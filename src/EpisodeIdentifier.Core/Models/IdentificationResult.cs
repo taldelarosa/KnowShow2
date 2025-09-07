@@ -1,0 +1,38 @@
+namespace EpisodeIdentifier.Core.Models;
+
+public class IdentificationResult
+{
+    public string? Series { get; set; }
+    public string? Season { get; set; }
+    public string? Episode { get; set; }
+    public double MatchConfidence { get; set; }
+    public string? AmbiguityNotes { get; set; }
+    public IdentificationError? Error { get; set; }
+
+    public bool IsAmbiguous => MatchConfidence < 0.9 && !string.IsNullOrEmpty(AmbiguityNotes);
+    public bool HasError => Error != null;
+}
+
+public class IdentificationError
+{
+    public string Code { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+
+    public static IdentificationError NoSubtitlesFound => new()
+    {
+        Code = "NO_SUBTITLES_FOUND",
+        Message = "No PGS subtitles could be extracted from the video file."
+    };
+
+    public static IdentificationError UnsupportedFileType => new()
+    {
+        Code = "UNSUPPORTED_FILE_TYPE",
+        Message = "The provided file is not AV1 encoded."
+    };
+
+    public static IdentificationError UnsupportedLanguage => new()
+    {
+        Code = "UNSUPPORTED_LANGUAGE",
+        Message = "The subtitle language is not supported."
+    };
+}
