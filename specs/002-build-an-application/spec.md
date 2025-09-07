@@ -1,7 +1,7 @@
 
 # Feature Specification: Identify Season and Episode from AV1 Video via PGS Subtitle Comparison (CLI, JSON Output)
 
-**Feature Branch**: `001-build-an-application`  
+**Feature Branch**: `002-build-an-application`  
 **Created**: September 7, 2025  
 **Status**: Draft  
 **Input**: User description: "Build an application that can identify the Season and Episode number of a provided AV1 encoded video file by extracting the PGS subtitles and comparing them to other known labelled subtitles that exist on the file system in a folder structure of Subtitles=>Series=>Season. This will be part of an automated workflow so it will only run on the command line and will always output JSON responses."
