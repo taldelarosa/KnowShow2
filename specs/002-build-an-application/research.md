@@ -1,11 +1,7 @@
 # Research: Identify Season and Episode from AV1 Video via PGS Subtitle Comparison (CLI, JSON Output)
 
 ## Unresolved Clarifications
-- Should the system reject non-AV1 files or attempt processing? (FR-006)
-- What is the minimum match threshold for subtitle comparison? (FR-008)
-- How should ambiguous results be represented in JSON? (FR-007)
-- Should the system support multiple subtitle languages or only a default? (FR-009)
-- What is the required JSON schema for output (fields, error structure)?
+
 
 ## Technology Choices
 - **Language**: C# (custom code)

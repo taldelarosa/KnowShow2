@@ -81,10 +81,10 @@ A user (or automated workflow) provides an AV1 encoded video file via the comman
 - **FR-003**: System MUST compare extracted subtitles to a database of known, labelled subtitles organized in a Subtitles=>Series=>Season folder structure.
 - **FR-004**: System MUST output the identified Season and Episode number as a JSON object if a match is found.
 - **FR-005**: System MUST output a JSON error message if identification is not possible due to missing or unreadable subtitles.
-- **FR-006**: System MUST output a JSON error message for unsupported file types (e.g., non-AV1 files). [NEEDS CLARIFICATION: Should non-AV1 files be rejected or processed?]
-- **FR-007**: System MUST handle cases where multiple matches are found and report ambiguity in the JSON output. [NEEDS CLARIFICATION: How should ambiguous results be represented?]
-- **FR-008**: System MUST define a minimum match threshold for subtitle comparison. [NEEDS CLARIFICATION: What is the threshold?]
-- **FR-009**: System MUST clarify supported subtitle languages. [NEEDS CLARIFICATION: Which languages are required?]
+- **FR-006**: System MUST output a JSON error message for unsupported file types (e.g., non-AV1 files) and stop processing. Note in the error message that non-AV1 files will be supported in a later release.
+- **FR-007**: System MUST handle cases where multiple matches are found and report ambiguity in the JSON output. This is only done when there is no confidence score higher than 90%. The System will return the path of the top 3 subtitles with the highest match confidence in the error message.
+- **FR-008**: System MUST define a minimum match threshold for subtitle comparison. This is configurable. The default is 0.92
+- **FR-009**: System MUST clarify supported subtitle languages. English is the preferred default but other languages can be used with the proper flag.
 - **FR-010**: System MUST always output responses in JSON format, including errors and status messages.
 - **FR-011**: System MUST log all identification attempts for audit purposes.
 - **FR-012**: System MUST support integration into automated workflows (non-interactive, no prompts).
