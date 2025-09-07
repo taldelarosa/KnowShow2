@@ -1,25 +1,42 @@
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
+using EpisodeIdentifier.Core.Models;
 
 namespace EpisodeIdentifier.Core.Services;
 
 public class SubtitleExtractor
 {
     private readonly ILogger<SubtitleExtractor> _logger;
+    private readonly VideoFormatValidator _validator;
 
-    public SubtitleExtractor(ILogger<SubtitleExtractor> logger)
+    public SubtitleExtractor(ILogger<SubtitleExtractor> logger, VideoFormatValidator validator)
     {
         _logger = logger;
+        _validator = validator;
     }
 
-    public async Task<byte[]> ExtractPgsSubtitles(string videoPath)
+    public async Task<byte[]> ExtractPgsSubtitles(string videoPath, string? preferredLanguage = null)
     {
-        _logger.LogInformation("Extracting PGS subtitles from {VideoPath}", videoPath);
+        _logger.LogInformation("Extracting PGS subtitles from {VideoPath}, preferred language: {Language}", 
+            videoPath, preferredLanguage ?? "any");
 
-        // First try mkvextract
+        // Get available subtitle tracks
+        var subtitleTracks = await _validator.GetSubtitleTracks(videoPath);
+        if (!subtitleTracks.Any())
+        {
+            _logger.LogWarning("No PGS subtitle tracks found in {VideoPath}", videoPath);
+            return Array.Empty<byte>();
+        }
+
+        // Select the best track based on language preference
+        var selectedTrack = SelectBestTrack(subtitleTracks, preferredLanguage);
+        _logger.LogInformation("Selected subtitle track: Index={Index}, Language={Language}", 
+            selectedTrack.Index, selectedTrack.Language ?? "unknown");
+
+        // First try mkvextract with specific track
         try
         {
-            var result = await ExtractWithMkvextract(videoPath);
+            var result = await ExtractWithMkvextract(videoPath, selectedTrack.Index);
             if (result.Length > 0)
             {
                 return result;
@@ -30,63 +47,133 @@ public class SubtitleExtractor
             _logger.LogWarning(ex, "Failed to extract subtitles with mkvextract, falling back to ffmpeg");
         }
 
-        // Fallback to ffmpeg
-        return await ExtractWithFfmpeg(videoPath);
+        // Fallback to ffmpeg with specific stream
+        return await ExtractWithFfmpeg(videoPath, selectedTrack.Index);
     }
 
-    private async Task<byte[]> ExtractWithMkvextract(string videoPath)
+    private SubtitleTrackInfo SelectBestTrack(List<SubtitleTrackInfo> tracks, string? preferredLanguage)
     {
-        using var process = new Process
+        // If preferred language specified, try to find it
+        if (!string.IsNullOrEmpty(preferredLanguage))
         {
-            StartInfo = new ProcessStartInfo
+            var langTrack = tracks.FirstOrDefault(t => 
+                string.Equals(t.Language, preferredLanguage, StringComparison.OrdinalIgnoreCase));
+            if (langTrack != null)
             {
-                FileName = "mkvextract",
-                Arguments = $"tracks \"{videoPath}\" 0:subtitles.sup",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
+                return langTrack;
             }
-        };
-
-        process.Start();
-        await process.WaitForExitAsync();
-
-        if (process.ExitCode == 0 && File.Exists("subtitles.sup"))
-        {
-            var content = await File.ReadAllBytesAsync("subtitles.sup");
-            File.Delete("subtitles.sup");
-            return content;
         }
 
-        throw new Exception($"mkvextract failed with exit code {process.ExitCode}");
+        // Default preferences: English first, then first available
+        var englishTrack = tracks.FirstOrDefault(t => 
+            string.Equals(t.Language, "eng", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(t.Language, "en", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(t.Language, "english", StringComparison.OrdinalIgnoreCase));
+        
+        return englishTrack ?? tracks.First();
     }
 
-    private async Task<byte[]> ExtractWithFfmpeg(string videoPath)
+    private async Task<byte[]> ExtractWithMkvextract(string videoPath, int trackIndex)
     {
-        using var process = new Process
+        // Get unique temporary filename
+        var tempFile = Path.GetTempFileName() + ".sup";
+        
+        try
         {
-            StartInfo = new ProcessStartInfo
+            using var process = new Process
             {
-                FileName = "ffmpeg",
-                Arguments = $"-i \"{videoPath}\" -map 0:s:0 subtitles.sup",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "mkvextract",
+                    Arguments = $"tracks \"{videoPath}\" {trackIndex}:\"{tempFile}\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            var stderr = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode == 0 && File.Exists(tempFile))
+            {
+                var content = await File.ReadAllBytesAsync(tempFile);
+                _logger.LogInformation("Successfully extracted {Size} bytes using mkvextract", content.Length);
+                return content;
             }
-        };
-
-        process.Start();
-        await process.WaitForExitAsync();
-
-        if (process.ExitCode == 0 && File.Exists("subtitles.sup"))
-        {
-            var content = await File.ReadAllBytesAsync("subtitles.sup");
-            File.Delete("subtitles.sup");
-            return content;
+            else
+            {
+                _logger.LogWarning("mkvextract failed with exit code {ExitCode}: {Error}", process.ExitCode, stderr);
+                return Array.Empty<byte>();
+            }
         }
+        finally
+        {
+            if (File.Exists(tempFile))
+            {
+                try
+                {
+                    File.Delete(tempFile);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete temporary file {TempFile}", tempFile);
+                }
+            }
+        }
+    }
 
-        throw new Exception($"ffmpeg failed with exit code {process.ExitCode}");
+    private async Task<byte[]> ExtractWithFfmpeg(string videoPath, int streamIndex)
+    {
+        // Get unique temporary filename
+        var tempFile = Path.GetTempFileName() + ".sup";
+        
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "ffmpeg",
+                    Arguments = $"-i \"{videoPath}\" -map 0:{streamIndex} -c copy -y \"{tempFile}\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            var stderr = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode == 0 && File.Exists(tempFile))
+            {
+                var content = await File.ReadAllBytesAsync(tempFile);
+                _logger.LogInformation("Successfully extracted {Size} bytes using ffmpeg", content.Length);
+                return content;
+            }
+            else
+            {
+                _logger.LogWarning("ffmpeg failed with exit code {ExitCode}: {Error}", process.ExitCode, stderr);
+                return Array.Empty<byte>();
+            }
+        }
+        finally
+        {
+            if (File.Exists(tempFile))
+            {
+                try
+                {
+                    File.Delete(tempFile);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete temporary file {TempFile}", tempFile);
+                }
+            }
+        }
     }
 }

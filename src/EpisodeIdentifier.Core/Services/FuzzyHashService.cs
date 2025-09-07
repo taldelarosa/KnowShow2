@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Core.Models;
+using FuzzySharp;
 
 namespace EpisodeIdentifier.Core.Services;
 
@@ -28,9 +29,8 @@ public class FuzzyHashService
                 Series TEXT NOT NULL,
                 Season TEXT NOT NULL,
                 Episode TEXT NOT NULL,
-                FuzzyHash TEXT NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS IX_SubtitleHashes_FuzzyHash ON SubtitleHashes(FuzzyHash);";
+                SubtitleText TEXT NOT NULL
+            );";
         command.ExecuteNonQuery();
     }
 
@@ -46,35 +46,37 @@ public class FuzzyHashService
 
         using var command = connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO SubtitleHashes (Series, Season, Episode, FuzzyHash)
-            VALUES (@series, @season, @episode, @hash);";
+            INSERT INTO SubtitleHashes (Series, Season, Episode, SubtitleText)
+            VALUES (@series, @season, @episode, @text);";
         
         command.Parameters.AddWithValue("@series", subtitle.Series);
         command.Parameters.AddWithValue("@season", subtitle.Season);
         command.Parameters.AddWithValue("@episode", subtitle.Episode);
-        command.Parameters.AddWithValue("@hash", ComputeFuzzyHash(subtitle.SubtitleText));
+        command.Parameters.AddWithValue("@text", subtitle.SubtitleText);
 
         await command.ExecuteNonQueryAsync();
+        _logger.LogInformation("Stored subtitle: {Series} S{Season}E{Episode}", 
+            subtitle.Series, subtitle.Season, subtitle.Episode);
     }
 
     public async Task<List<(LabelledSubtitle Subtitle, double Confidence)>> FindMatches(string subtitleText, double threshold = 0.8)
     {
         var results = new List<(LabelledSubtitle, double)>();
-        var searchHash = ComputeFuzzyHash(subtitleText);
-
+        
         using var connection = new SqliteConnection($"Data Source={_dbPath}");
         await connection.OpenAsync();
 
         using var command = connection.CreateCommand();
         command.CommandText = @"
-            SELECT Series, Season, Episode, FuzzyHash
+            SELECT Series, Season, Episode, SubtitleText
             FROM SubtitleHashes;";
 
         using var reader = await command.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
-            var storedHash = reader.GetString(3);
-            var confidence = ComputeHashSimilarity(searchHash, storedHash);
+            var storedText = reader.GetString(3);
+            // Convert the FuzzySharp ratio (0-100) to a confidence score (0-1)
+            var confidence = Fuzz.TokenSetRatio(subtitleText, storedText) / 100.0;
 
             if (confidence >= threshold)
             {
@@ -83,43 +85,19 @@ public class FuzzyHashService
                     Series = reader.GetString(0),
                     Season = reader.GetString(1),
                     Episode = reader.GetString(2),
-                    FuzzyHash = storedHash
+                    SubtitleText = storedText
                 };
 
                 results.Add((subtitle, confidence));
+                _logger.LogDebug("Match found: {Series} S{Season}E{Episode} with confidence {Confidence:P2}", 
+                    subtitle.Series, subtitle.Season, subtitle.Episode, confidence);
             }
         }
 
-        return results.OrderByDescending(x => x.Item2).ToList();
-    }
+        var sortedResults = results.OrderByDescending(x => x.Item2).ToList();
+        _logger.LogInformation("Found {Count} matches above threshold {Threshold:P2}", 
+            sortedResults.Count, threshold);
 
-    private string ComputeFuzzyHash(string text)
-    {
-        // This is a simplified implementation using character n-grams
-        // A production implementation would use a proper fuzzy hashing algorithm like ssdeep
-        const int ngramSize = 3;
-        var ngrams = new HashSet<string>();
-
-        for (int i = 0; i <= text.Length - ngramSize; i++)
-        {
-            var ngram = text.Substring(i, ngramSize).ToLowerInvariant();
-            ngrams.Add(ngram);
-        }
-
-        return string.Join("|", ngrams.OrderBy(n => n));
-    }
-
-    private double ComputeHashSimilarity(string hash1, string hash2)
-    {
-        var set1 = new HashSet<string>(hash1.Split('|'));
-        var set2 = new HashSet<string>(hash2.Split('|'));
-
-        if (set1.Count == 0 || set2.Count == 0) return 0.0;
-
-        // Use Jaccard similarity coefficient
-        var intersection = set1.Intersect(set2).Count();
-        var union = set1.Union(set2).Count();
-
-        return (double)intersection / union;
+        return sortedResults;
     }
 }
