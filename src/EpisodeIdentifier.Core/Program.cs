@@ -14,7 +14,7 @@ public class Program
 
         var inputOption = new Option<FileInfo>(
             "--input",
-            "Path to AV1 video file or subtitle file when using --store");
+            "Path to AV1 video file for identification, or subtitle file for storage (when using --store)");
         rootCommand.Add(inputOption);
 
         var hashDbOption = new Option<FileInfo>(
@@ -26,6 +26,11 @@ public class Program
             "--store",
             "Store subtitle information in the hash database instead of identifying a video");
         rootCommand.Add(storeOption);
+
+        var bulkOption = new Option<DirectoryInfo>(
+            "--bulk-store",
+            "Store all subtitle files from a directory, parsing series/season/episode from filenames");
+        rootCommand.Add(bulkOption);
 
         var seriesOption = new Option<string>(
             "--series",
@@ -47,21 +52,35 @@ public class Program
             "Preferred subtitle language (default: English)") { IsRequired = false };
         rootCommand.Add(languageOption);
 
-        rootCommand.SetHandler(HandleCommand, inputOption, hashDbOption, storeOption, seriesOption, seasonOption, episodeOption, languageOption);
+        rootCommand.SetHandler(HandleCommand, inputOption, hashDbOption, storeOption, bulkOption, seriesOption, seasonOption, episodeOption, languageOption);
 
         return await rootCommand.InvokeAsync(args);
     }
 
     private static async Task<int> HandleCommand(
-        FileInfo input, 
+        FileInfo? input, 
         FileInfo hashDb, 
         bool store,
+        DirectoryInfo? bulkDirectory,
         string? series,
         string? season,
         string? episode,
         string? language)
     {
-        if (!input.Exists)
+        // Validate input parameters
+        if (bulkDirectory != null && input != null)
+        {
+            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "CONFLICTING_OPTIONS", message = "Cannot specify both --input and --bulk-store options" } }));
+            return 1;
+        }
+
+        if (bulkDirectory == null && input == null)
+        {
+            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "MISSING_INPUT", message = "Must specify either --input or --bulk-store option" } }));
+            return 1;
+        }
+
+        if (input != null && !input.Exists)
         {
             Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "INVALID_INPUT", message = "Input file not found" } }));
             return 1;
@@ -77,8 +96,10 @@ public class Program
         var pgsRipService = new PgsRipService(loggerFactory.CreateLogger<PgsRipService>());
         var fallbackConverter = new PgsToTextConverter(loggerFactory.CreateLogger<PgsToTextConverter>());
         var pgsConverter = new EnhancedPgsToTextConverter(loggerFactory.CreateLogger<EnhancedPgsToTextConverter>(), pgsRipService, fallbackConverter);
-        var hashService = new FuzzyHashService(hashDb.FullName, loggerFactory.CreateLogger<FuzzyHashService>());
+        var normalizationService = new SubtitleNormalizationService(loggerFactory.CreateLogger<SubtitleNormalizationService>());
+        var hashService = new FuzzyHashService(hashDb.FullName, loggerFactory.CreateLogger<FuzzyHashService>(), normalizationService);
         var matcher = new SubtitleMatcher(hashService, loggerFactory.CreateLogger<SubtitleMatcher>());
+        var filenameParser = new SubtitleFilenameParser(loggerFactory.CreateLogger<SubtitleFilenameParser>());
 
         try
         {
@@ -90,8 +111,18 @@ public class Program
                     return 1;
                 }
 
+                // Validate that the input file is a subtitle file, not a video file
+                var videoExtensions = new[] { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v" };
+                var inputExtension = input!.Extension.ToLowerInvariant();
+                
+                if (videoExtensions.Contains(inputExtension))
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "INVALID_FILE_TYPE", message = $"Cannot store video files in database. Only subtitle files (.srt, .vtt, .ass, etc.) are allowed for storage. Got: {inputExtension}" } }));
+                    return 1;
+                }
+
                 // For storing, we expect a subtitle file directly
-                var subtitleText = await File.ReadAllTextAsync(input.FullName);
+                var subtitleText = await File.ReadAllTextAsync(input!.FullName);
                 var subtitle = new LabelledSubtitle
                 {
                     Series = series,
@@ -107,15 +138,81 @@ public class Program
                         series,
                         season,
                         episode,
-                        file = input.Name
+                        file = input!.Name
                     }
                 }));
                 return 0;
             }
+            else if (bulkDirectory != null)
+            {
+                if (!bulkDirectory.Exists)
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "DIRECTORY_NOT_FOUND", message = $"Directory not found: {bulkDirectory.FullName}" } }));
+                    return 1;
+                }
+
+                // Scan directory for subtitle files and parse their information
+                var subtitleFiles = await filenameParser.ScanDirectory(bulkDirectory.FullName);
+                
+                if (!subtitleFiles.Any())
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLE_FILES", message = "No parseable subtitle files found in the directory" } }));
+                    return 1;
+                }
+
+                var successCount = 0;
+                var failureCount = 0;
+                var results = new List<object>();
+
+                foreach (var subtitleFile in subtitleFiles)
+                {
+                    try
+                    {
+                        var subtitleText = await File.ReadAllTextAsync(subtitleFile.FilePath);
+                        var subtitle = new LabelledSubtitle
+                        {
+                            Series = subtitleFile.Series,
+                            Season = subtitleFile.Season,
+                            Episode = subtitleFile.Episode,
+                            SubtitleText = subtitleText
+                        };
+
+                        await hashService.StoreHash(subtitle);
+                        successCount++;
+                        results.Add(new { 
+                            status = "success", 
+                            file = Path.GetFileName(subtitleFile.FilePath),
+                            series = subtitleFile.Series,
+                            season = subtitleFile.Season,
+                            episode = subtitleFile.Episode
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        failureCount++;
+                        results.Add(new { 
+                            status = "failed", 
+                            file = Path.GetFileName(subtitleFile.FilePath),
+                            error = ex.Message
+                        });
+                    }
+                }
+
+                Console.WriteLine(JsonSerializer.Serialize(new { 
+                    message = "Bulk ingestion completed",
+                    summary = new {
+                        totalFiles = subtitleFiles.Count,
+                        successful = successCount,
+                        failed = failureCount
+                    },
+                    results
+                }));
+                return failureCount > 0 ? 1 : 0;
+            }
             else
             {
                 // Validate AV1 encoding first
-                if (!await validator.IsAV1Encoded(input.FullName))
+                if (!await validator.IsAV1Encoded(input!.FullName))
                 {
                     Console.WriteLine(JsonSerializer.Serialize(new { 
                         error = new { 

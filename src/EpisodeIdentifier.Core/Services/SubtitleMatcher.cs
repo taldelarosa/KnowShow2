@@ -23,11 +23,33 @@ public class SubtitleMatcher
         if (!matches.Any())
         {
             _logger.LogInformation("No matches found above confidence threshold {Threshold}", minConfidence);
-            return new IdentificationResult 
-            { 
-                MatchConfidence = 0,
-                Error = IdentificationError.NoSubtitlesFound
-            };
+            
+            // Get the best match regardless of threshold for error reporting
+            var bestOverallMatch = await _hashService.GetBestMatch(subtitleText);
+            
+            if (bestOverallMatch.HasValue)
+            {
+                var (subtitle, confidence) = bestOverallMatch.Value;
+                var errorMessage = $"No matching episodes found in the database with sufficient confidence. Best match: {subtitle.Series} S{subtitle.Season}E{subtitle.Episode} ({confidence:P1} confidence, below {minConfidence:P0} threshold)";
+                
+                return new IdentificationResult 
+                { 
+                    MatchConfidence = confidence,
+                    Error = new IdentificationError 
+                    { 
+                        Code = "NO_MATCHES_FOUND", 
+                        Message = errorMessage 
+                    }
+                };
+            }
+            else
+            {
+                return new IdentificationResult 
+                { 
+                    MatchConfidence = 0,
+                    Error = IdentificationError.NoMatchesFound
+                };
+            }
         }
 
         var bestMatch = matches.First();
@@ -44,6 +66,13 @@ public class SubtitleMatcher
         {
             result.AmbiguityNotes = $"Multiple episodes matched with confidence > {minConfidence}";
             _logger.LogWarning("Ambiguous match found: {Notes}", result.AmbiguityNotes);
+            
+            // Log all close matches for debugging
+            foreach (var match in matches.Take(5)) // Show top 5 matches
+            {
+                _logger.LogInformation("Close match: {Series} S{Season}E{Episode} - {Confidence:P2} confidence", 
+                    match.Subtitle.Series, match.Subtitle.Season, match.Subtitle.Episode, match.Confidence);
+            }
         }
 
         return result;

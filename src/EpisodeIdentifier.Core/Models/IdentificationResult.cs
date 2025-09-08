@@ -35,4 +35,10 @@ public class IdentificationError
         Code = "UNSUPPORTED_LANGUAGE",
         Message = "The subtitle language is not supported."
     };
+
+    public static IdentificationError NoMatchesFound => new()
+    {
+        Code = "NO_MATCHES_FOUND",
+        Message = "No matching episodes found in the database with sufficient confidence."
+    };
 }
