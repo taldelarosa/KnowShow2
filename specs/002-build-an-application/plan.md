@@ -60,6 +60,8 @@ This feature provides a CLI-only tool to identify the Season and Episode of an A
   - All checks passing (tests, linting, build)
   - Branch up-to-date with main
 - **Branch protection**: Enforced via GitHub rules (see `.github/` configuration)
+- **Infrastructure as Code**: Repository settings defined in `.github/repository-config.yml`
+- **Automated deployment**: Use `./scripts/setup-branch-protection.sh` to apply settings
 
 **Development Flow**:
 1. Create feature branch from main: `git checkout -b ###-feature-name`
