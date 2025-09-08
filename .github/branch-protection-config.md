@@ -1,10 +1,49 @@
 # Branch Protection Configuration
-# This file documents the required GitHub branch protection settings for this repository.
-# These settings must be configured manually in the GitHub repository settings.
+# This file documents the automated GitHub branch protection setup for this repository.
+# Branch protection is now configured via YAML and applied using GitHub CLI.
 
-## Main Branch Protection Rules
+## Automated Configuration (Recommended)
 
-Configure the following settings for the `main` branch in GitHub repository settings:
+### YAML-Based Configuration
+Branch protection is defined in `.github/repository-config.yml` and applied using:
+
+```bash
+# Validate configuration
+./scripts/validate-config.sh
+
+# Preview changes
+./scripts/setup-branch-protection.sh --dry-run
+
+# Apply all repository settings and branch protection
+./scripts/setup-branch-protection.sh
+
+# Apply only repository settings (skip branch protection)
+./scripts/setup-branch-protection.sh --config-only
+```
+
+### Prerequisites
+- GitHub CLI (`gh`) installed and authenticated
+- `yq` installed for YAML parsing
+- `jq` installed for JSON processing
+- Repository admin access
+
+### Installation
+```bash
+# Install prerequisites
+sudo snap install gh
+sudo snap install yq
+sudo apt-get install jq
+
+# Authenticate with GitHub
+gh auth login
+
+# Run setup
+./scripts/setup-branch-protection.sh
+```
+
+## Current Configuration
+
+The YAML configuration (`.github/repository-config.yml`) defines:
 
 ### General Protection Rules
 - ✅ **Restrict pushes that create files**: Enabled

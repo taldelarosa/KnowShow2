@@ -161,6 +161,11 @@ check_system_dependencies() {
         missing_descriptions+=("git (version control)")
     fi
     
+    if ! command_exists "jq"; then
+        missing_packages+=("jq")
+        missing_descriptions+=("jq (JSON processing for GitHub CLI)")
+    fi
+    
     # Video processing tools
     if ! check_package "ffmpeg" "ffmpeg" "FFmpeg (video processing)"; then
         missing_packages+=("ffmpeg")
