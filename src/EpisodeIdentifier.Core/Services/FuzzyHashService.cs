@@ -34,12 +34,16 @@ public class FuzzyHashService
                 OriginalText TEXT NOT NULL,
                 NoTimecodesText TEXT NOT NULL,
                 NoHtmlText TEXT NOT NULL,
-                CleanText TEXT NOT NULL
+                CleanText TEXT NOT NULL,
+                UNIQUE(Series, Season, Episode)
             );";
         command.ExecuteNonQuery();
 
         // Migrate existing data if needed
         MigrateExistingData(connection);
+        
+        // Add unique constraint if table already exists without it
+        AddUniqueConstraintIfNeeded(connection);
     }
 
     private void MigrateExistingData(SqliteConnection connection)
@@ -85,6 +89,25 @@ public class FuzzyHashService
         }
     }
 
+    private void AddUniqueConstraintIfNeeded(SqliteConnection connection)
+    {
+        try
+        {
+            // Check if the unique constraint already exists by trying to create it
+            using var command = connection.CreateCommand();
+            command.CommandText = @"
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_episode 
+                ON SubtitleHashes(Series, Season, Episode);";
+            command.ExecuteNonQuery();
+            
+            _logger.LogDebug("Unique constraint ensured on (Series, Season, Episode)");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Could not add unique constraint: {Message}", ex.Message);
+        }
+    }
+
     public async Task StoreHash(LabelledSubtitle subtitle)
     {
         if (!subtitle.IsValid)
@@ -92,28 +115,11 @@ public class FuzzyHashService
             throw new ArgumentException("Subtitle text is required");
         }
 
-        using var connection = new SqliteConnection($"Data Source={_dbPath}");
-        await connection.OpenAsync();
-
-        // Check if this episode already exists
-        using var checkCommand = connection.CreateCommand();
-        checkCommand.CommandText = @"
-            SELECT COUNT(*) FROM SubtitleHashes 
-            WHERE Series = @series AND Season = @season AND Episode = @episode;";
-        checkCommand.Parameters.AddWithValue("@series", subtitle.Series);
-        checkCommand.Parameters.AddWithValue("@season", subtitle.Season);
-        checkCommand.Parameters.AddWithValue("@episode", subtitle.Episode);
-        
-        var existingCount = Convert.ToInt32(await checkCommand.ExecuteScalarAsync());
-        if (existingCount > 0)
-        {
-            _logger.LogWarning("Episode {Series} S{Season}E{Episode} already exists in database, skipping duplicate entry", 
-                subtitle.Series, subtitle.Season, subtitle.Episode);
-            return;
-        }
-
         // Create normalized versions
         var normalized = _normalizationService.CreateNormalizedVersions(subtitle.SubtitleText);
+
+        using var connection = new SqliteConnection($"Data Source={_dbPath}");
+        await connection.OpenAsync();
 
         using var command = connection.CreateCommand();
         command.CommandText = @"
@@ -128,9 +134,17 @@ public class FuzzyHashService
         command.Parameters.AddWithValue("@noHtml", normalized.NoHtml);
         command.Parameters.AddWithValue("@clean", normalized.NoHtmlAndTimecodes);
 
-        await command.ExecuteNonQueryAsync();
-        _logger.LogInformation("Stored subtitle with {VersionCount} normalized versions: {Series} S{Season}E{Episode}", 
-            4, subtitle.Series, subtitle.Season, subtitle.Episode);
+        try
+        {
+            await command.ExecuteNonQueryAsync();
+            _logger.LogInformation("Stored subtitle with {VersionCount} normalized versions: {Series} S{Season}E{Episode}", 
+                4, subtitle.Series, subtitle.Season, subtitle.Episode);
+        }
+        catch (SqliteException ex) when (ex.Message.Contains("UNIQUE constraint failed"))
+        {
+            _logger.LogWarning("Episode {Series} S{Season}E{Episode} already exists in database, skipping duplicate entry", 
+                subtitle.Series, subtitle.Season, subtitle.Episode);
+        }
     }
 
     public async Task<List<(LabelledSubtitle Subtitle, double Confidence)>> FindMatches(string subtitleText, double threshold = 0.8)
