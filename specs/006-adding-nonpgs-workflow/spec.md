@@ -77,7 +77,7 @@ A user has a video file that does not contain PGS (Presentation Graphic Stream) 
 - **FR-003**: System MUST process extracted text subtitles through the existing fuzzy hash comparison workflow
 - **FR-004**: System MUST maintain existing PGS subtitle priority (process PGS first when available)
 - **FR-005**: System MUST provide clear indication in results when text subtitles were used instead of PGS
-- **FR-006**: System MUST handle multiple text subtitle tracks by [NEEDS CLARIFICATION: should system process all tracks, first track only, or user-selected track?]
+- **FR-006**: System MUST process all available text subtitle tracks sequentially until a successful database match is found
 - **FR-007**: System MUST gracefully handle text subtitle extraction failures and continue to next available subtitle track
 - **FR-008**: System MUST preserve all existing functionality for PGS subtitle processing (no regressions)
 
@@ -115,6 +115,6 @@ A user has a video file that does not contain PGS (Presentation Graphic Stream) 
 - [x] User scenarios defined
 - [x] Requirements generated
 - [x] Entities identified
-- [ ] Review checklist passed
+- [x] Review checklist passed
 
 ---
