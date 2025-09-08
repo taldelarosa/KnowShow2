@@ -54,7 +54,7 @@ public class VideoFormatValidator
                 {
                     var codec = codecName.GetString();
                     _logger.LogInformation("Found video codec: {Codec}", codec);
-                    return codec == "av01" || codec == "libaom-av1";
+                    return codec == "av01" || codec == "libaom-av1" || codec == "av1";
                 }
             }
 
