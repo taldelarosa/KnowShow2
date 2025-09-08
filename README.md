@@ -2,6 +2,28 @@
 
 This application identifies Season and Episode numbers from AV1 encoded video files by extracting PGS (Presentation Graphics Stream) subtitles and comparing them to known labeled subtitles.
 
+## Quick Setup (Fresh Linux System)
+
+**⚡ One-Command Setup:**
+```bash
+# Check what's needed
+./scripts/setup-prerequisites.sh --check-only
+
+# Install everything automatically (requires sudo)  
+./scripts/setup-prerequisites.sh --install
+
+# Build and test
+cd src/EpisodeIdentifier.Core && dotnet build
+dotnet test
+```
+
+**Manual verification:** The setup script will install all required dependencies including:
+- .NET 8.0 SDK
+- FFmpeg & MKVToolNix (video processing)
+- Tesseract OCR with language packs
+- pgsrip (advanced PGS processor) 
+- Enhanced OCR training data
+
 ## Features
 
 ### Core Functionality
@@ -21,6 +43,8 @@ This application identifies Season and Episode numbers from AV1 encoded video fi
 
 ## Dependencies
 
+**🎯 Automated Setup:** Use `./scripts/setup-prerequisites.sh --install` to install everything automatically.
+
 ### Required External Tools
 ```bash
 # Video processing
@@ -31,9 +55,12 @@ sudo apt-get install tesseract-ocr tesseract-ocr-eng
 
 # Additional language packs (optional)
 sudo apt-get install tesseract-ocr-spa tesseract-ocr-fra tesseract-ocr-deu
+
+# Advanced PGS processor (recommended)
+pip install pgsrip
 ```
 
-### .NET Dependencies
+### .NET Dependencies (auto-restored)
 - Microsoft.Data.Sqlite
 - Microsoft.Extensions.Logging
 - System.CommandLine
@@ -196,6 +223,23 @@ dotnet test tests/contract/
 - `IdentificationError`: Extended error codes for new scenarios
 
 ## Troubleshooting
+
+### Setup Issues
+
+**"Command not found" or missing dependencies**
+```bash
+# Run the comprehensive setup checker
+./scripts/setup-prerequisites.sh --check-only --verbose
+
+# Install any missing dependencies  
+./scripts/setup-prerequisites.sh --install
+```
+
+**"Permission denied" when running setup**
+```bash
+# Make the script executable
+chmod +x scripts/setup-prerequisites.sh
+```
 
 ### Common Issues
 
