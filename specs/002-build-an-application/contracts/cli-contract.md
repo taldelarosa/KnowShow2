@@ -2,13 +2,12 @@
 
 ## CLI Arguments
 - `--input <video-file>`: Path to AV1 video file
-- `--sub-db <subtitle-root>`: Path to root of known subtitles (Subtitles=>Series=>Season)
 - `--hash-db <sqlite-db>`: Path to SQLite database for fuzzy hashes
-- `--output-format json`: Output format (must be JSON)
+- `--language <lang>`: Preferred subtitle language (default: eng)
 
 ## Input Example
 ```sh
-./identify-episode --input "MyShow_S01E02.mkv" --sub-db "/mnt/share/Subtitles" --hash-db "./hashes.sqlite" --output-format json
+./identify-episode --input "MyShow_S01E02.mkv" --hash-db "./hashes.sqlite"
 ```
 
 ## Output JSON Schema

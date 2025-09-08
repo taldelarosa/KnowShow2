@@ -17,11 +17,6 @@ public class Program
             "Path to AV1 video file or subtitle file when using --store");
         rootCommand.Add(inputOption);
 
-        var subDbOption = new Option<DirectoryInfo>(
-            "--sub-db",
-            "Path to root of known subtitles (Subtitles=>Series=>Season)");
-        rootCommand.Add(subDbOption);
-
         var hashDbOption = new Option<FileInfo>(
             "--hash-db",
             "Path to SQLite database for fuzzy hashes");
@@ -52,14 +47,13 @@ public class Program
             "Preferred subtitle language (default: English)") { IsRequired = false };
         rootCommand.Add(languageOption);
 
-        rootCommand.SetHandler(HandleCommand, inputOption, subDbOption, hashDbOption, storeOption, seriesOption, seasonOption, episodeOption, languageOption);
+        rootCommand.SetHandler(HandleCommand, inputOption, hashDbOption, storeOption, seriesOption, seasonOption, episodeOption, languageOption);
 
         return await rootCommand.InvokeAsync(args);
     }
 
     private static async Task<int> HandleCommand(
         FileInfo input, 
-        DirectoryInfo subDb, 
         FileInfo hashDb, 
         bool store,
         string? series,
@@ -70,12 +64,6 @@ public class Program
         if (!input.Exists)
         {
             Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "INVALID_INPUT", message = "Input file not found" } }));
-            return 1;
-        }
-
-        if (!store && !subDb.Exists)
-        {
-            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "INVALID_PATH", message = "Subtitle database path not found" } }));
             return 1;
         }
 

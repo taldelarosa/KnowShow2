@@ -9,8 +9,8 @@
 
 ## Steps
 1. Place AV1 video file in working directory
-2. Run CLI tool: `dotnet run -- --input <video-file> --sub-db <subtitle-root> --hash-db <sqlite-db>`
-3. Tool extracts PGS subtitles using mkvextract/ffmpeg
+2. Run CLI tool: `dotnet run -- --input <video-file> --hash-db <sqlite-db>`
+3. Tool extracts PGS subtitles using pgsrip (enhanced) or FFmpeg (fallback)
 4. Tool computes fuzzy hash of extracted subtitles
 5. Tool compares hash to known hashes in SQLite DB
 6. Tool outputs JSON with identified Series, Season, Episode, and confidence
@@ -19,7 +19,7 @@
 ## Example
 ```sh
 # Example command
-./identify-episode --input "MyShow_S01E02.mkv" --sub-db "/mnt/share/Subtitles" --hash-db "./hashes.sqlite" --output-format json
+./identify-episode --input "MyShow_S01E02.mkv" --hash-db "./hashes.sqlite"
 ```
 
 ## Output

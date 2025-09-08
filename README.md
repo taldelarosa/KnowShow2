@@ -43,12 +43,12 @@ sudo apt-get install tesseract-ocr-spa tesseract-ocr-fra tesseract-ocr-deu
 
 ### Basic Identification
 ```bash
-dotnet run -- --input video.mkv --sub-db /path/to/subtitles --hash-db hashes.sqlite
+dotnet run -- --input video.mkv --hash-db hashes.sqlite
 ```
 
 ### With Language Preference
 ```bash
-dotnet run -- --input video.mkv --sub-db /path/to/subtitles --hash-db hashes.sqlite --language eng
+dotnet run -- --input video.mkv --hash-db hashes.sqlite --language eng
 ```
 
 ### Store Known Subtitle
@@ -61,7 +61,6 @@ dotnet run -- --input subtitle.txt --hash-db hashes.sqlite --store --series "Sho
 | Option | Description | Required | Default |
 |--------|-------------|----------|---------|
 | `--input` | Path to AV1 video file or subtitle file | ✅ | - |
-| `--sub-db` | Path to subtitle database directory | ✅* | - |
 | `--hash-db` | Path to SQLite hash database | ✅ | - |
 | `--store` | Store mode instead of identify | ❌ | false |
 | `--series` | Series name (store mode only) | ✅** | - |
@@ -221,5 +220,5 @@ dotnet test tests/contract/
 Set environment variable for detailed logging:
 ```bash
 export DOTNET_LOGGING_CONSOLE_DISABLECOLORS=true
-dotnet run -- --input video.mkv --sub-db subtitles --hash-db hashes.db
+dotnet run -- --input video.mkv --hash-db hashes.db
 ```
