@@ -1,0 +1,112 @@
+name: Branch Protection Reminder
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  branch-protection-reminder:
+    name: Remind about proper Git workflow
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
+    
+    steps:
+    - name: Check if push is from merge
+      id: check-merge
+      run: |
+        # Check if this is a merge commit (has multiple parents)
+        if [ "$(git rev-list --parents -n 1 ${{ github.sha }} | wc -w)" -gt 2 ]; then
+          echo "is_merge=true" >> $GITHUB_OUTPUT
+        else
+          echo "is_merge=false" >> $GITHUB_OUTPUT
+        fi
+      
+    - name: Create issue for direct push
+      if: steps.check-merge.outputs.is_merge == 'false'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const issueTitle = `⚠️ Direct push to main branch detected`;
+          const issueBody = `
+          ## Direct Push to Main Branch Detected
+          
+          **Commit**: ${{ github.sha }}
+          **Author**: @${{ github.actor }}
+          **Timestamp**: ${{ github.event.head_commit.timestamp }}
+          
+          ### ❌ This violates our Git workflow policy
+          
+          According to our project constitution and workflow requirements:
+          - All changes must go through feature branches
+          - Pull requests are required for all merges to main
+          - Code review is mandatory
+          
+          ### 📋 Correct Workflow
+          
+          1. Create feature branch: \`git checkout -b ###-feature-name\`
+          2. Make changes and commit to feature branch
+          3. Push feature branch: \`git push origin ###-feature-name\`
+          4. Create Pull Request to main
+          5. Get code review and approval
+          6. Merge via PR
+          
+          ### 🔧 Next Steps
+          
+          1. **Immediate**: Configure branch protection rules (see \`.github/branch-protection-config.md\`)
+          2. **If this was an error**: Consider reverting this commit and redoing via proper workflow
+          3. **For future**: Always use feature branches for development
+          
+          ### 📚 References
+          
+          - [Git Workflow Requirements](specs/002-build-an-application/plan.md#git-workflow-requirements)
+          - [Branch Protection Config](.github/branch-protection-config.md)
+          - [Pull Request Template](.github/pull_request_template.md)
+          
+          **Please configure branch protection rules to prevent this in the future.**
+          `;
+          
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: issueTitle,
+            body: issueBody,
+            labels: ['workflow-violation', 'urgent', 'needs-attention']
+          });
+
+  check-branch-protection:
+    name: Check if branch protection is enabled
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check branch protection status
+      uses: actions/github-script@v6
+      with:
+        script: |
+          try {
+            const protection = await github.rest.repos.getBranchProtection({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: 'main'
+            });
+            
+            console.log('✅ Branch protection is enabled for main branch');
+            console.log('Protection rules:', JSON.stringify(protection.data, null, 2));
+            
+            // Check for key protection features
+            const required = protection.data.required_status_checks;
+            const pullRequest = protection.data.required_pull_request_reviews;
+            const restrictions = protection.data.restrictions;
+            
+            if (!required || !pullRequest) {
+              core.setFailed('⚠️ Branch protection is incomplete. See .github/branch-protection-config.md for required settings.');
+            }
+            
+          } catch (error) {
+            if (error.status === 404) {
+              core.setFailed('❌ Branch protection is NOT enabled for main branch. Please configure it using .github/branch-protection-config.md');
+            } else {
+              core.setFailed(`Error checking branch protection: ${error.message}`);
+            }
+          }

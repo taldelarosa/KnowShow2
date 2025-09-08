@@ -24,6 +24,28 @@ dotnet test
 - pgsrip (advanced PGS processor) 
 - Enhanced OCR training data
 
+## Git Workflow
+
+**⚠️ Important**: This project uses a **feature branch workflow** with branch protection:
+
+```bash
+# ✅ Correct workflow
+git checkout -b 005-new-feature    # Create feature branch
+# Make changes...
+git push origin 005-new-feature    # Push feature branch
+# Create Pull Request via GitHub
+# Get code review → Merge via PR
+
+# ❌ Direct pushes to main are blocked
+git push origin main  # This will fail!
+```
+
+**Required for all changes:**
+- Feature branches (`###-feature-name` format)
+- Pull Request with code review
+- All CI/CD checks must pass
+- See [branch protection guide](.github/branch-protection-config.md) for setup
+
 ## Features
 
 ### Core Functionality

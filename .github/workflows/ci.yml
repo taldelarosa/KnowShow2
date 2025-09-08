@@ -1,0 +1,148 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  
+jobs:
+  # Build and test the .NET application
+  build-and-test:
+    name: Build and Test (.NET)
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Cache NuGet packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+          
+    - name: Restore dependencies
+      run: dotnet restore
+      working-directory: ./src/EpisodeIdentifier.Core
+      
+    - name: Build application
+      run: dotnet build --no-restore --configuration Release
+      working-directory: ./src/EpisodeIdentifier.Core
+      
+    - name: Run unit tests
+      run: dotnet test --no-build --configuration Release --verbosity normal --logger trx --results-directory "TestResults"
+      working-directory: ./tests/unit
+      
+    - name: Run integration tests
+      run: dotnet test --no-build --configuration Release --verbosity normal --logger trx --results-directory "TestResults"
+      working-directory: ./tests/integration
+      
+    - name: Run contract tests
+      run: dotnet test --no-build --configuration Release --verbosity normal --logger trx --results-directory "TestResults"
+      working-directory: ./tests/contract
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: "**/TestResults/*.trx"
+
+  # Verify prerequisite setup script
+  verify-setup:
+    name: Verify Setup Script
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Make setup script executable
+      run: chmod +x scripts/setup-prerequisites.sh
+      
+    - name: Test setup script (check-only mode)
+      run: ./scripts/setup-prerequisites.sh --check-only --verbose
+      
+    - name: Test setup script help
+      run: ./scripts/setup-prerequisites.sh --help
+
+  # Security and code quality checks
+  security-scan:
+    name: Security and Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # Lint and format check
+  lint-and-format:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      working-directory: ./src/EpisodeIdentifier.Core
+      
+    - name: Check code formatting
+      run: dotnet format --verify-no-changes --verbosity normal
+      working-directory: ./src/EpisodeIdentifier.Core
+      
+    - name: Run static analysis
+      run: dotnet build --configuration Release --verbosity normal /p:TreatWarningsAsErrors=true
+      working-directory: ./src/EpisodeIdentifier.Core
+
+  # Build documentation and validate links
+  docs-check:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check markdown files
+      uses: DavidAnson/markdownlint-cli2-action@v13
+      with:
+        globs: '**/*.md'
+        
+    - name: Check for broken links
+      uses: gaurav-nelson/github-action-markdown-link-check@v1
+      with:
+        use-quiet-mode: 'yes'
+        use-verbose-mode: 'yes'
+        config-file: '.github/mlc_config.json'

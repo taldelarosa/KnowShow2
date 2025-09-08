@@ -25,6 +25,12 @@
 8. STOP - Ready for /tasks command
 ```
 
+**IMPORTANT Git Workflow**: 
+- All changes MUST be made in feature branches (format: `###-feature-name`)
+- NO direct pushes to `main` branch allowed
+- All changes merge to `main` via Pull Request with code review
+- Branch protection rules enforce this workflow
+
 **IMPORTANT**: The /plan command STOPS at step 7. Phases 2-4 are executed by other commands:
 - Phase 2: /tasks command creates tasks.md
 - Phase 3-4: Implementation execution (manual or via tools)
@@ -44,6 +50,24 @@ This feature provides a CLI-only tool to identify the Season and Episode of an A
 **Performance Goals**: Fast enough for automation; <5s per file typical  
 **Constraints**: CLI-only, JSON output, no interactive prompts, must run in automated workflows  
 **Scale/Scope**: Single-user, batch/automation use, local or mounted file shares
+
+## Git Workflow Requirements
+**Feature Branch Model**: All development MUST follow feature branch workflow
+- **Main branch**: Protected, no direct pushes allowed
+- **Feature branches**: Named `###-feature-description` (e.g., `005-add-ocr-optimization`)
+- **Pull Requests**: Required for all merges to main with:
+  - Code review (minimum 1 approval)
+  - All checks passing (tests, linting, build)
+  - Branch up-to-date with main
+- **Branch protection**: Enforced via GitHub rules (see `.github/` configuration)
+
+**Development Flow**:
+1. Create feature branch from main: `git checkout -b ###-feature-name`
+2. Make changes, commit, and push feature branch
+3. Create Pull Request to main with description and testing notes
+4. Address review feedback and ensure CI passes
+5. Merge via PR (squash recommended for clean history)
+6. Delete feature branch after successful merge
 
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*

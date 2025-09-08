@@ -452,6 +452,11 @@ main() {
     echo "  1. Build the project: cd src/EpisodeIdentifier.Core && dotnet build"
     echo "  2. Run tests: dotnet test"
     echo "  3. See README.md for usage examples"
+    echo
+    log_info "Git Workflow Reminder:"
+    echo "  • Always work in feature branches (###-feature-name)"
+    echo "  • Create Pull Requests for all changes to main"
+    echo "  • Configure branch protection: see .github/branch-protection-config.md"
 }
 
 # Run main function
