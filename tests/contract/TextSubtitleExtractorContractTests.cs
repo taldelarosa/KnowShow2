@@ -2,6 +2,7 @@ using Xunit;
 using FluentAssertions;
 using EpisodeIdentifier.Core.Services;
 using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Interfaces;
 
 namespace EpisodeIdentifier.Tests.Contract;
 
