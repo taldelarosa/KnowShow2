@@ -86,7 +86,9 @@ public class Program
 
         var validator = new VideoFormatValidator(loggerFactory.CreateLogger<VideoFormatValidator>());
         var extractor = new SubtitleExtractor(loggerFactory.CreateLogger<SubtitleExtractor>(), validator);
-        var pgsConverter = new PgsToTextConverter(loggerFactory.CreateLogger<PgsToTextConverter>());
+        var pgsRipService = new PgsRipService(loggerFactory.CreateLogger<PgsRipService>());
+        var fallbackConverter = new PgsToTextConverter(loggerFactory.CreateLogger<PgsToTextConverter>());
+        var pgsConverter = new EnhancedPgsToTextConverter(loggerFactory.CreateLogger<EnhancedPgsToTextConverter>(), pgsRipService, fallbackConverter);
         var hashService = new FuzzyHashService(hashDb.FullName, loggerFactory.CreateLogger<FuzzyHashService>());
         var matcher = new SubtitleMatcher(hashService, loggerFactory.CreateLogger<SubtitleMatcher>());
 
@@ -148,16 +150,19 @@ public class Program
                     return 1;
                 }
 
-                var subtitleBytes = await extractor.ExtractPgsSubtitles(input.FullName, language);
-                if (subtitleBytes.Length == 0)
+                // Get subtitle track information for direct video processing
+                var subtitleTracks = await validator.GetSubtitleTracks(input.FullName);
+                var pgsTrack = subtitleTracks.FirstOrDefault(t => t.Language.Contains("eng") || string.IsNullOrEmpty(t.Language));
+                
+                if (pgsTrack == null)
                 {
-                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLES_FOUND", message = "No PGS subtitles could be extracted from the video file" } }));
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLES_FOUND", message = "No PGS subtitles could be found in the video file" } }));
                     return 1;
                 }
 
-                // Convert PGS subtitle bytes to text using OCR
+                // Extract and OCR subtitle images directly from video file
                 var ocrLanguage = GetOcrLanguageCode(language);
-                var subtitleText = await pgsConverter.ConvertPgsToText(subtitleBytes, ocrLanguage);
+                var subtitleText = await pgsConverter.ConvertPgsFromVideoToText(input.FullName, pgsTrack.Index, ocrLanguage);
                 
                 if (string.IsNullOrWhiteSpace(subtitleText))
                 {

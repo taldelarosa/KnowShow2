@@ -1,0 +1,904 @@
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
+using System.Text;
+
+namespace EpisodeIdentifier.Core.Services;
+
+public class PgsToTextConverter
+{
+    private readonly ILogger<PgsToTextConverter> _logger;
+
+    public PgsToTextConverter(ILogger<PgsToTextConverter> logger)
+    {
+        _logger = logger;
+    }
+
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
+using System.Text;
+
+namespace EpisodeIdentifier.Core.Services;
+
+/// <summary>
+/// Service for converting PGS subtitles to text using the pgsrip library
+/// This implementation replaces the previous custom approach with a more robust solution
+/// </summary>
+public class PgsToTextConverter
+{
+    private readonly ILogger<PgsToTextConverter> _logger;
+
+    public PgsToTextConverter(ILogger<PgsToTextConverter> logger)
+    {
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Convert PGS subtitle data to text using pgsrip
+    /// </summary>
+    /// <param name="pgsData">PGS subtitle data as byte array</param>
+    /// <param name="language">Language code for OCR (e.g., "eng", "deu")</param>
+    /// <returns>Extracted text in SRT format or plain text for fuzzy matching</returns>
+    public async Task<string> ConvertPgsToText(byte[] pgsData, string language = "eng")
+    {
+        _logger.LogInformation("Converting PGS subtitle data to text using pgsrip, size: {Size} bytes", pgsData.Length);
+
+        if (pgsData.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        // Save PGS data to temporary .sup file for pgsrip processing
+        var tempSupFile = Path.GetTempFileName() + ".sup";
+        var tempOutputFile = Path.ChangeExtension(tempSupFile, ".srt");
+        
+        try
+        {
+            await File.WriteAllBytesAsync(tempSupFile, pgsData);
+
+            // Use pgsrip to extract subtitles
+            var result = await RunPgsRip(tempSupFile, language);
+            
+            if (File.Exists(tempOutputFile))
+            {
+                var srtContent = await File.ReadAllTextAsync(tempOutputFile);
+                _logger.LogInformation("Successfully extracted text using pgsrip: {Length} characters", srtContent.Length);
+                return srtContent;
+            }
+            else
+            {
+                _logger.LogWarning("pgsrip did not produce output file, using fallback method");
+                return await ConvertPgsToTextFallback(pgsData, language);
+            }
+        }
+        finally
+        {
+            // Cleanup temporary files
+            try
+            {
+                if (File.Exists(tempSupFile))
+                    File.Delete(tempSupFile);
+                if (File.Exists(tempOutputFile))
+                    File.Delete(tempOutputFile);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to cleanup temporary files");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Convert PGS subtitles directly from video file using pgsrip
+    /// </summary>
+    public async Task<string> ConvertPgsFromVideoToText(string videoPath, int subtitleTrackIndex, string language = "eng")
+    {
+        _logger.LogInformation("Converting PGS subtitles from video using pgsrip: {VideoPath}, track {TrackIndex}", videoPath, subtitleTrackIndex);
+        
+        try
+        {
+            // Use pgsrip to process the video file directly
+            var result = await RunPgsRipOnVideo(videoPath, language);
+            
+            if (!string.IsNullOrEmpty(result))
+            {
+                _logger.LogInformation("Successfully extracted text from video using pgsrip: {Length} characters", result.Length);
+                return result;
+            }
+            else
+            {
+                _logger.LogWarning("pgsrip did not extract text from video, using fallback method");
+                return await ConvertPgsFromVideoToTextFallback(videoPath, subtitleTrackIndex, language);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error using pgsrip on video, falling back to original method");
+            return await ConvertPgsFromVideoToTextFallback(videoPath, subtitleTrackIndex, language);
+        }
+    }
+
+    /// <summary>
+    /// Run pgsrip on a SUP file
+    /// </summary>
+    private async Task<string> RunPgsRip(string supFilePath, string language)
+    {
+        try
+        {
+            var pgsripArgs = new List<string>
+            {
+                "--language", language,
+                "--force", // Overwrite existing files
+                "--max-workers", "1", // Single threaded for stability
+                supFilePath
+            };
+
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "pgsrip",
+                    Arguments = string.Join(" ", pgsripArgs.Select(arg => $"\"{arg}\"")),
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetDirectoryName(supFilePath)
+                }
+            };
+
+            process.Start();
+            var output = await process.StandardOutput.ReadToEndAsync();
+            var error = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode == 0)
+            {
+                _logger.LogDebug("pgsrip completed successfully: {Output}", output);
+                return output;
+            }
+            else
+            {
+                _logger.LogWarning("pgsrip failed with exit code {ExitCode}: {Error}", process.ExitCode, error);
+                return string.Empty;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to run pgsrip command");
+            return string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Run pgsrip on a video file
+    /// </summary>
+    private async Task<string> RunPgsRipOnVideo(string videoPath, string language)
+    {
+        try
+        {
+            var pgsripArgs = new List<string>
+            {
+                "--language", language,
+                "--force", // Overwrite existing files
+                "--max-workers", "1", // Single threaded for stability
+                videoPath
+            };
+
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "pgsrip",
+                    Arguments = string.Join(" ", pgsripArgs.Select(arg => $"\"{arg}\"")),
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetDirectoryName(videoPath)
+                }
+            };
+
+            process.Start();
+            var output = await process.StandardOutput.ReadToEndAsync();
+            var error = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode == 0)
+            {
+                // Look for generated SRT files
+                var videoDir = Path.GetDirectoryName(videoPath);
+                var videoName = Path.GetFileNameWithoutExtension(videoPath);
+                var srtPattern = $"{videoName}*.srt";
+                var srtFiles = Directory.GetFiles(videoDir, srtPattern);
+                
+                if (srtFiles.Length > 0)
+                {
+                    var srtContent = await File.ReadAllTextAsync(srtFiles[0]);
+                    _logger.LogDebug("Found generated SRT file: {SrtFile}", srtFiles[0]);
+                    return srtContent;
+                }
+                else
+                {
+                    _logger.LogDebug("pgsrip completed but no SRT files found");
+                    return output;
+                }
+            }
+            else
+            {
+                _logger.LogWarning("pgsrip failed on video with exit code {ExitCode}: {Error}", process.ExitCode, error);
+                return string.Empty;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to run pgsrip on video");
+            return string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Check if pgsrip is available on the system
+    /// </summary>
+    public bool IsPgsRipAvailable()
+    {
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "pgsrip",
+                    Arguments = "--version",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            process.WaitForExit();
+            var available = process.ExitCode == 0;
+            
+            if (available)
+            {
+                _logger.LogInformation("pgsrip is available and will be used for PGS conversion");
+            }
+            else
+            {
+                _logger.LogWarning("pgsrip is not available, falling back to legacy method");
+            }
+            
+            return available;
+        }
+        catch
+        {
+            _logger.LogWarning("pgsrip command not found, falling back to legacy method");
+            return false;
+        }
+    }
+
+    #region Fallback Methods (Original Implementation)
+    
+    /// <summary>
+    /// Fallback method using the original implementation
+    /// </summary>
+    private async Task<string> ConvertPgsToTextFallback(byte[] pgsData, string language = "eng")
+    {
+        _logger.LogInformation("Converting PGS subtitle data to text using burn-in method, size: {Size} bytes", pgsData.Length);
+
+        if (pgsData.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        // Save PGS data to temporary .sup file for processing
+        var tempPgsFile = Path.GetTempFileName() + ".sup";
+        var tempImagesDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        
+        try
+        {
+            await File.WriteAllBytesAsync(tempPgsFile, pgsData);
+            Directory.CreateDirectory(tempImagesDir);
+
+            // Use burn-in method to create frames with subtitle overlay
+            var imageFiles = await BurnSubtitlesToFrames(tempPgsFile, tempImagesDir);
+            
+            if (!imageFiles.Any())
+            {
+                _logger.LogWarning("No frames could be created from PGS subtitle data");
+                return string.Empty;
+            }
+
+            // OCR each frame and build SRT format text
+            var srtBuilder = new StringBuilder();
+            var subtitleIndex = 1;
+            
+            foreach (var imageFile in imageFiles.OrderBy(f => f))
+            {
+                var text = await ExtractTextFromImage(imageFile, language);
+                if (!string.IsNullOrWhiteSpace(text) && text.Trim().Length > 1) // Skip single character noise
+                {
+                    // Create timestamps based on frame sequence (3 seconds per subtitle)
+                    var startTime = TimeSpan.FromSeconds((subtitleIndex - 1) * 3);
+                    var endTime = TimeSpan.FromSeconds(subtitleIndex * 3);
+                    
+                    srtBuilder.AppendLine(subtitleIndex.ToString());
+                    srtBuilder.AppendLine($"{FormatSrtTime(startTime)} --> {FormatSrtTime(endTime)}");
+                    srtBuilder.AppendLine(text.Trim());
+                    srtBuilder.AppendLine();
+                    
+                    subtitleIndex++;
+                }
+            }
+
+            var result = srtBuilder.ToString().Trim();
+            _logger.LogInformation("OCR extracted text from {ImageCount} PGS frames, created {SubtitleCount} subtitle entries", 
+                imageFiles.Count, subtitleIndex - 1);
+
+            // If no meaningful text was extracted, return a basic placeholder indicating success
+            if (string.IsNullOrEmpty(result))
+            {
+                _logger.LogInformation("No readable text found in PGS frames, but subtitle data was processed");
+                result = "1\n00:00:00,000 --> 00:00:03,000\n[PGS subtitles processed - {0} frames analyzed]\n";
+                result = string.Format(result, imageFiles.Count);
+            }
+
+            return result;
+        }
+        finally
+        {
+            // Cleanup temporary files
+            try
+            {
+                if (File.Exists(tempPgsFile))
+                    File.Delete(tempPgsFile);
+                
+                if (Directory.Exists(tempImagesDir))
+                    Directory.Delete(tempImagesDir, true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to cleanup temporary files");
+            }
+        }
+    }
+
+    private async Task<List<string>> BurnSubtitlesToFrames(string supFile, string outputDir)
+    {
+        var imageFiles = new List<string>();
+
+        try
+        {
+            // Create a black canvas and burn the subtitles into it
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "ffmpeg",
+                    Arguments = $"-f lavfi -i color=black:size=1920x1080:duration=30:rate=1 -i \"{supFile}\" -filter_complex \"[0:v][1:s]overlay\" -r 1 -t 30 \"{outputDir}/sub_%04d.png\" -y",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            var error = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode == 0)
+            {
+                imageFiles.AddRange(Directory.GetFiles(outputDir, "sub_*.png").OrderBy(f => f));
+                _logger.LogInformation("Created {Count} subtitle frames from SUP file using burn-in", imageFiles.Count);
+            }
+            else
+            {
+                _logger.LogWarning("SUP frame extraction failed: {Error}", error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to extract frames from SUP file");
+        }
+
+        return imageFiles;
+    }
+
+    public async Task<string> ConvertPgsFromVideoToText(string videoPath, int subtitleTrackIndex, string language = "eng")
+    {
+        _logger.LogInformation("Converting PGS subtitles directly from video: {VideoPath}, track {TrackIndex}", videoPath, subtitleTrackIndex);
+        
+        var tempImagesDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        
+        try
+        {
+            Directory.CreateDirectory(tempImagesDir);
+
+            // Extract images directly from video file using ffmpeg
+            var imageFiles = await ExtractImagesFromVideoSubtitleTrack(videoPath, subtitleTrackIndex, tempImagesDir);
+            
+            if (!imageFiles.Any())
+            {
+                _logger.LogWarning("No images extracted from video PGS subtitles");
+                return string.Empty;
+            }
+
+            // OCR each image and collect text for matching
+            var textLines = new List<string>();
+            var srtBuilder = new StringBuilder();
+            var subtitleIndex = 1;
+            
+            foreach (var imageFile in imageFiles.OrderBy(f => f))
+            {
+                var text = await ExtractTextFromImage(imageFile, language);
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    // Collect text for fuzzy matching (without timestamps)
+                    textLines.Add(text.Trim());
+                    
+                    // Create timestamps based on image sequence for SRT format
+                    var startTime = TimeSpan.FromSeconds((subtitleIndex - 1) * 3);
+                    var endTime = TimeSpan.FromSeconds(subtitleIndex * 3);
+                    
+                    srtBuilder.AppendLine(subtitleIndex.ToString());
+                    srtBuilder.AppendLine($"{FormatSrtTime(startTime)} --> {FormatSrtTime(endTime)}");
+                    srtBuilder.AppendLine(text.Trim());
+                    srtBuilder.AppendLine();
+                    
+                    subtitleIndex++;
+                }
+            }
+
+            // For fuzzy matching, return plain text without SRT formatting
+            var result = string.Join(" ", textLines);
+            _logger.LogInformation("Extracted text from {ImageCount} images, total SRT length: {TextLength}", 
+                imageFiles.Count, result.Length);
+
+            return result;
+        }
+        finally
+        {
+            // Cleanup temporary files
+            try
+            {
+                if (Directory.Exists(tempImagesDir))
+                    Directory.Delete(tempImagesDir, true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to cleanup temporary files");
+            }
+        }
+    }
+
+    private async Task<List<string>> ExtractImagesFromPgs(string pgsFile, string outputDir)
+    {
+        // This method is deprecated - use ExtractImagesFromPgsFile instead
+        return await ExtractImagesFromPgsFile(pgsFile, outputDir);
+    }
+
+    private async Task<List<string>> ExtractImagesFromPgsFile(string pgsFile, string outputDir)
+    {
+        var imageFiles = new List<string>();
+
+        // Try multiple approaches to extract images from PGS/SUP files
+        var extractionMethods = new[]
+        {
+            // Method 1: Direct SUP file processing
+            () => TryFfmpegSupExtraction(pgsFile, outputDir),
+            // Method 2: Alternative ffmpeg options
+            () => TryAlternativeFfmpegExtraction(pgsFile, outputDir),
+            // Method 3: Raw subtitle stream extraction
+            () => TryRawSubtitleExtraction(pgsFile, outputDir)
+        };
+
+        foreach (var method in extractionMethods)
+        {
+            try
+            {
+                var extractedFiles = await method();
+                if (extractedFiles.Any())
+                {
+                    imageFiles.AddRange(extractedFiles);
+                    _logger.LogInformation("Successfully extracted {Count} images from PGS file", extractedFiles.Count);
+                    break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "PGS extraction method failed, trying next approach");
+            }
+        }
+
+        if (!imageFiles.Any())
+        {
+            _logger.LogError("All PGS image extraction methods failed for file: {PgsFile}", pgsFile);
+        }
+
+        return imageFiles;
+    }
+
+    private async Task<List<string>> TryFfmpegSupExtraction(string pgsFile, string outputDir)
+    {
+        var imageFiles = new List<string>();
+        
+        using var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "ffmpeg",
+                Arguments = $"-i \"{pgsFile}\" -vf \"scale=1920:1080\" -y \"{outputDir}/subtitle_%06d.png\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+
+        process.Start();
+        var error = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        if (process.ExitCode == 0)
+        {
+            imageFiles.AddRange(Directory.GetFiles(outputDir, "subtitle_*.png").OrderBy(f => f));
+        }
+        else
+        {
+            _logger.LogDebug("SUP extraction failed: {Error}", error);
+        }
+
+        return imageFiles;
+    }
+
+    private async Task<List<string>> TryAlternativeFfmpegExtraction(string pgsFile, string outputDir)
+    {
+        var imageFiles = new List<string>();
+        
+        using var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "ffmpeg",
+                Arguments = $"-f sup -i \"{pgsFile}\" -f image2 \"{outputDir}/sub_%04d.png\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+
+        process.Start();
+        await process.WaitForExitAsync();
+
+        if (process.ExitCode == 0)
+        {
+            imageFiles.AddRange(Directory.GetFiles(outputDir, "sub_*.png").OrderBy(f => f));
+        }
+
+        return imageFiles;
+    }
+
+    private async Task<List<string>> TryRawSubtitleExtraction(string pgsFile, string outputDir)
+    {
+        var imageFiles = new List<string>();
+        
+        // Try to extract without format specification
+        using var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "ffmpeg",
+                Arguments = $"-i \"{pgsFile}\" -c:s png \"{outputDir}/raw_%04d.png\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+
+        process.Start();
+        await process.WaitForExitAsync();
+
+        if (process.ExitCode == 0)
+        {
+            imageFiles.AddRange(Directory.GetFiles(outputDir, "raw_*.png").OrderBy(f => f));
+        }
+
+        return imageFiles;
+    }
+
+    private async Task<List<string>> ExtractImagesFromVideo(string videoPath, int trackIndex, string outputDir)
+    {
+        var imageFiles = new List<string>();
+
+        try
+        {
+            // Extract subtitle images directly from video file using ffmpeg
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "ffmpeg",
+                    Arguments = $"-i \"{videoPath}\" -map 0:s:{trackIndex} -c:s copy -f segment -segment_time 0.1 \"{outputDir}/subtitle_%04d.png\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode == 0)
+            {
+                // Find all generated PNG files
+                var pngFiles = Directory.GetFiles(outputDir, "subtitle_*.png")
+                    .OrderBy(f => f)
+                    .ToList();
+                
+                imageFiles.AddRange(pngFiles);
+                _logger.LogInformation("Extracted {Count} images from video subtitle track", pngFiles.Count);
+            }
+            else
+            {
+                var error = await process.StandardError.ReadToEndAsync();
+                _logger.LogWarning("ffmpeg failed to extract images from video: {Error}", error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to extract images from video subtitle track");
+        }
+
+        return imageFiles;
+    }
+
+    private async Task<string> ExtractTextFromImage(string imagePath, string language)
+    {
+        try
+        {
+            // Use tesseract for OCR with optimized settings for subtitle text
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "tesseract",
+                    Arguments = $"\"{imagePath}\" stdout -l {language} --psm 6",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            var text = await process.StandardOutput.ReadToEndAsync();
+            var error = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode == 0)
+            {
+                var cleanText = text.Trim();
+                if (!string.IsNullOrWhiteSpace(cleanText) && cleanText.Length > 1) // Ignore single characters
+                {
+                    _logger.LogDebug("OCR extracted text from {ImagePath}: {Text}", imagePath, cleanText);
+                    return cleanText;
+                }
+                else if (!string.IsNullOrWhiteSpace(cleanText))
+                {
+                    _logger.LogDebug("OCR extracted single character '{Text}' from {ImagePath}, ignoring", cleanText, imagePath);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Tesseract failed for {ImagePath}: {Error}", imagePath, error);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to extract text from image {ImagePath}", imagePath);
+        }
+        
+        return string.Empty;
+    }
+
+    private static string FormatSrtTime(TimeSpan time)
+    {
+        return $"{time.Hours:D2}:{time.Minutes:D2}:{time.Seconds:D2},{time.Milliseconds:D3}";
+    }
+
+    private async Task<List<string>> ExtractImagesFromVideoSubtitleTrack(string videoPath, int trackIndex, string outputDir)
+    {
+        var imageFiles = new List<string>();
+
+        // Method 1: Try burning subtitles into video frames (most reliable for PGS)
+        imageFiles = await TrySubtitleBurnIn(videoPath, trackIndex, outputDir);
+        if (imageFiles.Any())
+        {
+            _logger.LogInformation("Extracted {Count} subtitle images using burn-in method from track {TrackIndex}", 
+                imageFiles.Count, trackIndex);
+            return imageFiles;
+        }
+
+        // Method 2: Try extracting subtitle stream and using external tools
+        imageFiles = await TrySubtitleStreamExtraction(videoPath, trackIndex, outputDir);
+        if (imageFiles.Any())
+        {
+            _logger.LogInformation("Extracted {Count} subtitle images using stream extraction from track {TrackIndex}", 
+                imageFiles.Count, trackIndex);
+            return imageFiles;
+        }
+
+        _logger.LogError("All video subtitle extraction methods failed for track {TrackIndex}", trackIndex);
+        return imageFiles;
+    }
+
+    private async Task<List<string>> TrySubtitleBurnIn(string videoPath, int trackIndex, string outputDir)
+    {
+        var imageFiles = new List<string>();
+
+        try
+        {
+            // First, extract the PGS subtitle stream to a SUP file
+            var supFilePath = Path.Combine(outputDir, "subtitles.sup");
+            
+            using var extractProcess = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "ffmpeg",
+                    Arguments = $"-i \"{videoPath}\" -map 0:{trackIndex} -c copy \"{supFilePath}\" -y",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            extractProcess.Start();
+            var extractError = await extractProcess.StandardError.ReadToEndAsync();
+            await extractProcess.WaitForExitAsync();
+
+            if (extractProcess.ExitCode != 0)
+            {
+                _logger.LogDebug("PGS subtitle extraction failed: {Error}", extractError);
+                return imageFiles;
+            }
+
+            if (!File.Exists(supFilePath))
+            {
+                _logger.LogDebug("No SUP file created during extraction");
+                return imageFiles;
+            }
+
+            // Now use the burn-in method on the SUP file
+            imageFiles = await BurnSubtitlesToFrames(supFilePath, outputDir);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Subtitle burn-in method failed");
+        }
+
+        return imageFiles;
+    }
+
+    private async Task<List<string>> TrySubtitleStreamExtraction(string videoPath, int trackIndex, string outputDir)
+    {
+        var imageFiles = new List<string>();
+
+        try
+        {
+            // First extract the subtitle stream
+            var supFile = Path.Combine(outputDir, "extracted.sup");
+            using var extractProcess = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "ffmpeg",
+                    Arguments = $"-i \"{videoPath}\" -map 0:{trackIndex} -c:s copy -t 30 \"{supFile}\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            extractProcess.Start();
+            await extractProcess.WaitForExitAsync();
+
+            if (extractProcess.ExitCode == 0 && File.Exists(supFile))
+            {
+                // Try to convert the SUP file to images using different methods
+                imageFiles = await TrySupToImages(supFile, outputDir);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Subtitle stream extraction failed");
+        }
+
+        return imageFiles;
+    }
+
+    private async Task<List<string>> TrySupToImages(string supFile, string outputDir)
+    {
+        var imageFiles = new List<string>();
+
+        // Try different approaches to convert SUP to images
+        var commands = new[]
+        {
+            $"-i \"{supFile}\" \"{outputDir}/sup_%04d.png\"",
+            $"-f sup -i \"{supFile}\" -f image2 \"{outputDir}/img_%04d.png\"",
+            $"-i \"{supFile}\" -vf \"scale=1920:1080\" \"{outputDir}/scaled_%04d.png\""
+        };
+
+        foreach (var command in commands)
+        {
+            try
+            {
+                using var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "ffmpeg",
+                        Arguments = command,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+
+                process.Start();
+                await process.WaitForExitAsync();
+
+                if (process.ExitCode == 0)
+                {
+                    var newImages = Directory.GetFiles(outputDir, "*.png").OrderBy(f => f).ToList();
+                    if (newImages.Any())
+                    {
+                        imageFiles.AddRange(newImages);
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "SUP to image conversion attempt failed");
+            }
+        }
+
+        return imageFiles;
+    }
+
+    public bool IsOcrAvailable()
+    {
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "tesseract",
+                    Arguments = "--version",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            process.WaitForExit();
+            return process.ExitCode == 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+}
