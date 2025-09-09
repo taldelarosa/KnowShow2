@@ -9,7 +9,16 @@ public class TextSubtitleTrack
     /// <summary>
     /// Index of the subtitle track in the video file (0-based).
     /// </summary>
-    public int TrackIndex { get; set; }
+    public int Index { get; set; }
+
+    /// <summary>
+    /// Track index in the container - same as Index for compatibility.
+    /// </summary>
+    public int TrackIndex 
+    { 
+        get => Index; 
+        set => Index = value; 
+    }
 
     /// <summary>
     /// Language code of the subtitle track (e.g., "en", "ja").
@@ -20,6 +29,26 @@ public class TextSubtitleTrack
     /// Format of the subtitle content.
     /// </summary>
     public SubtitleFormat Format { get; set; }
+
+    /// <summary>
+    /// Whether this track is marked as default in the container.
+    /// </summary>
+    public bool IsDefault { get; set; }
+
+    /// <summary>
+    /// Whether this track is marked as forced in the container.
+    /// </summary>
+    public bool IsForced { get; set; }
+
+    /// <summary>
+    /// Source type of the subtitle track (embedded, external, etc.).
+    /// </summary>
+    public SubtitleSourceType SourceType { get; set; }
+
+    /// <summary>
+    /// File path for external subtitle files, or null for embedded tracks.
+    /// </summary>
+    public string? FilePath { get; set; }
 
     /// <summary>
     /// Raw text content of the subtitle file.

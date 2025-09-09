@@ -9,37 +9,37 @@ namespace EpisodeIdentifier.Core.Interfaces;
 public interface ITextSubtitleExtractor
 {
     /// <summary>
-    /// Extracts all available text subtitle tracks from a video file.
-    /// This method identifies and extracts content from supported text subtitle formats.
+    /// Detects available text subtitle tracks from a video file.
+    /// Uses FFmpeg to analyze the file and identify text-based subtitle streams.
     /// </summary>
-    /// <param name="videoFilePath">Path to the video file to extract subtitles from.</param>
-    /// <param name="cancellationToken">Token to cancel the extraction operation.</param>
-    /// <returns>Result containing all extracted text subtitle tracks.</returns>
-    Task<TextSubtitleExtractionResult> ExtractTextSubtitlesAsync(
-        string videoFilePath, 
+    /// <param name="videoFilePath">Path to the video file to analyze</param>
+    /// <param name="cancellationToken">Token to cancel the operation</param>
+    /// <returns>List of detected text subtitle tracks</returns>
+    Task<IReadOnlyList<TextSubtitleTrack>> DetectTextSubtitleTracksAsync(
+        string videoFilePath,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Determines the text subtitle formats available in a video file without extracting content.
-    /// This method provides a quick way to check what subtitle formats are available.
+    /// Extracts text content from a specific subtitle track.
+    /// Uses FFmpeg to extract the subtitle stream and convert to text format.
     /// </summary>
-    /// <param name="videoFilePath">Path to the video file to analyze.</param>
-    /// <param name="cancellationToken">Token to cancel the analysis operation.</param>
-    /// <returns>List of available text subtitle formats with track information.</returns>
-    Task<List<(int TrackIndex, string Language, SubtitleFormat Format)>> GetAvailableTextSubtitleFormatsAsync(
-        string videoFilePath, 
+    /// <param name="videoFilePath">Path to the video file</param>
+    /// <param name="track">The subtitle track to extract</param>
+    /// <param name="cancellationToken">Token to cancel the operation</param>
+    /// <returns>Extraction result with track info and extracted content</returns>
+    Task<TextSubtitleExtractionResult> ExtractTextSubtitleContentAsync(
+        string videoFilePath,
+        TextSubtitleTrack track,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Extracts content from a specific text subtitle track by index.
-    /// This method allows selective extraction of individual subtitle tracks.
+    /// Attempts to extract all available text subtitle tracks from a video file.
+    /// This is the main entry point for the nonPGS workflow when multiple tracks are available.
     /// </summary>
-    /// <param name="videoFilePath">Path to the video file containing the subtitle track.</param>
-    /// <param name="trackIndex">Zero-based index of the subtitle track to extract.</param>
-    /// <param name="cancellationToken">Token to cancel the extraction operation.</param>
-    /// <returns>The extracted text subtitle track, or null if extraction failed.</returns>
-    Task<TextSubtitleTrack?> ExtractSpecificTrackAsync(
-        string videoFilePath, 
-        int trackIndex, 
+    /// <param name="videoFilePath">Path to the video file</param>
+    /// <param name="cancellationToken">Token to cancel the operation</param>
+    /// <returns>Extraction result containing all successfully extracted tracks</returns>
+    Task<TextSubtitleExtractionResult> TryExtractAllTextSubtitlesAsync(
+        string videoFilePath,
         CancellationToken cancellationToken = default);
 }

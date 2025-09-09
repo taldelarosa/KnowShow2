@@ -1,195 +1,133 @@
 using EpisodeIdentifier.Core.Interfaces;
 using EpisodeIdentifier.Core.Models;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace EpisodeIdentifier.Core.Services;
 
 /// <summary>
-/// Handler for WebVTT (.vtt) format.
-/// Implements parsing and validation for VTT subtitle files.
+/// Handles parsing of WebVTT (.vtt) subtitle format.
 /// </summary>
 public class VttFormatHandler : ISubtitleFormatHandler
 {
     public SubtitleFormat SupportedFormat => SubtitleFormat.VTT;
 
     /// <summary>
-    /// Regular expression pattern for VTT time format: HH:MM:SS.mmm --> HH:MM:SS.mmm
+    /// Regular expression for parsing VTT cue blocks.
     /// </summary>
-    private static readonly Regex VttTimePattern = new(
-        @"^(\d{2}):(\d{2}):(\d{2})\.(\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})\.(\d{3}).*$",
-        RegexOptions.Compiled);
+    private static readonly Regex VttCueRegex = new(
+        @"(\d{2}:\d{2}:\d{2}\.\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}\.\d{3})(?:\s*(.*))?[\r\n]+((?:[^\r\n]*[\r\n]*)*?)(?=\r?\n\r?\n|\r?\n\d{2}:|\Z)",
+        RegexOptions.Multiline | RegexOptions.Compiled);
 
-    /// <summary>
-    /// Pattern to detect VTT format signature
-    /// </summary>
-    private static readonly Regex VttHeaderPattern = new(
-        @"^WEBVTT\s*",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    public async Task<SubtitleParsingResult> ParseSubtitleTextAsync(
+        Stream stream, 
+        string? encoding = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (stream == null)
+            throw new ArgumentNullException(nameof(stream));
+
+        var textEncoding = GetEncoding(encoding);
+        
+        using var reader = new StreamReader(stream, textEncoding, leaveOpen: true);
+        var content = await reader.ReadToEndAsync(cancellationToken);
+        
+        return ParseVttContent(content);
+    }
 
     public bool CanHandle(string content)
     {
         if (string.IsNullOrWhiteSpace(content))
             return false;
 
-        // Look for WEBVTT header or VTT-style timestamps
-        return VttHeaderPattern.IsMatch(content) || VttTimePattern.IsMatch(content);
+        // VTT files must start with "WEBVTT"
+        return content.TrimStart().StartsWith("WEBVTT", StringComparison.OrdinalIgnoreCase);
     }
 
-    public async Task<SubtitleParsingResult> ParseContentAsync(string content, CancellationToken cancellationToken = default)
+    private static Encoding GetEncoding(string? encoding)
     {
-        var result = new SubtitleParsingResult
-        {
-            Format = SubtitleFormat.VTT,
-            Status = ProcessingStatus.Processing
-        };
-
-        var startTime = DateTimeOffset.UtcNow;
+        if (string.IsNullOrWhiteSpace(encoding))
+            return Encoding.UTF8;
 
         try
         {
-            if (string.IsNullOrWhiteSpace(content))
-            {
-                result.Status = ProcessingStatus.Failed;
-                result.ErrorMessage = "Content is empty or null";
-                return result;
-            }
-
-            var entries = new List<SubtitleEntry>();
-            var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                             .Select(line => line.Trim())
-                             .Where(line => !string.IsNullOrEmpty(line))
-                             .ToArray();
-
-            int entryIndex = 1;
-            bool pastHeader = false;
-
-            for (int i = 0; i < lines.Length; i++)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var line = lines[i];
-
-                // Skip WEBVTT header and metadata
-                if (!pastHeader)
-                {
-                    if (VttHeaderPattern.IsMatch(line))
-                    {
-                        pastHeader = true;
-                        // Store header metadata
-                        if (line.Length > 6) // "WEBVTT" + space + metadata
-                        {
-                            result.FormatMetadata["Header"] = line[6..].Trim();
-                        }
-                        continue;
-                    }
-                    if (line.StartsWith("NOTE") || line.StartsWith("STYLE") || line.StartsWith("REGION"))
-                    {
-                        continue;
-                    }
-                }
-
-                // Look for timestamp line
-                var timeMatch = VttTimePattern.Match(line);
-                if (!timeMatch.Success)
-                    continue;
-
-                // Parse start and end times
-                var startMs = ParseVttTimestamp(
-                    timeMatch.Groups[1].Value, timeMatch.Groups[2].Value,
-                    timeMatch.Groups[3].Value, timeMatch.Groups[4].Value);
-                var endMs = ParseVttTimestamp(
-                    timeMatch.Groups[5].Value, timeMatch.Groups[6].Value,
-                    timeMatch.Groups[7].Value, timeMatch.Groups[8].Value);
-
-                // Collect text lines until next timestamp or end
-                var textLines = new List<string>();
-                for (int j = i + 1; j < lines.Length; j++)
-                {
-                    if (VttTimePattern.IsMatch(lines[j]))
-                        break;
-                    
-                    // Skip cue identifier lines (lines that don't contain text)
-                    if (lines[j].Contains("-->") || 
-                        lines[j].StartsWith("NOTE") || 
-                        lines[j].StartsWith("STYLE") ||
-                        lines[j].StartsWith("REGION"))
-                        break;
-                        
-                    textLines.Add(lines[j]);
-                }
-
-                if (textLines.Count > 0)
-                {
-                    var text = string.Join("\n", textLines);
-                    
-                    // Remove VTT formatting tags
-                    text = RemoveVttFormatting(text);
-
-                    if (!string.IsNullOrWhiteSpace(text))
-                    {
-                        var entry = new SubtitleEntry
-                        {
-                            Index = entryIndex++,
-                            StartTimeMs = startMs,
-                            EndTimeMs = endMs,
-                            Text = text.Trim()
-                        };
-
-                        // Parse and store positioning/styling info from the timestamp line
-                        var timestampLine = line;
-                        if (timestampLine.Contains(" "))
-                        {
-                            var stylePart = timestampLine[(timestampLine.IndexOf("-->") + 3)..].Trim();
-                            if (!string.IsNullOrEmpty(stylePart) && stylePart.Contains(' '))
-                            {
-                                entry.Styling["Position"] = stylePart;
-                            }
-                        }
-
-                        entries.Add(entry);
-                    }
-                }
-
-                // Move index past the text lines we just processed
-                i += textLines.Count;
-            }
-
-            result.Entries = entries;
-            result.TotalDurationMs = entries.Count > 0 ? entries.Max(e => e.EndTimeMs) : 0;
-            result.Status = ProcessingStatus.Completed;
+            return Encoding.GetEncoding(encoding);
         }
-        catch (OperationCanceledException)
+        catch (ArgumentException)
         {
-            result.Status = ProcessingStatus.Failed;
-            result.ErrorMessage = "Parsing was cancelled";
-            throw;
+            throw new ArgumentException($"Invalid encoding: {encoding}", nameof(encoding));
         }
-        catch (Exception ex)
-        {
-            result.Status = ProcessingStatus.Failed;
-            result.ErrorMessage = $"Failed to parse VTT content: {ex.Message}";
-        }
-        finally
-        {
-            result.ParsingTimeMs = (long)(DateTimeOffset.UtcNow - startTime).TotalMilliseconds;
-        }
-
-        return result;
     }
 
-    private static long ParseVttTimestamp(string hours, string minutes, string seconds, string milliseconds)
+    private static SubtitleParsingResult ParseVttContent(string content)
     {
-        return (long.Parse(hours) * 3600 + long.Parse(minutes) * 60 + long.Parse(seconds)) * 1000 + long.Parse(milliseconds);
+        var entries = new List<SubtitleEntry>();
+        
+        // Remove WEBVTT header and any metadata
+        var contentWithoutHeader = Regex.Replace(content, @"^WEBVTT[^\r\n]*[\r\n]*", "", RegexOptions.Multiline);
+        
+        var matches = VttCueRegex.Matches(contentWithoutHeader);
+
+        foreach (Match match in matches)
+        {
+            if (match.Groups.Count >= 5)
+            {
+                var startTime = ParseVttTimestamp(match.Groups[1].Value);
+                var endTime = ParseVttTimestamp(match.Groups[2].Value);
+                var text = CleanVttText(match.Groups[4].Value.Trim());
+
+                entries.Add(new SubtitleEntry
+                {
+                    Index = entries.Count + 1,
+                    StartTimeMs = startTime,
+                    EndTimeMs = endTime,
+                    Text = text
+                });
+            }
+        }
+
+        return new SubtitleParsingResult
+        {
+            Entries = entries,
+            Format = SubtitleFormat.VTT,
+            Status = ProcessingStatus.Completed
+        };
     }
 
-    private static string RemoveVttFormatting(string text)
+    private static long ParseVttTimestamp(string timestamp)
     {
-        // Remove VTT formatting tags like <c>, <i>, <b>, <u>, etc.
-        var cleanText = Regex.Replace(text, @"<[^>]*>", string.Empty);
+        // Parse VTT timestamp format: "HH:MM:SS.mmm" or "MM:SS.mmm"
+        var parts = timestamp.Split(':');
         
-        // Remove VTT cue settings that might leak into text
-        cleanText = Regex.Replace(cleanText, @"\b(align|line|position|size|vertical):[^\s]+", string.Empty);
+        if (parts.Length == 2)
+        {
+            // MM:SS.mmm format
+            var minutes = int.Parse(parts[0]);
+            var secondsParts = parts[1].Split('.');
+            var seconds = int.Parse(secondsParts[0]);
+            var milliseconds = int.Parse(secondsParts[1]);
+            
+            return (minutes * 60 + seconds) * 1000 + milliseconds;
+        }
+        else if (parts.Length == 3)
+        {
+            // HH:MM:SS.mmm format
+            var hours = int.Parse(parts[0]);
+            var minutes = int.Parse(parts[1]);
+            var secondsParts = parts[2].Split('.');
+            var seconds = int.Parse(secondsParts[0]);
+            var milliseconds = int.Parse(secondsParts[1]);
+            
+            return (hours * 3600 + minutes * 60 + seconds) * 1000 + milliseconds;
+        }
         
-        return cleanText.Trim();
+        return 0;
+    }
+
+    private static string CleanVttText(string text)
+    {
+        // Remove VTT formatting tags like <c>, <i>, etc.
+        var cleaned = Regex.Replace(text, @"<[^>]*>", string.Empty);
+        return cleaned.Replace("\n", " ").Trim();
     }
 }

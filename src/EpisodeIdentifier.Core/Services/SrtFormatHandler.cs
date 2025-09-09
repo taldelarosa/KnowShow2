@@ -1,130 +1,107 @@
 using EpisodeIdentifier.Core.Interfaces;
 using EpisodeIdentifier.Core.Models;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace EpisodeIdentifier.Core.Services;
 
 /// <summary>
-/// Handler for SubRip Subtitle (.srt) format.
-/// Implements parsing and validation for SRT subtitle files.
+/// Handles parsing of SubRip (.srt) subtitle format.
 /// </summary>
 public class SrtFormatHandler : ISubtitleFormatHandler
 {
     public SubtitleFormat SupportedFormat => SubtitleFormat.SRT;
 
     /// <summary>
-    /// Regular expression pattern for SRT time format: HH:MM:SS,mmm --> HH:MM:SS,mmm
+    /// Regular expression for parsing SRT subtitle entries.
+    /// Matches: sequence number, timestamp, and subtitle text.
     /// </summary>
-    private static readonly Regex SrtTimePattern = new(
-        @"^(\d{2}):(\d{2}):(\d{2}),(\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2}),(\d{3})$",
-        RegexOptions.Compiled);
+    private static readonly Regex SrtEntryRegex = new(
+        @"^(\d+)\s*\n(\d{2}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2},\d{3})\s*\n(.*?)(?=\n\d+\s*\n|\n*$)",
+        RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.Singleline);
+
+    public async Task<SubtitleParsingResult> ParseSubtitleTextAsync(
+        Stream stream, 
+        string? encoding = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (stream == null)
+            throw new ArgumentNullException(nameof(stream));
+
+        var textEncoding = GetEncoding(encoding);
+        
+        using var reader = new StreamReader(stream, textEncoding, leaveOpen: true);
+        var content = await reader.ReadToEndAsync(cancellationToken);
+        
+        return ParseSrtContent(content);
+    }
 
     public bool CanHandle(string content)
     {
         if (string.IsNullOrWhiteSpace(content))
             return false;
 
-        // Look for SRT-style timestamps in the content
-        return SrtTimePattern.IsMatch(content);
+        // Look for SRT-style sequence numbers and timestamps
+        return Regex.IsMatch(content, @"^\d+\s*\n\d{2}:\d{2}:\d{2},\d{3}\s*-->\s*\d{2}:\d{2}:\d{2},\d{3}", RegexOptions.Multiline);
     }
 
-    public async Task<SubtitleParsingResult> ParseContentAsync(string content, CancellationToken cancellationToken = default)
+    private static Encoding GetEncoding(string? encoding)
     {
-        var result = new SubtitleParsingResult
-        {
-            Format = SubtitleFormat.SRT,
-            Status = ProcessingStatus.Processing
-        };
-
-        var startTime = DateTimeOffset.UtcNow;
+        if (string.IsNullOrWhiteSpace(encoding))
+            return Encoding.UTF8;
 
         try
         {
-            if (string.IsNullOrWhiteSpace(content))
-            {
-                result.Status = ProcessingStatus.Failed;
-                result.ErrorMessage = "Content is empty or null";
-                return result;
-            }
-
-            var entries = new List<SubtitleEntry>();
-            var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                             .Select(line => line.Trim())
-                             .Where(line => !string.IsNullOrEmpty(line))
-                             .ToArray();
-
-            for (int i = 0; i < lines.Length; i++)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                // Skip non-numeric index lines
-                if (!int.TryParse(lines[i], out int index))
-                    continue;
-
-                // Look for timestamp on next line
-                if (i + 1 >= lines.Length)
-                    break;
-
-                var timeLine = lines[i + 1];
-                var timeMatch = SrtTimePattern.Match(timeLine);
-                if (!timeMatch.Success)
-                    continue;
-
-                // Parse start and end times
-                var startMs = ParseSrtTimestamp(
-                    timeMatch.Groups[1].Value, timeMatch.Groups[2].Value,
-                    timeMatch.Groups[3].Value, timeMatch.Groups[4].Value);
-                var endMs = ParseSrtTimestamp(
-                    timeMatch.Groups[5].Value, timeMatch.Groups[6].Value,
-                    timeMatch.Groups[7].Value, timeMatch.Groups[8].Value);
-
-                // Collect text lines until next index or end
-                var textLines = new List<string>();
-                for (int j = i + 2; j < lines.Length; j++)
-                {
-                    if (int.TryParse(lines[j], out _))
-                        break;
-                    textLines.Add(lines[j]);
-                }
-
-                if (textLines.Count > 0)
-                {
-                    var entry = new SubtitleEntry
-                    {
-                        Index = index,
-                        StartTimeMs = startMs,
-                        EndTimeMs = endMs,
-                        Text = string.Join("\n", textLines)
-                    };
-                    entries.Add(entry);
-                }
-            }
-
-            result.Entries = entries;
-            result.TotalDurationMs = entries.Count > 0 ? entries.Max(e => e.EndTimeMs) : 0;
-            result.Status = ProcessingStatus.Completed;
+            return Encoding.GetEncoding(encoding);
         }
-        catch (OperationCanceledException)
+        catch (ArgumentException)
         {
-            result.Status = ProcessingStatus.Failed;
-            result.ErrorMessage = "Parsing was cancelled";
-            throw;
+            throw new ArgumentException($"Invalid encoding: {encoding}", nameof(encoding));
         }
-        catch (Exception ex)
-        {
-            result.Status = ProcessingStatus.Failed;
-            result.ErrorMessage = $"Failed to parse SRT content: {ex.Message}";
-        }
-        finally
-        {
-            result.ParsingTimeMs = (long)(DateTimeOffset.UtcNow - startTime).TotalMilliseconds;
-        }
-
-        return result;
     }
 
-    private static long ParseSrtTimestamp(string hours, string minutes, string seconds, string milliseconds)
+    private static SubtitleParsingResult ParseSrtContent(string content)
     {
-        return (long.Parse(hours) * 3600 + long.Parse(minutes) * 60 + long.Parse(seconds)) * 1000 + long.Parse(milliseconds);
+        var entries = new List<SubtitleEntry>();
+        var matches = SrtEntryRegex.Matches(content);
+
+        foreach (Match match in matches)
+        {
+            if (match.Groups.Count >= 5)
+            {
+                var sequenceNumber = int.Parse(match.Groups[1].Value);
+                var startTime = ParseSrtTimestamp(match.Groups[2].Value);
+                var endTime = ParseSrtTimestamp(match.Groups[3].Value);
+                var text = match.Groups[4].Value.Trim().Replace("\n", " ");
+
+                entries.Add(new SubtitleEntry
+                {
+                    Index = sequenceNumber,
+                    StartTimeMs = startTime,
+                    EndTimeMs = endTime,
+                    Text = text
+                });
+            }
+        }
+
+        return new SubtitleParsingResult
+        {
+            Entries = entries,
+            Format = SubtitleFormat.SRT,
+            Status = ProcessingStatus.Completed
+        };
+    }
+
+    private static long ParseSrtTimestamp(string timestamp)
+    {
+        // Parse SRT timestamp format: "HH:MM:SS,mmm"
+        var parts = timestamp.Split(':');
+        var hours = int.Parse(parts[0]);
+        var minutes = int.Parse(parts[1]);
+        var secondsParts = parts[2].Split(',');
+        var seconds = int.Parse(secondsParts[0]);
+        var milliseconds = int.Parse(secondsParts[1]);
+        
+        return (hours * 3600 + minutes * 60 + seconds) * 1000 + milliseconds;
     }
 }

@@ -109,7 +109,7 @@ public class SubtitleFilenameParser
     /// <summary>
     /// Scans a directory for subtitle files and parses their information
     /// </summary>
-    public async Task<List<SubtitleFileInfo>> ScanDirectory(string directoryPath, bool recursive = true)
+    public Task<List<SubtitleFileInfo>> ScanDirectory(string directoryPath, bool recursive = true)
     {
         if (!Directory.Exists(directoryPath))
         {
@@ -138,7 +138,7 @@ public class SubtitleFilenameParser
         _logger.LogInformation("Scanned {TotalFiles} subtitle files, parsed {ParsedFiles} successfully", 
             allFiles.Count, results.Count);
 
-        return results;
+        return Task.FromResult(results);
     }
 }
 

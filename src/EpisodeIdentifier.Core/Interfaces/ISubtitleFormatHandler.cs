@@ -14,15 +14,17 @@ public interface ISubtitleFormatHandler
     SubtitleFormat SupportedFormat { get; }
 
     /// <summary>
-    /// Parses raw subtitle content into structured subtitle data.
+    /// Parses subtitle content from a stream with optional encoding specification.
     /// This method converts the raw text content into a structured format
     /// with individual subtitle entries, timing, and metadata.
     /// </summary>
-    /// <param name="content">Raw subtitle content to parse.</param>
+    /// <param name="stream">Stream containing subtitle content to parse.</param>
+    /// <param name="encoding">Text encoding to use for reading the stream. If null, UTF-8 is used.</param>
     /// <param name="cancellationToken">Token to cancel the parsing operation.</param>
     /// <returns>Structured parsing result with subtitle entries and metadata.</returns>
-    Task<SubtitleParsingResult> ParseContentAsync(
-        string content, 
+    Task<SubtitleParsingResult> ParseSubtitleTextAsync(
+        Stream stream, 
+        string? encoding = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

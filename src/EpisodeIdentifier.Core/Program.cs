@@ -100,6 +100,7 @@ public class Program
         var hashService = new FuzzyHashService(hashDb.FullName, loggerFactory.CreateLogger<FuzzyHashService>(), normalizationService);
         var matcher = new SubtitleMatcher(hashService, loggerFactory.CreateLogger<SubtitleMatcher>());
         var filenameParser = new SubtitleFilenameParser(loggerFactory.CreateLogger<SubtitleFilenameParser>());
+        var textExtractor = new VideoTextSubtitleExtractor(loggerFactory.CreateLogger<VideoTextSubtitleExtractor>());
 
         try
         {
@@ -237,11 +238,21 @@ public class Program
 
                 // Get subtitle track information for direct video processing
                 var subtitleTracks = await validator.GetSubtitleTracks(input.FullName);
-                var pgsTrack = subtitleTracks.FirstOrDefault(t => t.Language.Contains("eng") || string.IsNullOrEmpty(t.Language));
+                var pgsTrack = subtitleTracks.FirstOrDefault(t => 
+                    t.CodecName == "hdmv_pgs_subtitle" && 
+                    ((t.Language?.Contains("eng") == true) || string.IsNullOrEmpty(t.Language)));
                 
                 if (pgsTrack == null)
                 {
-                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLES_FOUND", message = "No PGS subtitles could be found in the video file" } }));
+                    // Try text subtitle fallback
+                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, matcher);
+                    if (textSubtitleResult != null)
+                    {
+                        Console.WriteLine(JsonSerializer.Serialize(textSubtitleResult));
+                        return textSubtitleResult.HasError ? 1 : 0;
+                    }
+
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLES_FOUND", message = "No PGS or text subtitles could be found in the video file" } }));
                     return 1;
                 }
 
@@ -294,5 +305,53 @@ public class Program
             "ar" or "ara" or "arabic" => "ara",
             _ => "eng" // Default to English for unknown languages
         };
+    }
+
+    /// <summary>
+    /// Attempts to extract text subtitles from the video when PGS subtitles are not available.
+    /// </summary>
+    private static async Task<IdentificationResult?> TryExtractTextSubtitle(
+        string videoFilePath,
+        string? language,
+        VideoFormatValidator validator,
+        VideoTextSubtitleExtractor textExtractor,
+        SubtitleMatcher matcher)
+    {
+        try
+        {
+            // Get all subtitle tracks from the video
+            var subtitleTracks = await validator.GetSubtitleTracks(videoFilePath);
+            
+            // Look for text-based subtitle tracks (non-PGS)
+            var textTracks = subtitleTracks.Where(t => 
+                t.CodecName != "hdmv_pgs_subtitle" && 
+                (t.CodecName == "subrip" || t.CodecName == "ass" || t.CodecName == "webvtt" || t.CodecName == "mov_text" || t.CodecName == "srt"))
+                .ToList();
+
+            if (!textTracks.Any())
+            {
+                return null; // No text subtitle tracks found
+            }
+
+            // Select the best text track based on language preference
+            var selectedTrack = textTracks.FirstOrDefault(t => 
+                string.IsNullOrEmpty(language) || 
+                (t.Language?.Contains(language, StringComparison.OrdinalIgnoreCase) == true)) ?? textTracks.First();
+
+            // Extract text subtitle content
+            var subtitleText = await textExtractor.ExtractTextSubtitleFromVideo(videoFilePath, selectedTrack.Index, language);
+
+            if (string.IsNullOrWhiteSpace(subtitleText))
+            {
+                return null; // Failed to extract text content
+            }
+
+            // Match against database
+            return await matcher.IdentifyEpisode(subtitleText);
+        }
+        catch (Exception)
+        {
+            return null; // Text subtitle extraction failed
+        }
     }
 }
