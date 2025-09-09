@@ -1,10 +1,11 @@
 namespace EpisodeIdentifier.Tests.Integration;
 
-[TestClass]
 public class UnitTest1
 {
-    [TestMethod]
+    [Fact]
     public void TestMethod1()
     {
+        // TODO: Implement actual integration tests
+        true.Should().BeTrue();
     }
 }

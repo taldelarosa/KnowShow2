@@ -1,9 +1,10 @@
 using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Interfaces;
 
 namespace EpisodeIdentifier.Core.Services;
 
-public class SubtitleMatcher
+public class SubtitleMatcher : ISubtitleMatcher
 {
     private readonly FuzzyHashService _hashService;
     private readonly ILogger<SubtitleMatcher> _logger;

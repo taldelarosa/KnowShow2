@@ -16,7 +16,7 @@ public class VttFormatHandler : ISubtitleFormatHandler
     /// Regular expression for parsing VTT cue blocks.
     /// </summary>
     private static readonly Regex VttCueRegex = new(
-        @"(\d{2}:\d{2}:\d{2}\.\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}\.\d{3})(?:\s*(.*))?[\r\n]+((?:[^\r\n]*[\r\n]*)*?)(?=\r?\n\r?\n|\r?\n\d{2}:|\Z)",
+        @"(\d{2}:\d{2}:\d{2}\.\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}\.\d{3})(?:[^\r\n]*)?[\r\n]+((?:[^\r\n]+(?:[\r\n]+)?)*?)(?=\r?\n\r?\n|\r?\n\d{2}:|\Z)",
         RegexOptions.Multiline | RegexOptions.Compiled);
 
     public async Task<SubtitleParsingResult> ParseSubtitleTextAsync(
@@ -29,10 +29,29 @@ public class VttFormatHandler : ISubtitleFormatHandler
 
         var textEncoding = GetEncoding(encoding);
         
-        using var reader = new StreamReader(stream, textEncoding, leaveOpen: true);
-        var content = await reader.ReadToEndAsync(cancellationToken);
-        
-        return ParseVttContent(content);
+        try
+        {
+            // Read bytes first to check for malformed data
+            var buffer = new byte[stream.Length];
+            await stream.ReadAsync(buffer, 0, (int)stream.Length, cancellationToken);
+            
+            // Check for invalid UTF-8 sequences
+            if (IsInvalidUtf8(buffer))
+            {
+                throw new InvalidDataException("The subtitle file contains malformed data or invalid encoding.");
+            }
+            
+            // Reset stream position and read as text
+            stream.Position = 0;
+            using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
+            var content = await reader.ReadToEndAsync(cancellationToken);
+            
+            return ParseVttContent(content);
+        }
+        catch (DecoderFallbackException ex)
+        {
+            throw new InvalidDataException("The subtitle file contains malformed data or invalid encoding.", ex);
+        }
     }
 
     public bool CanHandle(string content)
@@ -55,7 +74,7 @@ public class VttFormatHandler : ISubtitleFormatHandler
         }
         catch (ArgumentException)
         {
-            throw new ArgumentException($"Invalid encoding: {encoding}", nameof(encoding));
+            throw new NotSupportedException($"Encoding '{encoding}' is not supported", new ArgumentException($"Invalid encoding: {encoding}", nameof(encoding)));
         }
     }
 
@@ -70,11 +89,11 @@ public class VttFormatHandler : ISubtitleFormatHandler
 
         foreach (Match match in matches)
         {
-            if (match.Groups.Count >= 5)
+            if (match.Groups.Count >= 4 && !string.IsNullOrWhiteSpace(match.Groups[3].Value))
             {
                 var startTime = ParseVttTimestamp(match.Groups[1].Value);
                 var endTime = ParseVttTimestamp(match.Groups[2].Value);
-                var text = CleanVttText(match.Groups[4].Value.Trim());
+                var text = CleanVttText(match.Groups[3].Value.Trim());
 
                 entries.Add(new SubtitleEntry
                 {
@@ -129,5 +148,27 @@ public class VttFormatHandler : ISubtitleFormatHandler
         // Remove VTT formatting tags like <c>, <i>, etc.
         var cleaned = Regex.Replace(text, @"<[^>]*>", string.Empty);
         return cleaned.Replace("\n", " ").Trim();
+    }
+
+    private static bool IsInvalidUtf8(byte[] bytes)
+    {
+        // Check for invalid UTF-8 byte sequences
+        // Bytes 0xFF and 0xFE are never valid in UTF-8
+        foreach (var b in bytes)
+        {
+            if (b == 0xFF || b == 0xFE)
+                return true;
+        }
+        
+        // Additional check: try to convert to string and see if it contains replacement characters
+        try
+        {
+            var text = Encoding.UTF8.GetString(bytes);
+            return text.Contains('\uFFFD');
+        }
+        catch
+        {
+            return true;
+        }
     }
 }

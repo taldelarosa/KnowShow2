@@ -26,40 +26,40 @@ public class SubtitleFormatHandlerContractTests
     }
 
     [Theory]
-    [InlineData(typeof(SrtFormatHandler), SubtitleFormat.SRT, true)]
-    [InlineData(typeof(SrtFormatHandler), SubtitleFormat.ASS, false)]
-    [InlineData(typeof(SrtFormatHandler), SubtitleFormat.VTT, false)]
-    [InlineData(typeof(AssFormatHandler), SubtitleFormat.ASS, true)]
-    [InlineData(typeof(AssFormatHandler), SubtitleFormat.SRT, false)]
-    [InlineData(typeof(AssFormatHandler), SubtitleFormat.VTT, false)]
-    [InlineData(typeof(VttFormatHandler), SubtitleFormat.VTT, true)]
-    [InlineData(typeof(VttFormatHandler), SubtitleFormat.SRT, false)]
-    [InlineData(typeof(VttFormatHandler), SubtitleFormat.ASS, false)]
-    public void CanHandle_ReturnsTrueForSupportedFormatOnly(Type handlerType, SubtitleFormat format, bool expectedResult)
+    [InlineData(typeof(SrtFormatHandler), "1\n00:00:01,000 --> 00:00:04,000\nHello World", true)]
+    [InlineData(typeof(SrtFormatHandler), "[V4+ Styles]\nTitle: Test", false)]
+    [InlineData(typeof(SrtFormatHandler), "WEBVTT\n\n00:00:01.000 --> 00:00:04.000", false)]
+    [InlineData(typeof(AssFormatHandler), "[V4+ Styles]\nTitle: Test", true)]
+    [InlineData(typeof(AssFormatHandler), "1\n00:00:01,000 --> 00:00:04,000\nHello World", false)]
+    [InlineData(typeof(AssFormatHandler), "WEBVTT\n\n00:00:01.000 --> 00:00:04.000", false)]
+    [InlineData(typeof(VttFormatHandler), "WEBVTT\n\n00:00:01.000 --> 00:00:04.000", true)]
+    [InlineData(typeof(VttFormatHandler), "1\n00:00:01,000 --> 00:00:04,000\nHello World", false)]
+    [InlineData(typeof(VttFormatHandler), "[V4+ Styles]\nTitle: Test", false)]
+    public void CanHandle_ReturnsTrueForSupportedFormatOnly(Type handlerType, string content, bool expectedResult)
     {
         // Arrange
         var handler = (ISubtitleFormatHandler)Activator.CreateInstance(handlerType)!;
 
         // Act
-        var canHandle = handler.CanHandle(format);
+        var canHandle = handler.CanHandle(content);
 
         // Assert
         canHandle.Should().Be(expectedResult);
     }
 
     [Theory]
-    [InlineData(typeof(SrtFormatHandler), SubtitleFormat.SRT)]
-    [InlineData(typeof(AssFormatHandler), SubtitleFormat.ASS)]
-    [InlineData(typeof(VttFormatHandler), SubtitleFormat.VTT)]
-    public void CanHandle_ConsistentResultsAcrossMultipleCalls(Type handlerType, SubtitleFormat format)
+    [InlineData(typeof(SrtFormatHandler), "1\n00:00:01,000 --> 00:00:04,000\nHello World")]
+    [InlineData(typeof(AssFormatHandler), "[V4+ Styles]\nTitle: Test")]
+    [InlineData(typeof(VttFormatHandler), "WEBVTT\n\n00:00:01.000 --> 00:00:04.000")]
+    public void CanHandle_ConsistentResultsAcrossMultipleCalls(Type handlerType, string content)
     {
         // Arrange
         var handler = (ISubtitleFormatHandler)Activator.CreateInstance(handlerType)!;
 
         // Act
-        var result1 = handler.CanHandle(format);
-        var result2 = handler.CanHandle(format);
-        var result3 = handler.CanHandle(format);
+        var result1 = handler.CanHandle(content);
+        var result2 = handler.CanHandle(content);
+        var result3 = handler.CanHandle(content);
 
         // Assert
         result1.Should().Be(result2);
@@ -92,12 +92,16 @@ in one subtitle
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().Contain("Hello world!");
-        result.Should().Contain("This is italic text");
-        result.Should().Contain("Multiple lines");
-        result.Should().NotContain("00:00:01,000");
-        result.Should().NotContain("<i>");
-        result.Should().NotContain("</i>");
+        result.IsSuccessful.Should().BeTrue();
+        result.Entries.Should().NotBeEmpty();
+        
+        var allText = string.Join(" ", result.Entries.Select(e => e.Text));
+        allText.Should().Contain("Hello world!");
+        allText.Should().Contain("This is italic text");
+        allText.Should().Contain("Multiple lines");
+        allText.Should().NotContain("00:00:01,000");
+        allText.Should().NotContain("<i>");
+        allText.Should().NotContain("</i>");
     }
 
     [Fact]
@@ -126,12 +130,16 @@ Dialogue: 0,0:00:05.00,0:00:07.00,Default,,0,0,0,,{\i1}Italic text{\i0}
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().Contain("Hello from ASS!");
-        result.Should().Contain("Italic text");
-        result.Should().NotContain("This is a comment");
-        result.Should().NotContain("Format:");
-        result.Should().NotContain("{\\i1}");
-        result.Should().NotContain("{\\i0}");
+        result.IsSuccessful.Should().BeTrue();
+        result.Entries.Should().NotBeEmpty();
+        
+        var allText = string.Join(" ", result.Entries.Select(e => e.Text));
+        allText.Should().Contain("Hello from ASS!");
+        allText.Should().Contain("Italic text");
+        allText.Should().NotContain("This is a comment");
+        allText.Should().NotContain("Format:");
+        allText.Should().NotContain("{\\i1}");
+        allText.Should().NotContain("{\\i0}");
     }
 
     [Fact]
@@ -159,13 +167,17 @@ Text with <c.className>styling</c>
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().Contain("Hello from WebVTT!");
-        result.Should().Contain("Multiple speakers");
-        result.Should().Contain("Text with styling");
-        result.Should().NotContain("WEBVTT");
-        result.Should().NotContain("NOTE");
-        result.Should().NotContain("<v Speaker>");
-        result.Should().NotContain("<c.className>");
+        result.IsSuccessful.Should().BeTrue();
+        result.Entries.Should().NotBeEmpty();
+        
+        var allText = string.Join(" ", result.Entries.Select(e => e.Text));
+        allText.Should().Contain("Hello from WebVTT!");
+        allText.Should().Contain("Multiple speakers");
+        allText.Should().Contain("Text with styling");
+        allText.Should().NotContain("WEBVTT");
+        allText.Should().NotContain("NOTE");
+        allText.Should().NotContain("<v Speaker>");
+        allText.Should().NotContain("<c.className>");
     }
 
     [Theory]
@@ -183,7 +195,7 @@ Text with <c.className>styling</c>
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeEmpty();
+        result.Entries.Should().BeEmpty();
     }
 
     [Theory]

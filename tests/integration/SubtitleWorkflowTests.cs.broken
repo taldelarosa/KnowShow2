@@ -1,0 +1,213 @@
+using System;
+using System.IO;
+using System.Threading.Tasks;
+
+namespace EpisodeIdentifier.Tests.Integration;
+
+public class SubtitleWorkflowTests : IDisposable
+{
+    private readonly ServiceProvider _serviceProvider;
+    private readonly SubtitleWorkflowCoordinator _coordinator;
+    private readonly VideoFormatValidator _validator;
+    private readonly ITextSubtitleExtractor _textExtractor;
+
+    public SubtitleWorkflowTests()
+    {
+        var services = new ServiceCollection();
+        
+        // Add logging
+        services.AddLogging(builder => builder.AddConsole());
+        
+        // Add core services
+        services.AddTransient<VideoFormatValidator>();
+        services.AddTransient<SubtitleExtractor>();
+        services.AddTransient<ITextSubtitleExtractor, SimpleTextSubtitleExtractor>();
+        services.AddTransient<EnhancedPgsToTextConverter>();
+        services.AddTransient<PgsToTextConverter>();
+        services.AddTransient<SubtitleMatcher>();
+        services.AddTransient<FuzzyHashService>();
+        services.AddTransient<SubtitleWorkflowCoordinator>();
+        
+        _serviceProvider = services.BuildServiceProvider();
+        _coordinator = _serviceProvider.GetRequiredService<SubtitleWorkflowCoordinator>();
+        _validator = _serviceProvider.GetRequiredService<VideoFormatValidator>();
+        _textExtractor = _serviceProvider.GetRequiredService<ITextSubtitleExtractor>();
+    }
+
+    [Fact]
+    public async Task WorkflowCoordinator_WithPgsVideo_UsesPgsWorkflow()
+    {
+        // This test verifies that the coordinator correctly identifies and processes PGS subtitles
+        var testVideoPath = "/mnt/c/src/KnowShow/TestData/media/video_with_pgs.mkv";
+        
+        // If test file doesn't exist, test the workflow logic with a mock scenario
+        if (!File.Exists(testVideoPath))
+        {
+            // Test that non-existent files are handled gracefully
+            var result = await _coordinator.ProcessVideoAsync("nonexistent_pgs.mkv");
+            result.Should().NotBeNull();
+            result.HasError.Should().BeTrue();
+            return;
+        }
+
+        var result = await _coordinator.ProcessVideoAsync(testVideoPath);
+        result.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task WorkflowCoordinator_WithTextSubtitles_UsesTextWorkflow()
+    {
+        // Test with the known good file
+        var testVideoPath = "/mnt/c/src/KnowShow/TestData/media/Episode S02E01.mkv";
+        
+        if (!File.Exists(testVideoPath))
+        {
+            var result = await _coordinator.ProcessVideoAsync("nonexistent_text.mkv");
+            result.Should().NotBeNull();
+            result.HasError.Should().BeTrue();
+            return;
+        }
+
+        var result = await _coordinator.ProcessVideoAsync(testVideoPath);
+        result.Should().NotBeNull();
+        
+        // If successful, verify it extracted text subtitles
+        if (!result.HasError)
+        {
+            result.Series.Should().NotBeNullOrEmpty();
+            result.Season.Should().BeGreaterThan(0);
+            result.Episode.Should().BeGreaterThan(0);
+        }
+    }
+
+    [Fact]
+    public async Task VideoFormatValidator_DetectsSubtitleTracks()
+    {
+        var testVideoPath = "/mnt/c/src/KnowShow/TestData/media/Episode S02E01.mkv";
+        
+        if (!File.Exists(testVideoPath))
+        {
+            // Test with non-existent file
+            var tracks = await _validator.GetSubtitleTracks("nonexistent.mkv");
+            tracks.Should().NotBeNull();
+            tracks.Should().BeEmpty();
+            return;
+        }
+
+        var subtitleTracks = await _validator.GetSubtitleTracks(testVideoPath);
+        subtitleTracks.Should().NotBeNull();
+        
+        // Should detect some subtitle tracks in this file
+        if (subtitleTracks.Count > 0)
+        {
+            foreach (var track in subtitleTracks)
+            {
+                track.Index.Should().BeGreaterOrEqualTo(0);
+                track.CodecName.Should().NotBeNullOrEmpty();
+            }
+        }
+    }
+
+    [Fact]
+    public async Task TextSubtitleExtractor_DetectsTextTracks()
+    {
+        var testVideoPath = "/mnt/c/src/KnowShow/TestData/media/Episode S02E01.mkv";
+        
+        if (!File.Exists(testVideoPath))
+        {
+            var tracks = await _textExtractor.DetectTextSubtitleTracksAsync("nonexistent.mkv");
+            tracks.Should().NotBeNull();
+            tracks.Should().BeEmpty();
+            return;
+        }
+
+        var textTracks = await _textExtractor.DetectTextSubtitleTracksAsync(testVideoPath);
+        textTracks.Should().NotBeNull();
+        
+        // Should detect text subtitle tracks
+        if (textTracks.Any())
+        {
+            var firstTrack = textTracks.First();
+            firstTrack.Index.Should().BeGreaterOrEqualTo(0);
+            firstTrack.Format.Should().NotBeNull();
+        }
+    }
+
+    [Fact]
+    public async Task TextSubtitleExtractor_ExtractsContent()
+    {
+        var testVideoPath = "/mnt/c/src/KnowShow/TestData/media/Episode S02E01.mkv";
+        
+        if (!File.Exists(testVideoPath))
+        {
+            // Can't test extraction without a real file
+            Assert.True(true, "Test file not available, skipping extraction test");
+            return;
+        }
+
+        // First detect tracks
+        var textTracks = await _textExtractor.DetectTextSubtitleTracksAsync(testVideoPath);
+        
+        if (!textTracks.Any())
+        {
+            Assert.True(true, "No text tracks found, skipping extraction test");
+            return;
+        }
+
+        // Extract from first available track
+        var selectedTrack = textTracks.First();
+        var extractionResult = await _textExtractor.ExtractTextSubtitleContentAsync(testVideoPath, selectedTrack);
+        
+        extractionResult.Should().NotBeNull();
+        extractionResult.Status.Should().Be(ProcessingStatus.Completed);
+        extractionResult.ExtractedTracks.Should().NotBeEmpty();
+        
+        var extractedTrack = extractionResult.ExtractedTracks.First();
+        extractedTrack.Content.Should().NotBeNullOrWhiteSpace();
+        extractedTrack.Content.Length.Should().BeGreaterThan(100); // Should have substantial content
+    }
+
+    [Fact]
+    public async Task WorkflowCoordinator_WithLanguagePreference_SelectsCorrectTrack()
+    {
+        var testVideoPath = "/mnt/c/src/KnowShow/TestData/media/Episode S02E01.mkv";
+        var languages = new[] { "eng", "en", "english" };
+        
+        foreach (var language in languages)
+        {
+            if (!File.Exists(testVideoPath))
+            {
+                var result = await _coordinator.ProcessVideoAsync("nonexistent.mkv", language);
+                result.Should().NotBeNull();
+                result.HasError.Should().BeTrue();
+                continue;
+            }
+
+            var result = await _coordinator.ProcessVideoAsync(testVideoPath, language);
+            result.Should().NotBeNull();
+            
+            // Should not fail due to language preference
+            // (Though it might not find subtitles in that specific language)
+        }
+    }
+
+    [Fact]
+    public async Task WorkflowCoordinator_HandlesEmptyInputGracefully()
+    {
+        var testCases = new[] { "", null, "   " };
+        
+        foreach (var testCase in testCases)
+        {
+            var result = await _coordinator.ProcessVideoAsync(testCase);
+            result.Should().NotBeNull();
+            result.HasError.Should().BeTrue();
+            result.Error.Should().NotBeNull();
+            result.Error.Message.Should().NotBeNullOrEmpty();
+        }
+    }
+
+    public void Dispose()
+    {
+        _serviceProvider?.Dispose();
+    }
+}

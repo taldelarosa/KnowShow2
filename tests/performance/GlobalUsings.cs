@@ -5,3 +5,5 @@ global using Microsoft.Extensions.DependencyInjection;
 global using EpisodeIdentifier.Core.Services;
 global using EpisodeIdentifier.Core.Models;
 global using EpisodeIdentifier.Core.Interfaces;
+global using BenchmarkDotNet.Attributes;
+global using BenchmarkDotNet.Running;
