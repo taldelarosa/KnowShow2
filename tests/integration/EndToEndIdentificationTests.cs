@@ -1,35 +1,68 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Xunit;
+using FluentAssertions;
+using EpisodeIdentifier.Core.Services;
+using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace EpisodeIdentifier.Tests.Integration;
 
 public class EndToEndIdentificationTests : IDisposable
 {
-    private readonly ServiceProvider _serviceProvider;
     private readonly SubtitleWorkflowCoordinator _coordinator;
     private readonly string _testDataPath;
 
     public EndToEndIdentificationTests()
     {
-        // Setup test services
-        var services = new ServiceCollection();
+        // Create required dependencies manually (like AssWorkflowTests pattern)
+        var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
         
-        // Add logging
-        services.AddLogging(builder => builder.AddConsole());
+        // Create core services
+        var validatorLogger = loggerFactory.CreateLogger<VideoFormatValidator>();
+        var pgsExtractorLogger = loggerFactory.CreateLogger<SubtitleExtractor>();
+        var pgsRipLogger = loggerFactory.CreateLogger<PgsRipService>();
+        var pgsConverterLogger = loggerFactory.CreateLogger<PgsToTextConverter>();
+        var enhancedConverterLogger = loggerFactory.CreateLogger<EnhancedPgsToTextConverter>();
         
-        // Add core services
-        services.AddTransient<VideoFormatValidator>();
-        services.AddTransient<SubtitleExtractor>();
-        services.AddTransient<ITextSubtitleExtractor, SimpleTextSubtitleExtractor>();
-        services.AddTransient<EnhancedPgsToTextConverter>();
-        services.AddTransient<PgsToTextConverter>();
-        services.AddTransient<SubtitleMatcher>();
-        services.AddTransient<FuzzyHashService>();
-        services.AddTransient<SubtitleWorkflowCoordinator>();
+        var validator = new VideoFormatValidator(validatorLogger);
+        var pgsExtractor = new SubtitleExtractor(pgsExtractorLogger, validator);
         
-        _serviceProvider = services.BuildServiceProvider();
-        _coordinator = _serviceProvider.GetRequiredService<SubtitleWorkflowCoordinator>();
+        // Create text extractor with format handlers
+        var formatHandlers = new List<ISubtitleFormatHandler>
+        {
+            new SrtFormatHandler(),
+            new AssFormatHandler(), 
+            new VttFormatHandler()
+        };
+        var textExtractor = new TextSubtitleExtractor(formatHandlers);
+        
+        // Create converter services
+        var pgsRipService = new PgsRipService(pgsRipLogger);
+        var pgsConverter = new PgsToTextConverter(pgsConverterLogger);
+        var enhancedConverter = new EnhancedPgsToTextConverter(enhancedConverterLogger, pgsRipService, pgsConverter);
+        
+        // Create matching services
+        var fuzzyLogger = loggerFactory.CreateLogger<FuzzyHashService>();
+        var normalizationLogger = loggerFactory.CreateLogger<SubtitleNormalizationService>();
+        var matcherLogger = loggerFactory.CreateLogger<SubtitleMatcher>();
+        var coordinatorLogger = loggerFactory.CreateLogger<SubtitleWorkflowCoordinator>();
+        
+        var normalizationService = new SubtitleNormalizationService(normalizationLogger);
+        var testDbPath = "/mnt/c/Users/Ragma/KnowShow_Specd/test_constraint.db";
+        var hashService = new FuzzyHashService(testDbPath, fuzzyLogger, normalizationService);
+        var matcher = new SubtitleMatcher(hashService, matcherLogger);
+        
+        // Create coordinator
+        _coordinator = new SubtitleWorkflowCoordinator(
+            coordinatorLogger,
+            validator,
+            pgsExtractor,
+            textExtractor,
+            enhancedConverter,
+            matcher);
         
         // Setup test data path
         _testDataPath = Path.Combine(Path.GetTempPath(), "EpisodeIdentifierTests");
@@ -61,9 +94,9 @@ public class EndToEndIdentificationTests : IDisposable
         if (!identificationResult.HasError)
         {
             identificationResult.Series.Should().NotBeNullOrEmpty();
-            identificationResult.Season.Should().BeGreaterThan(0);
-            identificationResult.Episode.Should().BeGreaterThan(0);
-            identificationResult.Confidence.Should().BeGreaterThan(0.5);
+            identificationResult.Season.Should().NotBeNullOrEmpty();
+            identificationResult.Episode.Should().NotBeNullOrEmpty();
+            identificationResult.MatchConfidence.Should().BeGreaterThan(0.5);
         }
         else
         {
@@ -88,15 +121,12 @@ public class EndToEndIdentificationTests : IDisposable
     }
 
     [Fact]
-    public async Task ProcessVideo_WithEmptyFilePath_ReturnsError()
+    public async Task ProcessVideo_WithEmptyFilePath_ThrowsException()
     {
-        // Act
-        var result = await _coordinator.ProcessVideoAsync("");
-
-        // Assert
-        result.Should().NotBeNull();
-        result.HasError.Should().BeTrue();
-        result.Error.Should().NotBeNull();
+        // Act & Assert
+        var action = async () => await _coordinator.ProcessVideoAsync("");
+        await action.Should().ThrowAsync<ArgumentException>()
+            .WithParameterName("videoFilePath");
     }
 
     [Fact]
@@ -125,8 +155,6 @@ public class EndToEndIdentificationTests : IDisposable
 
     public void Dispose()
     {
-        _serviceProvider?.Dispose();
-        
         // Cleanup test data
         if (Directory.Exists(_testDataPath))
         {
