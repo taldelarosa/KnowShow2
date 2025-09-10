@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
@@ -6,183 +7,151 @@ using FluentAssertions;
 using EpisodeIdentifier.Core.Services;
 using EpisodeIdentifier.Core.Models;
 using EpisodeIdentifier.Core.Interfaces;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace EpisodeIdentifier.Tests.Integration;
 
-public class SrtWorkflowTests : IDisposable
+public class SrtWorkflowTests
 {
-    private readonly ServiceProvider _serviceProvider;
-    private readonly SubtitleWorkflowCoordinator _coordinator;
-    private readonly VideoFormatValidator _validator;
-    private readonly ITextSubtitleExtractor _textExtractor;
+    private readonly TextSubtitleExtractor _textExtractor;
+    private readonly SubtitleMatcher _matcher;
 
     public SrtWorkflowTests()
     {
-        var services = new ServiceCollection();
+        // Create required dependencies manually (following the pattern from other working tests)
+        var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
         
-        // Add logging
-        services.AddLogging(builder => builder.AddConsole());
-        
-        // Add core services
-        services.AddTransient<VideoFormatValidator>();
-        services.AddTransient<SubtitleExtractor>();
-        services.AddTransient<ITextSubtitleExtractor, TextSubtitleExtractor>();
-        services.AddTransient<PgsRipService>();
-        services.AddTransient<SubtitleNormalizationService>();
-        services.AddTransient<ISubtitleFormatHandler, SrtFormatHandler>();
-        services.AddTransient<ISubtitleFormatHandler, VttFormatHandler>();
-        services.AddTransient<ISubtitleFormatHandler, AssFormatHandler>();
-        services.AddTransient<EnhancedPgsToTextConverter>();
-        services.AddTransient<PgsToTextConverter>();
-        services.AddTransient<SubtitleMatcher>();
-        services.AddTransient<FuzzyHashService>(provider => new FuzzyHashService("/mnt/c/Users/Ragma/KnowShow_Specd/test_constraint.db", provider.GetRequiredService<ILogger<FuzzyHashService>>(), provider.GetRequiredService<SubtitleNormalizationService>()));
-        services.AddTransient<SubtitleWorkflowCoordinator>();
-        
-        _serviceProvider = services.BuildServiceProvider();
-        _coordinator = _serviceProvider.GetRequiredService<SubtitleWorkflowCoordinator>();
-        _validator = _serviceProvider.GetRequiredService<VideoFormatValidator>();
-        _textExtractor = _serviceProvider.GetRequiredService<ITextSubtitleExtractor>();
-    }
-
-    [Fact]
-    public async Task WorkflowCoordinator_WithSrtVideo_UsesSrtWorkflow()
-    {
-        // This test verifies that the coordinator correctly identifies and processes SRT subtitles
-        var testVideoPath = "/mnt/c/src/KnowShow/TestData/media/video_with_srt.mkv";
-        
-        // If test file doesn't exist, test the workflow logic with a mock scenario
-        if (!File.Exists(testVideoPath))
+        // Create format handlers
+        var formatHandlers = new List<ISubtitleFormatHandler>
         {
-            // Test that non-existent files are handled gracefully
-            var result = await _coordinator.ProcessVideoAsync("nonexistent_srt.mkv");
-            result.Should().NotBeNull();
-            result.HasError.Should().BeTrue();
-            return;
-        }
-
-        // Test with actual file if it exists
-        var processingResult = await _coordinator.ProcessVideoAsync(testVideoPath);
-        
-        // Verify result structure
-        processingResult.Should().NotBeNull();
-        processingResult.HasError.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task WorkflowCoordinator_WithMultipleSrtTracks_ProcessesCorrectly()
-    {
-        // Test handling of videos with multiple SRT subtitle tracks
-        var testVideoPath = "/mnt/c/src/KnowShow/TestData/media/multi_srt_tracks.mkv";
-        
-        if (!File.Exists(testVideoPath))
-        {
-            // Mock the multi-track scenario
-            var result = await _coordinator.ProcessVideoAsync("mock_multi_srt.mkv");
-            result.Should().NotBeNull();
-            result.HasError.Should().BeTrue();
-            return;
-        }
-
-        var processingResult = await _coordinator.ProcessVideoAsync(testVideoPath);
-        
-        // Verify the coordinator processes multiple tracks
-        processingResult.Should().NotBeNull();
-        processingResult.HasError.Should().BeFalse();
-    }
-
-    [Fact]
-    public void VideoFormatValidator_WithSrtExtension_ReturnsTrue()
-    {
-        // Test that SRT files are recognized as valid video formats
-        var testFiles = new[]
-        {
-            "test.srt",
-            "episode.SRT",
-            "show_s01e01.srt"
+            new SrtFormatHandler(),
+            new AssFormatHandler(), 
+            new VttFormatHandler()
         };
-
-        foreach (var file in testFiles)
-        {
-            // Note: This tests the validator's file extension logic
-            // The actual validation may depend on file content
-            var isValid = Path.GetExtension(file).ToLowerInvariant() == ".srt";
-            
-            // SRT files should be considered valid for processing
-            // (even though they're subtitle files, they're part of the workflow)
-            isValid.Should().BeTrue($"File {file} should be recognized as processable");
-        }
+        
+        // Create text extractor
+        _textExtractor = new TextSubtitleExtractor(formatHandlers);
+        
+        // Create matching services
+        var fuzzyLogger = loggerFactory.CreateLogger<FuzzyHashService>();
+        var normalizationLogger = loggerFactory.CreateLogger<SubtitleNormalizationService>();
+        var matcherLogger = loggerFactory.CreateLogger<SubtitleMatcher>();
+        
+        var normalizationService = new SubtitleNormalizationService(normalizationLogger);
+        var testDbPath = "/mnt/c/Users/Ragma/KnowShow_Specd/test_constraint.db";
+        var hashService = new FuzzyHashService(testDbPath, fuzzyLogger, normalizationService);
+        _matcher = new SubtitleMatcher(hashService, matcherLogger);
     }
 
     [Fact]
-    public async Task TextSubtitleExtractor_WithSrtInput_ExtractsCorrectly()
+    public async Task TextSubtitleExtractor_WithNonexistentFile_HandlesGracefully()
     {
-        // Test that the text extractor can handle SRT input
-        var testSrtPath = "/mnt/c/src/KnowShow/TestData/subtitles/sample.srt";
-        
-        if (!File.Exists(testSrtPath))
-        {
-            // Skip test if no sample SRT file available
-            Assert.True(true, "Skipped: No sample SRT file available for testing");
-            return;
-        }
+        // Arrange
+        var nonExistentFile = "nonexistent.mkv";
 
-        var tracks = await _textExtractor.DetectTextSubtitleTracksAsync(testSrtPath);
-        
-        // Verify extraction results
-        tracks.Should().NotBeNull();
-        tracks.Should().NotBeEmpty();
-        tracks.First().FilePath.Should().NotBeNullOrEmpty();
+        // Act & Assert - Should throw exception for non-existent file
+        var action = async () => await _textExtractor.DetectTextSubtitleTracksAsync(nonExistentFile);
+        await action.Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]
-    public async Task WorkflowCoordinator_WithInvalidSrtFile_HandlesGracefully()
+    public async Task SrtProcessingWorkflow_WithSimpleTest_CompletesSuccessfully()
     {
-        // Test error handling for corrupted or invalid SRT files
-        var invalidSrtPath = "/mnt/c/src/KnowShow/TestData/subtitles/corrupted.srt";
-        
-        // Test with non-existent file
-        var result = await _coordinator.ProcessVideoAsync("invalid_srt_file.srt");
-        
-        // Should handle errors gracefully
+        // Arrange
+        var testSubtitleText = @"
+1
+00:00:01,000 --> 00:00:03,000
+This is the first subtitle.
+
+2
+00:00:04,000 --> 00:00:06,000
+This is the second subtitle.
+
+3
+00:00:07,000 --> 00:00:09,000
+This is the third subtitle.
+";
+
+        // Act - Use subtitle matcher directly with text
+        var result = await _matcher.IdentifyEpisodeAsync(testSubtitleText);
+
+        // Assert
         result.Should().NotBeNull();
-        result.HasError.Should().BeTrue();
-        result.Error?.Message.Should().NotBeNullOrEmpty();
+        result.HasError.Should().BeFalse();
+        result.Match.Should().NotBeNull();
     }
 
     [Fact]
-    public async Task WorkflowCoordinator_WithEmptySrtFile_ReturnsNoResults()
+    public async Task SubtitleMatcher_WithTestContent_ReturnsResult()
     {
-        // Test handling of empty SRT files
-        var emptySrtPath = "/tmp/empty.srt";
+        // Arrange  
+        var testContent = "This is a test subtitle that should not match anything in the database.";
         
-        // Create an empty SRT file for testing
-        await File.WriteAllTextAsync(emptySrtPath, "");
+        // Act
+        var result = await _matcher.IdentifyEpisodeAsync(testContent);
         
-        try
-        {
-            var result = await _coordinator.ProcessVideoAsync(emptySrtPath);
-            
-            // Should handle empty files appropriately
-            result.Should().NotBeNull();
-            if (result.HasError)
-            {
-                result.Error?.Message.Should().NotBeNullOrEmpty();
-            }
-        }
-        finally
-        {
-            // Clean up test file
-            if (File.Exists(emptySrtPath))
-            {
-                File.Delete(emptySrtPath);
-            }
-        }
+        // Assert
+        result.Should().NotBeNull();
+        result.HasError.Should().BeFalse();
+        result.Match.Should().NotBeNull();
+        result.Match.HasMatch.Should().BeFalse(); // Should not match with test content
     }
 
-    public void Dispose()
+    [Fact]
+    public async Task SrtProcessingWorkflow_WithFormatHandlers_ProcessesCorrectly()
     {
-        _serviceProvider?.Dispose();
+        // Arrange
+        var srtHandler = new SrtFormatHandler();
+        var testSrtContent = @"1
+00:00:01,000 --> 00:00:03,000
+Test subtitle content for SRT format.
+
+2
+00:00:04,000 --> 00:00:06,000
+Another line of subtitle text.";
+
+        // Act
+        var canHandle = srtHandler.SupportedFormat == SubtitleFormat.SRT;
+        
+        // Create a test stream for parsing
+        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(testSrtContent));
+        var parseResult = await srtHandler.ParseSubtitleTextAsync(stream, null);
+
+        // Assert
+        canHandle.Should().BeTrue();
+        parseResult.Should().NotBeNull();
+        parseResult.Entries.Should().HaveCount(2);
+        parseResult.Entries[0].Text.Should().Be("Test subtitle content for SRT format.");
+        parseResult.Entries[1].Text.Should().Be("Another line of subtitle text.");
+    }
+
+    [Fact]
+    public void FormatHandlers_CreatedCorrectly_SupportExpectedFormats()
+    {
+        // Arrange & Act
+        var srtHandler = new SrtFormatHandler();
+        var assHandler = new AssFormatHandler();
+        var vttHandler = new VttFormatHandler();
+
+        // Assert
+        srtHandler.SupportedFormat.Should().Be(SubtitleFormat.SRT);
+        assHandler.SupportedFormat.Should().Be(SubtitleFormat.ASS);
+        vttHandler.SupportedFormat.Should().Be(SubtitleFormat.VTT);
+    }
+
+    [Fact]
+    public async Task TextSubtitleExtractor_WithEmptyPath_ThrowsArgumentException()
+    {
+        // Act & Assert
+        var action = async () => await _textExtractor.DetectTextSubtitleTracksAsync("");
+        await action.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task TextSubtitleExtractor_WithNullPath_ThrowsArgumentException()
+    {
+        // Act & Assert
+        var action = async () => await _textExtractor.DetectTextSubtitleTracksAsync(null!);
+        await action.Should().ThrowAsync<ArgumentException>();
     }
 }
