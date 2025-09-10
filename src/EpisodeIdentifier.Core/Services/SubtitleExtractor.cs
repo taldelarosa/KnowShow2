@@ -1,10 +1,11 @@
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Interfaces;
 
 namespace EpisodeIdentifier.Core.Services;
 
-public class SubtitleExtractor
+public class SubtitleExtractor : ISubtitleExtractor
 {
     private readonly ILogger<SubtitleExtractor> _logger;
     private readonly VideoFormatValidator _validator;
@@ -17,7 +18,7 @@ public class SubtitleExtractor
 
     public async Task<byte[]> ExtractPgsSubtitles(string videoPath, string? preferredLanguage = null)
     {
-        _logger.LogInformation("Extracting PGS subtitles from {VideoPath}, preferred language: {Language}", 
+        _logger.LogInformation("Extracting PGS subtitles from {VideoPath}, preferred language: {Language}",
             videoPath, preferredLanguage ?? "any");
 
         // Get available subtitle tracks
@@ -30,7 +31,7 @@ public class SubtitleExtractor
 
         // Select the best track based on language preference
         var selectedTrack = SelectBestTrack(subtitleTracks, preferredLanguage);
-        _logger.LogInformation("Selected subtitle track: Index={Index}, Language={Language}", 
+        _logger.LogInformation("Selected subtitle track: Index={Index}, Language={Language}",
             selectedTrack.Index, selectedTrack.Language ?? "unknown");
 
         // First try mkvextract with specific track
@@ -56,7 +57,7 @@ public class SubtitleExtractor
         // If preferred language specified, try to find it
         if (!string.IsNullOrEmpty(preferredLanguage))
         {
-            var langTrack = tracks.FirstOrDefault(t => 
+            var langTrack = tracks.FirstOrDefault(t =>
                 string.Equals(t.Language, preferredLanguage, StringComparison.OrdinalIgnoreCase));
             if (langTrack != null)
             {
@@ -65,11 +66,11 @@ public class SubtitleExtractor
         }
 
         // Default preferences: English first, then first available
-        var englishTrack = tracks.FirstOrDefault(t => 
+        var englishTrack = tracks.FirstOrDefault(t =>
             string.Equals(t.Language, "eng", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(t.Language, "en", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(t.Language, "english", StringComparison.OrdinalIgnoreCase));
-        
+
         return englishTrack ?? tracks.First();
     }
 
@@ -77,7 +78,7 @@ public class SubtitleExtractor
     {
         // Get unique temporary filename
         var tempFile = Path.GetTempFileName() + ".sup";
-        
+
         try
         {
             using var process = new Process
@@ -129,7 +130,7 @@ public class SubtitleExtractor
     {
         // Get unique temporary filename
         var tempFile = Path.GetTempFileName() + ".sup";
-        
+
         try
         {
             using var process = new Process
@@ -175,5 +176,25 @@ public class SubtitleExtractor
                 }
             }
         }
+    }
+
+    public async Task<string> ExtractAndConvertSubtitles(string videoPath, string? preferredLanguage = null)
+    {
+        _logger.LogInformation("Extracting and converting subtitles from {VideoPath}, preferred language: {Language}",
+            videoPath, preferredLanguage ?? "any");
+
+        // Extract PGS subtitles
+        var pgsData = await ExtractPgsSubtitles(videoPath, preferredLanguage);
+
+        if (pgsData.Length == 0)
+        {
+            _logger.LogWarning("No PGS subtitle data extracted from {VideoPath}", videoPath);
+            return string.Empty;
+        }
+
+        // TODO: Convert PGS data to text using OCR
+        // For now, return a placeholder message
+        _logger.LogInformation("Extracted {Size} bytes of PGS data from {VideoPath}", pgsData.Length, videoPath);
+        return $"[PGS Subtitles extracted: {pgsData.Length} bytes]";
     }
 }

@@ -6,13 +6,15 @@ Your current PGS subtitle extraction implementation has several limitations comp
 
 ## Why pgsrip is Superior
 
-### Your Current Implementation Issues:
+### Your Current Implementation Issues
+
 1. **Poor timing accuracy**: Fixed 3-second intervals instead of actual subtitle timings
 2. **Crude image extraction**: FFmpeg burn-in method is unreliable
 3. **Basic OCR**: Simple Tesseract calls without optimization
 4. **No native PGS parsing**: Missing proper SUP format understanding
 
-### pgsrip's Advanced Features:
+### pgsrip's Advanced Features
+
 1. **Native PGS parsing**: Direct parsing of PGS segments (PCS, WDS, PDS, ODS)
 2. **Accurate timing**: Preserves original subtitle timestamps
 3. **Optimized OCR**: Intelligent image composition, confidence handling, adaptive parameters
@@ -21,6 +23,7 @@ Your current PGS subtitle extraction implementation has several limitations comp
 ## Installation Steps
 
 ### 1. Install pgsrip
+
 ```bash
 # Using uv (faster than pip)
 uv pip install --system pgsrip
@@ -30,6 +33,7 @@ pip install pgsrip
 ```
 
 ### 2. Install Dependencies
+
 ```bash
 # For Ubuntu/Debian:
 sudo apt-get install mkvtoolnix tesseract-ocr
@@ -45,6 +49,7 @@ echo 'export TESSDATA_PREFIX=/usr/share/tessdata_best' >> ~/.bashrc
 ```
 
 ### 3. Test Installation
+
 ```bash
 pgsrip --version
 ```
@@ -149,6 +154,7 @@ if __name__ == "__main__":
 ```
 
 Then call from C#:
+
 ```csharp
 private async Task<bool> RunPgsRipPython(string supFile, string language)
 {

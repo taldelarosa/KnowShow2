@@ -7,6 +7,7 @@ This enhancement replaces your current PGS subtitle extraction with a superior a
 ## Key Improvements
 
 ### Before (Your Original Implementation)
+
 - ❌ Fixed 3-second subtitle durations
 - ❌ FFmpeg burn-in artifacts
 - ❌ ~60% OCR accuracy
@@ -14,6 +15,7 @@ This enhancement replaces your current PGS subtitle extraction with a superior a
 - ❌ No native PGS format understanding
 
 ### After (with pgsrip Integration)
+
 - ✅ **Accurate timing**: Preserves original subtitle timestamps
 - ✅ **90%+ OCR accuracy**: Advanced image processing and optimization
 - ✅ **Native PGS parsing**: Direct segment analysis (PCS, WDS, PDS, ODS)
@@ -24,17 +26,20 @@ This enhancement replaces your current PGS subtitle extraction with a superior a
 ## Files Added
 
 ### Core Services
+
 1. **`PgsRipService.cs`** - Wrapper for pgsrip functionality
 2. **`EnhancedPgsToTextConverter.cs`** - Enhanced converter with fallback
 3. **`PgsConversionDemo.cs`** - Demo program for testing
 
 ### Scripts and Documentation
+
 4. **`pgsrip-converter.sh`** - Command-line conversion tool
 5. **`PGSRIP_INTEGRATION_GUIDE.md`** - Detailed integration guide
 
 ## Quick Start
 
 ### 1. Install pgsrip
+
 ```bash
 # Install pgsrip using uv (much faster than pip)
 uv pip install --system pgsrip
@@ -51,6 +56,7 @@ echo 'export TESSDATA_PREFIX=/usr/share/tessdata_best' >> ~/.bashrc
 ```
 
 ### 2. Test the Enhancement
+
 ```bash
 # Make the test script executable
 chmod +x scripts/pgsrip-converter.sh
@@ -65,6 +71,7 @@ chmod +x scripts/pgsrip-converter.sh
 ### 3. Update Your Application
 
 Replace your current service registration:
+
 ```csharp
 // Before
 services.AddScoped<PgsToTextConverter>();
@@ -76,6 +83,7 @@ services.AddScoped<EnhancedPgsToTextConverter>();
 ```
 
 Use the enhanced converter:
+
 ```csharp
 // Inject the enhanced service
 private readonly EnhancedPgsToTextConverter _converter;
@@ -97,6 +105,7 @@ var result = await _converter.ConvertPgsToText(pgsData, "eng");
 ## Usage Examples
 
 ### Basic Conversion
+
 ```csharp
 var enhancedConverter = serviceProvider.GetService<EnhancedPgsToTextConverter>();
 
@@ -108,12 +117,14 @@ var videoSrt = await enhancedConverter.ConvertPgsFromVideoToText(videoPath, 0, "
 ```
 
 ### Quality Information
+
 ```csharp
 var qualityInfo = await enhancedConverter.GetQualityInfoAsync();
 Console.WriteLine(qualityInfo.ToString());
 ```
 
 ### Automatic Installation
+
 ```csharp
 if (!qualityInfo.PgsRipAvailable)
 {
@@ -126,6 +137,7 @@ if (!qualityInfo.PgsRipAvailable)
 ```
 
 ### Command Line Testing
+
 ```bash
 # Test German subtitles with 2 workers
 ./scripts/pgsrip-converter.sh --language deu --workers 2 movie.mkv
@@ -146,6 +158,7 @@ The enhancement uses a **graceful degradation** approach:
 3. **Logging**: Clear information about which method is used
 
 This means:
+
 - ✅ No breaking changes to your existing code
 - ✅ Immediate quality improvement when pgsrip is available
 - ✅ Continued operation when pgsrip is not installed
@@ -154,6 +167,7 @@ This means:
 ## Real-World Benefits
 
 ### Timing Accuracy Example
+
 ```
 Before: All subtitles 3 seconds long
 00:00:00,000 --> 00:00:03,000
@@ -171,6 +185,7 @@ How are you?
 ```
 
 ### OCR Quality Example
+
 ```
 Before (burn-in artifacts):
 Hel1o w0r1d     # Artifacts from burn-in
@@ -184,6 +199,7 @@ How are you?    # Perfect character recognition
 ## Troubleshooting
 
 ### pgsrip Not Found
+
 ```bash
 # Install pgsrip
 pip install pgsrip
@@ -193,6 +209,7 @@ pgsrip --version
 ```
 
 ### Missing Dependencies
+
 ```bash
 # Ubuntu/Debian
 sudo apt-get install mkvtoolnix tesseract-ocr
@@ -203,6 +220,7 @@ tesseract --version
 ```
 
 ### Poor OCR Quality
+
 ```bash
 # Install better tessdata
 git clone https://github.com/tesseract-ocr/tessdata_best.git
@@ -217,6 +235,7 @@ export TESSDATA_PREFIX=/path/to/tessdata_best
 4. **Measure performance**: Compare processing times
 
 ### Test Script
+
 ```bash
 # Compare original vs enhanced
 ./scripts/pgsrip-converter.sh test-video.mkv > pgsrip-result.srt

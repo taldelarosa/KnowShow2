@@ -103,30 +103,40 @@ public class VideoFormatValidator
 
             foreach (var stream in streams.EnumerateArray())
             {
-                if (stream.TryGetProperty("codec_name", out var codecName) &&
-                    codecName.GetString() == "hdmv_pgs_subtitle")
+                if (stream.TryGetProperty("codec_name", out var codecName))
                 {
-                    var track = new SubtitleTrackInfo
-                    {
-                        Index = stream.GetProperty("index").GetInt32(),
-                        CodecName = codecName.GetString()!
-                    };
+                    var codecNameStr = codecName.GetString();
 
-                    if (stream.TryGetProperty("tags", out var tags))
+                    // Check for both PGS and text-based subtitle codecs
+                    if (codecNameStr == "hdmv_pgs_subtitle" ||
+                        codecNameStr == "subrip" ||
+                        codecNameStr == "ass" ||
+                        codecNameStr == "webvtt" ||
+                        codecNameStr == "mov_text" ||
+                        codecNameStr == "srt")
                     {
-                        if (tags.TryGetProperty("language", out var language))
+                        var track = new SubtitleTrackInfo
                         {
-                            track.Language = language.GetString();
-                        }
-                        if (tags.TryGetProperty("title", out var title))
+                            Index = stream.GetProperty("index").GetInt32(),
+                            CodecName = codecNameStr!
+                        };
+
+                        if (stream.TryGetProperty("tags", out var tags))
                         {
-                            track.Title = title.GetString();
+                            if (tags.TryGetProperty("language", out var language))
+                            {
+                                track.Language = language.GetString();
+                            }
+                            if (tags.TryGetProperty("title", out var title))
+                            {
+                                track.Title = title.GetString();
+                            }
                         }
+
+                        tracks.Add(track);
+                        _logger.LogInformation("Found subtitle track: Index={Index}, Codec={Codec}, Language={Language}, Title={Title}",
+                            track.Index, track.CodecName, track.Language ?? "unknown", track.Title ?? "untitled");
                     }
-
-                    tracks.Add(track);
-                    _logger.LogInformation("Found PGS subtitle track: Index={Index}, Language={Language}, Title={Title}", 
-                        track.Index, track.Language ?? "unknown", track.Title ?? "untitled");
                 }
             }
         }
