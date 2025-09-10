@@ -4,6 +4,7 @@
 **Input**: Feature specification from `/mnt/c/Users/Ragma/KnowShow_Specd/specs/006-adding-nonpgs-workflow/spec.md`
 
 ## Execution Flow (/plan command scope)
+
 ```
 1. Load feature spec from Input path
    → If not found: ERROR "No feature spec at {path}"
@@ -25,13 +26,16 @@
 ```
 
 **IMPORTANT**: The /plan command STOPS at step 7. Phases 2-4 are executed by other commands:
+
 - Phase 2: /tasks command creates tasks.md
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
+
 Extend the episode identification system to support text-based subtitle formats (.srt, .ass, .vtt) when PGS subtitles are not available. The system will maintain PGS subtitle priority while providing fallback processing through sequential text subtitle track extraction and existing fuzzy hash comparison workflow.
 
 ## Technical Context
+
 **Language/Version**: C# .NET 8.0  
 **Primary Dependencies**: FFmpeg, MKVToolNix (mkvextract), Tesseract OCR, pgsrip, System.Text.Json  
 **Storage**: SQLite database (existing fuzzy hash entries)  
@@ -43,21 +47,25 @@ Extend the episode identification system to support text-based subtitle formats 
 **Scale/Scope**: Support 3-5 common text subtitle formats, process multiple tracks per video
 
 ## Constitution Check
+
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 **Simplicity**:
+
 - Projects: 1 (CLI application with libraries) ✅
 - Using framework directly? Yes (direct FFmpeg/MKVToolNix calls) ✅
 - Single data model? Yes (extend existing models) ✅
 - Avoiding patterns? Yes (direct service calls, no unnecessary abstractions) ✅
 
 **Architecture**:
+
 - EVERY feature as library? Yes (TextSubtitleExtractor library planned) ✅
 - Libraries listed: TextSubtitleExtractor (subtitle format parsing), SubtitleFormatHandler (format-specific logic)
 - CLI per library: Extend existing CLI with --text-subtitles flag ✅
 - Library docs: Yes, llms.txt format for AI context ✅
 
 **Testing (NON-NEGOTIABLE)**:
+
 - RED-GREEN-Refactor cycle enforced? Yes, contract tests first ✅
 - Git commits show tests before implementation? Will ensure this ✅
 - Order: Contract→Integration→E2E→Unit strictly followed? Yes ✅
@@ -66,11 +74,13 @@ Extend the episode identification system to support text-based subtitle formats 
 - FORBIDDEN: Implementation before test, skipping RED phase ✅
 
 **Observability**:
+
 - Structured logging included? Yes, extend existing logging ✅
 - Frontend logs → backend? N/A (CLI application) ✅
 - Error context sufficient? Yes, subtitle format errors tracked ✅
 
 **Versioning**:
+
 - Version number assigned? 1.1.0 (minor feature addition) ✅
 - BUILD increments on every change? Yes ✅
 - Breaking changes handled? None expected, pure addition ✅
@@ -78,6 +88,7 @@ Extend the episode identification system to support text-based subtitle formats 
 ## Project Structure
 
 ### Documentation (this feature)
+
 ```
 specs/[###-feature]/
 ├── plan.md              # This file (/plan command output)
@@ -89,6 +100,7 @@ specs/[###-feature]/
 ```
 
 ### Source Code (repository root)
+
 ```
 # Option 1: Single project (DEFAULT)
 src/
@@ -128,12 +140,14 @@ ios/ or android/
 **Structure Decision**: [DEFAULT to Option 1 unless Technical Context indicates web/mobile app]
 
 ## Phase 0: Outline & Research
+
 1. **Extract unknowns from Technical Context** above:
    - For each NEEDS CLARIFICATION → research task
    - For each dependency → best practices task
    - For each integration → patterns task
 
 2. **Generate and dispatch research agents**:
+
    ```
    For each unknown in Technical Context:
      Task: "Research {unknown} for {feature context}"
@@ -149,6 +163,7 @@ ios/ or android/
 **Output**: research.md with all NEEDS CLARIFICATION resolved
 
 ## Phase 1: Design & Contracts
+
 *Prerequisites: research.md complete*
 
 1. **Extract entities from feature spec** → `data-model.md`:
@@ -181,9 +196,11 @@ ios/ or android/
 **Output**: data-model.md, /contracts/*, failing tests, quickstart.md, agent-specific file
 
 ## Phase 2: Task Planning Approach
+
 *This section describes what the /tasks command will do - DO NOT execute during /plan*
 
 **Task Generation Strategy**:
+
 - Load `/templates/tasks-template.md` as base
 - Generate tasks from Phase 1 design docs (contracts, data model, quickstart)
 - Each contract → contract test task [P]: TextSubtitleExtractor, SubtitleFormatHandler contracts
@@ -193,12 +210,14 @@ ios/ or android/
 - Quickstart validation tasks from test scenarios
 
 **Ordering Strategy**:
+
 - TDD order: Contract tests → Models → Format handlers → Service integration → CLI integration
 - Dependency order: Core models → Format handlers → Extractor service → CLI interface
 - Mark [P] for parallel execution: All format handlers, all contract tests, individual models
 - Sequential dependencies: Models before services, services before CLI
 
 **Specific Task Categories**:
+
 1. **Contract Tests** (5 tasks, all [P]): Test interfaces before implementation
 2. **Model Implementation** (4 tasks, all [P]): Create data structures
 3. **Format Handlers** (3 tasks, all [P]): SRT, ASS, VTT parsing logic
@@ -212,6 +231,7 @@ ios/ or android/
 **IMPORTANT**: This phase is executed by the /tasks command, NOT by /plan
 
 ## Phase 3+: Future Implementation
+
 *These phases are beyond the scope of the /plan command*
 
 **Phase 3**: Task execution (/tasks command creates tasks.md)  
@@ -219,6 +239,7 @@ ios/ or android/
 **Phase 5**: Validation (run tests, execute quickstart.md, performance validation)
 
 ## Complexity Tracking
+
 *Fill ONLY if Constitution Check has violations that must be justified*
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
@@ -226,11 +247,12 @@ ios/ or android/
 | [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
 | [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
 
-
 ## Progress Tracking
+
 *This checklist is updated during execution flow*
 
 **Phase Status**:
+
 - [x] Phase 0: Research complete (/plan command)
 - [x] Phase 1: Design complete (/plan command)
 - [x] Phase 2: Task planning complete (/plan command - describe approach only)
@@ -239,6 +261,7 @@ ios/ or android/
 - [ ] Phase 5: Validation passed
 
 **Gate Status**:
+
 - [x] Initial Constitution Check: PASS
 - [x] Post-Design Constitution Check: PASS
 - [x] All NEEDS CLARIFICATION resolved

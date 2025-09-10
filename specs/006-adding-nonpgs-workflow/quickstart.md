@@ -1,9 +1,11 @@
 # Quickstart: NonPGS Subtitle Workflow
 
 ## Overview
+
 This quickstart validates the nonPGS subtitle workflow by testing text-based subtitle processing when PGS subtitles are not available.
 
 ## Prerequisites
+
 - .NET 8.0 SDK
 - FFmpeg installed and in PATH
 - Sample video files with text subtitles
@@ -12,6 +14,7 @@ This quickstart validates the nonPGS subtitle workflow by testing text-based sub
 ## Test Data Setup
 
 ### Prepare Test Videos
+
 ```bash
 # Create test directory
 mkdir -p tests/data/nonpgs-workflow
@@ -28,6 +31,7 @@ cp sample_episode_mixed_subs.mkv tests/data/nonpgs-workflow/
 ```
 
 ### Verify Video Contents
+
 ```bash
 # Check subtitle tracks in test videos
 ffprobe -v quiet -print_format json -show_streams tests/data/nonpgs-workflow/sample_episode_with_srt.mkv | jq '.streams[] | select(.codec_type=="subtitle")'
@@ -36,6 +40,7 @@ ffprobe -v quiet -print_format json -show_streams tests/data/nonpgs-workflow/sam
 ## Validation Steps
 
 ### Step 1: Build and Test Setup
+
 ```bash
 # Build the project
 dotnet build
@@ -45,6 +50,7 @@ dotnet test --filter "Category!=Integration"
 ```
 
 ### Step 2: Text Subtitle Detection
+
 ```bash
 # Test subtitle track detection
 ./src/EpisodeIdentifier.Core/bin/Debug/net8.0/EpisodeIdentifier.Core \
@@ -56,6 +62,7 @@ dotnet test --filter "Category!=Integration"
 ```
 
 ### Step 3: Text Subtitle Extraction
+
 ```bash
 # Test SRT extraction
 ./src/EpisodeIdentifier.Core/bin/Debug/net8.0/EpisodeIdentifier.Core \
@@ -69,6 +76,7 @@ dotnet test --filter "Category!=Integration"
 ```
 
 ### Step 4: Full Workflow Test (SRT)
+
 ```bash
 # Test complete identification workflow with SRT
 ./src/EpisodeIdentifier.Core/bin/Debug/net8.0/EpisodeIdentifier.Core \
@@ -83,6 +91,7 @@ dotnet test --filter "Category!=Integration"
 ```
 
 ### Step 5: Full Workflow Test (ASS)
+
 ```bash
 # Test complete identification workflow with ASS
 ./src/EpisodeIdentifier.Core/bin/Debug/net8.0/EpisodeIdentifier.Core \
@@ -97,6 +106,7 @@ dotnet test --filter "Category!=Integration"
 ```
 
 ### Step 6: Multi-Track Processing
+
 ```bash
 # Test sequential track processing
 ./src/EpisodeIdentifier.Core/bin/Debug/net8.0/EpisodeIdentifier.Core \
@@ -113,6 +123,7 @@ dotnet test --filter "Category!=Integration"
 ```
 
 ### Step 7: PGS Priority Test
+
 ```bash
 # Verify PGS subtitles still take priority
 ./src/EpisodeIdentifier.Core/bin/Debug/net8.0/EpisodeIdentifier.Core \
@@ -127,6 +138,7 @@ dotnet test --filter "Category!=Integration"
 ```
 
 ### Step 8: No Match Scenario
+
 ```bash
 # Test when no matches are found
 ./src/EpisodeIdentifier.Core/bin/Debug/net8.0/EpisodeIdentifier.Core \
@@ -143,6 +155,7 @@ dotnet test --filter "Category!=Integration"
 ## Success Criteria
 
 ### Functional Validation
+
 - ✅ Text subtitle tracks are correctly detected
 - ✅ SRT, ASS, and VTT formats are successfully parsed
 - ✅ Extracted text is clean (no timestamps, minimal formatting)
@@ -151,11 +164,13 @@ dotnet test --filter "Category!=Integration"
 - ✅ Clear indication of subtitle source in results
 
 ### Performance Validation
+
 - ✅ Text subtitle extraction completes within 10 seconds per track
 - ✅ No memory leaks during large subtitle file processing
 - ✅ Graceful handling of encoding issues and corrupted data
 
 ### Integration Validation  
+
 - ✅ Existing PGS workflow remains unchanged
 - ✅ Database fuzzy hash matching works with text content
 - ✅ All existing tests continue to pass
@@ -164,12 +179,14 @@ dotnet test --filter "Category!=Integration"
 ## Troubleshooting
 
 ### Common Issues
+
 1. **FFmpeg not found**: Ensure FFmpeg is installed and in system PATH
 2. **No subtitle tracks detected**: Verify video contains text subtitles with `ffprobe`
 3. **Encoding errors**: Check subtitle file encoding, may need manual encoding specification
 4. **Performance issues**: Large subtitle files may require chunked processing
 
 ### Debug Commands
+
 ```bash
 # Verbose logging
 export EPISODEIDENTIFIER_LOG_LEVEL=Debug

@@ -33,6 +33,7 @@ dotnet run -- --help
 The setup script will install and configure:
 
 ### System Packages
+
 - **ffmpeg** - Video processing and format validation
 - **mkvtoolnix** - MKV container manipulation (mkvextract)
 - **tesseract-ocr** - Optical Character Recognition engine
@@ -43,11 +44,13 @@ The setup script will install and configure:
 - **ca-certificates** - SSL certificate validation
 
 ### Programming Environments
+
 - **.NET 8.0 SDK** - Required for building and running the application
 - **Python 3** - Required for pgsrip and advanced processing
 - **uv** - Fast Python package manager (alternative to pip)
 
 ### Specialized Tools
+
 - **pgsrip** - Advanced PGS subtitle processor (provides 90%+ OCR accuracy)
 - **Enhanced Tesseract training data** - Improved OCR models for better text recognition
 
@@ -58,6 +61,7 @@ If you prefer to install dependencies manually or need to troubleshoot:
 ### 1. Install System Dependencies
 
 **Ubuntu/Debian:**
+
 ```bash
 # Update package list
 sudo apt-get update
@@ -73,6 +77,7 @@ sudo apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-spa tesser
 ```
 
 **Other Linux distributions:**
+
 - **RHEL/CentOS/Fedora:** Use `dnf install` or `yum install`
 - **Arch Linux:** Use `pacman -S`
 - **openSUSE:** Use `zypper install`
@@ -168,11 +173,13 @@ dotnet test tests/contract/
 ### Setup Script Issues
 
 **Script not executable:**
+
 ```bash
 chmod +x scripts/setup-prerequisites.sh
 ```
 
 **Permission denied during installation:**
+
 ```bash
 # Make sure you can use sudo
 sudo whoami
@@ -184,6 +191,7 @@ sudo whoami
 ### Common Dependency Issues
 
 **FFmpeg not found:**
+
 ```bash
 # Check if installed
 which ffmpeg
@@ -194,6 +202,7 @@ sudo apt-get install ffmpeg
 ```
 
 **pgsrip installation fails:**
+
 ```bash
 # Try installing with pip instead of uv
 pip3 install pgsrip
@@ -203,6 +212,7 @@ python3 --version
 ```
 
 **.NET build fails:**
+
 ```bash
 # Check .NET SDK version
 dotnet --version
@@ -212,6 +222,7 @@ dotnet --version
 ```
 
 **Tesseract OCR issues:**
+
 ```bash
 # Check tesseract installation
 tesseract --version

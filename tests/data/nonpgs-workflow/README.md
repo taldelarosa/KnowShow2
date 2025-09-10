@@ -5,24 +5,28 @@ This directory contains test video files with various subtitle configurations fo
 ## Required Test Files
 
 ### 1. sample_episode_with_srt.mkv
+
 - Video file containing only SRT subtitle track
 - Language: English
 - Duration: ~45 minutes
 - Should match an entry in the episode database
 
 ### 2. sample_episode_with_ass.mkv  
+
 - Video file containing only ASS/SSA subtitle track
 - Language: Japanese with English translation
 - Duration: ~24 minutes (anime episode)
 - Should match an entry in the episode database
 
 ### 3. sample_episode_with_vtt.mkv
+
 - Video file containing WebVTT subtitle track
 - Language: Spanish
 - Duration: ~60 minutes
 - Should match an entry in the episode database
 
 ### 4. sample_episode_multi_subs.mkv
+
 - Video file with multiple text subtitle tracks:
   - Track 0: SRT (English) - no match
   - Track 1: ASS (Japanese) - no match  
@@ -30,11 +34,13 @@ This directory contains test video files with various subtitle configurations fo
 - Test sequential processing until match found
 
 ### 5. sample_episode_mixed_subs.mkv
+
 - Video file with both PGS and text subtitles
 - Should prioritize PGS processing
 - PGS track should match database entry
 
 ### 6. unknown_episode.mkv
+
 - Video file with text subtitles but no database match
 - Test "no match found" scenario
 - Multiple subtitle tracks for exhaustive processing test
