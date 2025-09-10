@@ -49,6 +49,43 @@ git push origin main  # This will fail!
 - All CI/CD checks must pass
 - See [branch protection guide](.github/branch-protection-config.md) for setup
 
+## Development & CI/CD
+
+### Code Quality Standards
+
+**Automated Formatting & Linting:**
+
+```bash
+# C# code formatting
+dotnet format EpisodeIdentifier.sln
+
+# Markdown documentation linting  
+npx markdownlint-cli2 "**/*.md" --fix
+```
+
+**Configuration Files:**
+- `.markdownlint.json` - Markdown linting rules optimized for technical documentation
+- Solution-wide formatting enforced via `dotnet format`
+
+### GitHub Actions Workflow
+
+**Build Process:**
+- Solution-based builds using `EpisodeIdentifier.sln`
+- Parallel test execution: Unit tests (8) + Contract tests (30) = 38 total
+- Integration tests temporarily disabled due to API compatibility issues
+
+**Quality Gates:**
+- ✅ .NET Code formatting validation via `dotnet format`  
+- ✅ Markdown documentation linting via `markdownlint-cli2`
+- ✅ Automated security scanning with Trivy
+- ✅ Dependency caching for faster builds
+- ✅ All deprecated GitHub Actions updated to current versions
+
+**Environment:**
+- NPM 11.6.0 (latest)
+- markdownlint-cli2 for documentation quality
+- Updated GitHub Actions (upload-artifact@v4, cache@v4, codeql-action@v3)
+
 ## Features
 
 ### Core Functionality
