@@ -29,7 +29,7 @@ public class SubtitleExtractor
         }
 
         // Select the best track based on language preference
-        var selectedTrack = SelectBestTrack(subtitleTracks, preferredLanguage);
+        var selectedTrack = PgsTrackSelector.SelectBestTrack(subtitleTracks, preferredLanguage);
         _logger.LogInformation("Selected subtitle track: Index={Index}, Language={Language}", 
             selectedTrack.Index, selectedTrack.Language ?? "unknown");
 
@@ -51,27 +51,7 @@ public class SubtitleExtractor
         return await ExtractWithFfmpeg(videoPath, selectedTrack.Index);
     }
 
-    private SubtitleTrackInfo SelectBestTrack(List<SubtitleTrackInfo> tracks, string? preferredLanguage)
-    {
-        // If preferred language specified, try to find it
-        if (!string.IsNullOrEmpty(preferredLanguage))
-        {
-            var langTrack = tracks.FirstOrDefault(t => 
-                string.Equals(t.Language, preferredLanguage, StringComparison.OrdinalIgnoreCase));
-            if (langTrack != null)
-            {
-                return langTrack;
-            }
-        }
 
-        // Default preferences: English first, then first available
-        var englishTrack = tracks.FirstOrDefault(t => 
-            string.Equals(t.Language, "eng", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(t.Language, "en", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(t.Language, "english", StringComparison.OrdinalIgnoreCase));
-        
-        return englishTrack ?? tracks.First();
-    }
 
     private async Task<byte[]> ExtractWithMkvextract(string videoPath, int trackIndex)
     {

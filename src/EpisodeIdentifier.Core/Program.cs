@@ -237,13 +237,14 @@ public class Program
 
                 // Get subtitle track information for direct video processing
                 var subtitleTracks = await validator.GetSubtitleTracks(input.FullName);
-                var pgsTrack = subtitleTracks.FirstOrDefault(t => t.Language.Contains("eng") || string.IsNullOrEmpty(t.Language));
                 
-                if (pgsTrack == null)
+                if (!subtitleTracks.Any())
                 {
                     Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLES_FOUND", message = "No PGS subtitles could be found in the video file" } }));
                     return 1;
                 }
+
+                var pgsTrack = PgsTrackSelector.SelectBestTrack(subtitleTracks, language);
 
                 // Extract and OCR subtitle images directly from video file
                 var ocrLanguage = GetOcrLanguageCode(language);
