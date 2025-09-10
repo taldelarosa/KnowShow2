@@ -17,19 +17,23 @@ public class VttWorkflowTests : IDisposable
     private readonly SubtitleWorkflowCoordinator _coordinator;
     private readonly VideoFormatValidator _validator;
     private readonly ITextSubtitleExtractor _textExtractor;
+    
+    // Configurable database path with default value
+    // Usage: VttWorkflowTests.DatabasePath = "/path/to/custom/database.db"; before running tests
+    public static string DatabasePath { get; set; } = "/mnt/c/Users/Ragma/KnowShow_Specd/test_constraint.db";
 
     public VttWorkflowTests()
     {
         var services = new ServiceCollection();
-
+        
         // Add logging
         services.AddLogging(builder => builder.AddConsole());
-
+        
         // Add format handlers
         services.AddSingleton<ISubtitleFormatHandler, SrtFormatHandler>();
         services.AddSingleton<ISubtitleFormatHandler, AssFormatHandler>();
         services.AddSingleton<ISubtitleFormatHandler, VttFormatHandler>();
-
+        
         // Add core services
         services.AddTransient<VideoFormatValidator>();
         services.AddTransient<SubtitleExtractor>();
@@ -42,11 +46,9 @@ public class VttWorkflowTests : IDisposable
         services.AddTransient<EnhancedPgsToTextConverter>();
         services.AddTransient<PgsToTextConverter>();
         services.AddTransient<SubtitleMatcher>();
-        // Use in-memory database for tests to avoid environment dependency
-        const string testDbPath = ":memory:"; // For SQLite; change if another DB is used
-        services.AddTransient<FuzzyHashService>(provider => new FuzzyHashService(testDbPath, provider.GetRequiredService<ILogger<FuzzyHashService>>(), provider.GetRequiredService<SubtitleNormalizationService>()));
+        services.AddTransient<FuzzyHashService>(provider => new FuzzyHashService(DatabasePath, provider.GetRequiredService<ILogger<FuzzyHashService>>(), provider.GetRequiredService<SubtitleNormalizationService>()));
         services.AddTransient<SubtitleWorkflowCoordinator>();
-
+        
         _serviceProvider = services.BuildServiceProvider();
         _coordinator = _serviceProvider.GetRequiredService<SubtitleWorkflowCoordinator>();
         _validator = _serviceProvider.GetRequiredService<VideoFormatValidator>();
@@ -58,7 +60,7 @@ public class VttWorkflowTests : IDisposable
     {
         // This test verifies that the coordinator correctly identifies and processes VTT subtitles
         var testVideoPath = "/mnt/c/src/KnowShow/TestData/media/video_with_vtt.mkv";
-
+        
         // If test file doesn't exist, test the workflow logic with a mock scenario
         if (!File.Exists(testVideoPath))
         {
@@ -71,7 +73,7 @@ public class VttWorkflowTests : IDisposable
 
         // Test with actual file if it exists
         var processingResult = await _coordinator.ProcessVideoAsync(testVideoPath);
-
+        
         // Verify result structure
         processingResult.Should().NotBeNull();
         processingResult.HasError.Should().BeFalse();
@@ -82,7 +84,7 @@ public class VttWorkflowTests : IDisposable
     {
         // Test handling of videos with multiple VTT subtitle tracks
         var testVideoPath = "/mnt/c/src/KnowShow/TestData/media/multi_vtt_tracks.mkv";
-
+        
         if (!File.Exists(testVideoPath))
         {
             // Mock the multi-track scenario
@@ -93,7 +95,7 @@ public class VttWorkflowTests : IDisposable
         }
 
         var processingResult = await _coordinator.ProcessVideoAsync(testVideoPath);
-
+        
         // Verify the coordinator processes multiple tracks
         processingResult.Should().NotBeNull();
         processingResult.HasError.Should().BeFalse();
@@ -115,7 +117,7 @@ public class VttWorkflowTests : IDisposable
             // Note: This tests the validator's file extension logic
             // The actual validation may depend on file content
             var isValid = Path.GetExtension(file).ToLowerInvariant() == ".vtt";
-
+            
             // VTT files should be considered valid for processing
             // (even though they're subtitle files, they're part of the workflow)
             isValid.Should().BeTrue($"File {file} should be recognized as processable");
@@ -127,7 +129,7 @@ public class VttWorkflowTests : IDisposable
     {
         // Test that the text extractor can handle VTT input
         var testVttPath = "/mnt/c/src/KnowShow/TestData/subtitles/sample.vtt";
-
+        
         if (!File.Exists(testVttPath))
         {
             // Skip test if no sample VTT file available
@@ -136,7 +138,7 @@ public class VttWorkflowTests : IDisposable
         }
 
         var tracks = await _textExtractor.DetectTextSubtitleTracksAsync(testVttPath);
-
+        
         // Verify extraction results
         tracks.Should().NotBeNull();
         tracks.Should().NotBeEmpty();
@@ -147,11 +149,9 @@ public class VttWorkflowTests : IDisposable
     public async Task WorkflowCoordinator_WithInvalidVttFile_HandlesGracefully()
     {
         // Test error handling for corrupted or invalid VTT files
-        var invalidVttPath = "/mnt/c/src/KnowShow/TestData/subtitles/corrupted.vtt";
-
         // Test with non-existent file
         var result = await _coordinator.ProcessVideoAsync("invalid_vtt_file.vtt");
-
+        
         // Should handle errors gracefully
         result.Should().NotBeNull();
         result.HasError.Should().BeTrue();
@@ -163,14 +163,14 @@ public class VttWorkflowTests : IDisposable
     {
         // Test handling of empty VTT files
         var emptyVttPath = "/tmp/empty.vtt";
-
+        
         // Create an empty VTT file for testing
         await File.WriteAllTextAsync(emptyVttPath, "WEBVTT\n\n");
-
+        
         try
         {
             var result = await _coordinator.ProcessVideoAsync(emptyVttPath);
-
+            
             // Should handle empty files appropriately
             result.Should().NotBeNull();
             if (result.HasError)
@@ -193,7 +193,7 @@ public class VttWorkflowTests : IDisposable
     {
         // Test handling of VTT files with web-specific formatting
         var webFormattedVttPath = "/tmp/web_formatted.vtt";
-
+        
         // Create a VTT file with web-style formatting
         var vttContent = @"WEBVTT
 
@@ -206,13 +206,13 @@ public class VttWorkflowTests : IDisposable
 00:00:07.000 --> 00:00:09.000
 Regular subtitle text
 ";
-
+        
         await File.WriteAllTextAsync(webFormattedVttPath, vttContent);
-
+        
         try
         {
             var result = await _coordinator.ProcessVideoAsync(webFormattedVttPath);
-
+            
             // Should handle web-formatted VTT appropriately
             result.Should().NotBeNull();
             // The exact behavior depends on implementation
