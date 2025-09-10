@@ -4,6 +4,7 @@ using EpisodeIdentifier.Core.Services;
 using EpisodeIdentifier.Core.Models;
 using EpisodeIdentifier.Core.Interfaces;
 using Microsoft.Extensions.Logging;
+using EpisodeIdentifier.Tests.Contract;
 
 namespace EpisodeIdentifier.Tests.Integration;
 
@@ -31,7 +32,7 @@ public class AssWorkflowTests
         var matcherLogger = loggerFactory.CreateLogger<SubtitleMatcher>();
         
         var normalizationService = new SubtitleNormalizationService(normalizationLogger);
-        var testDbPath = "/mnt/c/Users/Ragma/KnowShow_Specd/test_constraint.db"; // Use existing test database
+        var testDbPath = TestDatabaseConfig.GetTestDatabasePath(); // Use centralized configuration
         var hashService = new FuzzyHashService(testDbPath, fuzzyLogger, normalizationService);
         
         _matcher = new SubtitleMatcher(hashService, matcherLogger);

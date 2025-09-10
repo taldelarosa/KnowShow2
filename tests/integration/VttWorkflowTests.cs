@@ -8,6 +8,7 @@ using EpisodeIdentifier.Core.Models;
 using EpisodeIdentifier.Core.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using EpisodeIdentifier.Tests.Contract;
 
 namespace EpisodeIdentifier.Tests.Integration;
 
@@ -17,10 +18,6 @@ public class VttWorkflowTests : IDisposable
     private readonly SubtitleWorkflowCoordinator _coordinator;
     private readonly VideoFormatValidator _validator;
     private readonly ITextSubtitleExtractor _textExtractor;
-    
-    // Configurable database path with default value
-    // Usage: VttWorkflowTests.DatabasePath = "/path/to/custom/database.db"; before running tests
-    public static string DatabasePath { get; set; } = "/mnt/c/Users/Ragma/KnowShow_Specd/test_constraint.db";
 
     public VttWorkflowTests()
     {
@@ -46,7 +43,7 @@ public class VttWorkflowTests : IDisposable
         services.AddTransient<EnhancedPgsToTextConverter>();
         services.AddTransient<PgsToTextConverter>();
         services.AddTransient<SubtitleMatcher>();
-        services.AddTransient<FuzzyHashService>(provider => new FuzzyHashService(DatabasePath, provider.GetRequiredService<ILogger<FuzzyHashService>>(), provider.GetRequiredService<SubtitleNormalizationService>()));
+        services.AddTransient<FuzzyHashService>(provider => new FuzzyHashService(TestDatabaseConfig.GetTestDatabasePath(), provider.GetRequiredService<ILogger<FuzzyHashService>>(), provider.GetRequiredService<SubtitleNormalizationService>()));
         services.AddTransient<SubtitleWorkflowCoordinator>();
         
         _serviceProvider = services.BuildServiceProvider();
