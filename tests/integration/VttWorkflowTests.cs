@@ -42,7 +42,9 @@ public class VttWorkflowTests : IDisposable
         services.AddTransient<EnhancedPgsToTextConverter>();
         services.AddTransient<PgsToTextConverter>();
         services.AddTransient<SubtitleMatcher>();
-        services.AddTransient<FuzzyHashService>(provider => new FuzzyHashService("/mnt/c/Users/Ragma/KnowShow_Specd/test_constraint.db", provider.GetRequiredService<ILogger<FuzzyHashService>>(), provider.GetRequiredService<SubtitleNormalizationService>()));
+        // Use in-memory database for tests to avoid environment dependency
+        const string testDbPath = ":memory:"; // For SQLite; change if another DB is used
+        services.AddTransient<FuzzyHashService>(provider => new FuzzyHashService(testDbPath, provider.GetRequiredService<ILogger<FuzzyHashService>>(), provider.GetRequiredService<SubtitleNormalizationService>()));
         services.AddTransient<SubtitleWorkflowCoordinator>();
 
         _serviceProvider = services.BuildServiceProvider();
