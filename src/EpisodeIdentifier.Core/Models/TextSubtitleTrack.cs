@@ -14,10 +14,10 @@ public class TextSubtitleTrack
     /// <summary>
     /// Track index in the container - same as Index for compatibility.
     /// </summary>
-    public int TrackIndex 
-    { 
-        get => Index; 
-        set => Index = value; 
+    public int TrackIndex
+    {
+        get => Index;
+        set => Index = value;
     }
 
     /// <summary>

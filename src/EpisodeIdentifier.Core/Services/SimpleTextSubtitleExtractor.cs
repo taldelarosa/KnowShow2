@@ -24,8 +24,8 @@ public class VideoTextSubtitleExtractor
     /// <param name="preferredLanguage">Preferred language for subtitle selection</param>
     /// <returns>Raw subtitle text content</returns>
     public async Task<string?> ExtractTextSubtitleFromVideo(
-        string videoFilePath, 
-        int subtitleTrackIndex, 
+        string videoFilePath,
+        int subtitleTrackIndex,
         string? preferredLanguage = null)
     {
         if (string.IsNullOrWhiteSpace(videoFilePath))
@@ -34,7 +34,7 @@ public class VideoTextSubtitleExtractor
         if (!File.Exists(videoFilePath))
             throw new FileNotFoundException($"Video file not found: {videoFilePath}");
 
-        _logger.LogInformation("Extracting text subtitle from {VideoFile}, track index: {TrackIndex}", 
+        _logger.LogInformation("Extracting text subtitle from {VideoFile}, track index: {TrackIndex}",
             videoFilePath, subtitleTrackIndex);
 
         try
@@ -66,7 +66,7 @@ public class VideoTextSubtitleExtractor
 
                 if (process.ExitCode != 0)
                 {
-                    _logger.LogWarning("ffmpeg subtitle extraction failed with exit code {ExitCode}: {Error}", 
+                    _logger.LogWarning("ffmpeg subtitle extraction failed with exit code {ExitCode}: {Error}",
                         process.ExitCode, stderr);
                     return null;
                 }
@@ -79,14 +79,14 @@ public class VideoTextSubtitleExtractor
 
                 // Read the extracted subtitle content
                 var subtitleContent = await File.ReadAllTextAsync(tempSubtitleFile);
-                
+
                 if (string.IsNullOrWhiteSpace(subtitleContent))
                 {
                     _logger.LogWarning("Extracted subtitle content is empty");
                     return null;
                 }
 
-                _logger.LogInformation("Successfully extracted {Length} characters from text subtitle track", 
+                _logger.LogInformation("Successfully extracted {Length} characters from text subtitle track",
                     subtitleContent.Length);
 
                 // Clean the subtitle text
@@ -129,23 +129,23 @@ public class VideoTextSubtitleExtractor
         foreach (var line in lines)
         {
             var trimmedLine = line.Trim();
-            
+
             // Skip sequence numbers
             if (int.TryParse(trimmedLine, out _))
                 continue;
-                
+
             // Skip timestamp lines (SRT format: HH:MM:SS,mmm --> HH:MM:SS,mmm)
             if (trimmedLine.Contains("-->"))
                 continue;
-                
+
             // Skip VTT headers
             if (trimmedLine.StartsWith("WEBVTT", StringComparison.OrdinalIgnoreCase))
                 continue;
-                
+
             // Skip empty lines
             if (string.IsNullOrWhiteSpace(trimmedLine))
                 continue;
-                
+
             // Remove common subtitle formatting tags
             var cleanedLine = trimmedLine
                 .Replace("<i>", "")
@@ -157,10 +157,10 @@ public class VideoTextSubtitleExtractor
                 .Replace("<font ", "")
                 .Replace("</font>", "")
                 .Trim();
-                
+
             // Remove any remaining HTML-like tags
             cleanedLine = System.Text.RegularExpressions.Regex.Replace(cleanedLine, @"<[^>]*>", "");
-                
+
             if (!string.IsNullOrWhiteSpace(cleanedLine))
             {
                 textLines.Add(cleanedLine);
@@ -169,7 +169,7 @@ public class VideoTextSubtitleExtractor
 
         var result = string.Join(" ", textLines);
         _logger.LogDebug("Cleaned subtitle text: {Length} characters", result.Length);
-        
+
         return result;
     }
 }

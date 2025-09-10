@@ -59,7 +59,7 @@ public class SubtitleParsingResult
     /// <returns>Collection of entries within the specified time range.</returns>
     public IEnumerable<SubtitleEntry> GetEntriesInTimeRange(long startMs, long endMs)
     {
-        return Entries.Where(entry => 
+        return Entries.Where(entry =>
             entry.StartTimeMs >= startMs && entry.EndTimeMs <= endMs);
     }
 }

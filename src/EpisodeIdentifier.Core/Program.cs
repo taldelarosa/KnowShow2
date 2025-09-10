@@ -34,22 +34,26 @@ public class Program
 
         var seriesOption = new Option<string>(
             "--series",
-            "Series name when storing subtitle information") { IsRequired = false };
+            "Series name when storing subtitle information")
+        { IsRequired = false };
         rootCommand.Add(seriesOption);
 
         var seasonOption = new Option<string>(
             "--season",
-            "Season number when storing subtitle information") { IsRequired = false };
+            "Season number when storing subtitle information")
+        { IsRequired = false };
         rootCommand.Add(seasonOption);
 
         var episodeOption = new Option<string>(
             "--episode",
-            "Episode number when storing subtitle information") { IsRequired = false };
+            "Episode number when storing subtitle information")
+        { IsRequired = false };
         rootCommand.Add(episodeOption);
 
         var languageOption = new Option<string>(
             "--language",
-            "Preferred subtitle language (default: English)") { IsRequired = false };
+            "Preferred subtitle language (default: English)")
+        { IsRequired = false };
         rootCommand.Add(languageOption);
 
         rootCommand.SetHandler(HandleCommand, inputOption, hashDbOption, storeOption, bulkOption, seriesOption, seasonOption, episodeOption, languageOption);
@@ -58,8 +62,8 @@ public class Program
     }
 
     private static async Task<int> HandleCommand(
-        FileInfo? input, 
-        FileInfo hashDb, 
+        FileInfo? input,
+        FileInfo hashDb,
         bool store,
         DirectoryInfo? bulkDirectory,
         string? series,
@@ -115,7 +119,7 @@ public class Program
                 // Validate that the input file is a subtitle file, not a video file
                 var videoExtensions = new[] { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v" };
                 var inputExtension = input!.Extension.ToLowerInvariant();
-                
+
                 if (videoExtensions.Contains(inputExtension))
                 {
                     Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "INVALID_FILE_TYPE", message = $"Cannot store video files in database. Only subtitle files (.srt, .vtt, .ass, etc.) are allowed for storage. Got: {inputExtension}" } }));
@@ -133,9 +137,11 @@ public class Program
                 };
 
                 await hashService.StoreHash(subtitle);
-                Console.WriteLine(JsonSerializer.Serialize(new { 
+                Console.WriteLine(JsonSerializer.Serialize(new
+                {
                     message = "Subtitle stored successfully",
-                    details = new {
+                    details = new
+                    {
                         series,
                         season,
                         episode,
@@ -154,7 +160,7 @@ public class Program
 
                 // Scan directory for subtitle files and parse their information
                 var subtitleFiles = await filenameParser.ScanDirectory(bulkDirectory.FullName);
-                
+
                 if (!subtitleFiles.Any())
                 {
                     Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLE_FILES", message = "No parseable subtitle files found in the directory" } }));
@@ -180,8 +186,9 @@ public class Program
 
                         await hashService.StoreHash(subtitle);
                         successCount++;
-                        results.Add(new { 
-                            status = "success", 
+                        results.Add(new
+                        {
+                            status = "success",
                             file = Path.GetFileName(subtitleFile.FilePath),
                             series = subtitleFile.Series,
                             season = subtitleFile.Season,
@@ -191,17 +198,20 @@ public class Program
                     catch (Exception ex)
                     {
                         failureCount++;
-                        results.Add(new { 
-                            status = "failed", 
+                        results.Add(new
+                        {
+                            status = "failed",
                             file = Path.GetFileName(subtitleFile.FilePath),
                             error = ex.Message
                         });
                     }
                 }
 
-                Console.WriteLine(JsonSerializer.Serialize(new { 
+                Console.WriteLine(JsonSerializer.Serialize(new
+                {
                     message = "Bulk ingestion completed",
-                    summary = new {
+                    summary = new
+                    {
                         totalFiles = subtitleFiles.Count,
                         successful = successCount,
                         failed = failureCount
@@ -215,11 +225,13 @@ public class Program
                 // Validate AV1 encoding first
                 if (!await validator.IsAV1Encoded(input!.FullName))
                 {
-                    Console.WriteLine(JsonSerializer.Serialize(new { 
-                        error = new { 
-                            code = "UNSUPPORTED_FILE_TYPE", 
-                            message = "The provided file is not AV1 encoded. Non-AV1 files will be supported in a later release." 
-                        } 
+                    Console.WriteLine(JsonSerializer.Serialize(new
+                    {
+                        error = new
+                        {
+                            code = "UNSUPPORTED_FILE_TYPE",
+                            message = "The provided file is not AV1 encoded. Non-AV1 files will be supported in a later release."
+                        }
                     }));
                     return 1;
                 }
@@ -227,21 +239,23 @@ public class Program
                 // Check if OCR tools are available
                 if (!pgsConverter.IsOcrAvailable())
                 {
-                    Console.WriteLine(JsonSerializer.Serialize(new { 
-                        error = new { 
-                            code = "MISSING_DEPENDENCY", 
-                            message = "Tesseract OCR is required but not available. Please install tesseract-ocr." 
-                        } 
+                    Console.WriteLine(JsonSerializer.Serialize(new
+                    {
+                        error = new
+                        {
+                            code = "MISSING_DEPENDENCY",
+                            message = "Tesseract OCR is required but not available. Please install tesseract-ocr."
+                        }
                     }));
                     return 1;
                 }
 
                 // Get subtitle track information for direct video processing
                 var subtitleTracks = await validator.GetSubtitleTracks(input.FullName);
-                var pgsTrack = subtitleTracks.FirstOrDefault(t => 
-                    t.CodecName == "hdmv_pgs_subtitle" && 
+                var pgsTrack = subtitleTracks.FirstOrDefault(t =>
+                    t.CodecName == "hdmv_pgs_subtitle" &&
                     ((t.Language?.Contains("eng") == true) || string.IsNullOrEmpty(t.Language)));
-                
+
                 if (pgsTrack == null)
                 {
                     // Try text subtitle fallback
@@ -259,14 +273,16 @@ public class Program
                 // Extract and OCR subtitle images directly from video file
                 var ocrLanguage = GetOcrLanguageCode(language);
                 var subtitleText = await pgsConverter.ConvertPgsFromVideoToText(input.FullName, pgsTrack.Index, ocrLanguage);
-                
+
                 if (string.IsNullOrWhiteSpace(subtitleText))
                 {
-                    Console.WriteLine(JsonSerializer.Serialize(new { 
-                        error = new { 
-                            code = "OCR_FAILED", 
-                            message = "Failed to extract readable text from PGS subtitles using OCR" 
-                        } 
+                    Console.WriteLine(JsonSerializer.Serialize(new
+                    {
+                        error = new
+                        {
+                            code = "OCR_FAILED",
+                            message = "Failed to extract readable text from PGS subtitles using OCR"
+                        }
                     }));
                     return 1;
                 }
@@ -321,10 +337,10 @@ public class Program
         {
             // Get all subtitle tracks from the video
             var subtitleTracks = await validator.GetSubtitleTracks(videoFilePath);
-            
+
             // Look for text-based subtitle tracks (non-PGS)
-            var textTracks = subtitleTracks.Where(t => 
-                t.CodecName != "hdmv_pgs_subtitle" && 
+            var textTracks = subtitleTracks.Where(t =>
+                t.CodecName != "hdmv_pgs_subtitle" &&
                 (t.CodecName == "subrip" || t.CodecName == "ass" || t.CodecName == "webvtt" || t.CodecName == "mov_text" || t.CodecName == "srt"))
                 .ToList();
 
@@ -334,8 +350,8 @@ public class Program
             }
 
             // Select the best text track based on language preference
-            var selectedTrack = textTracks.FirstOrDefault(t => 
-                string.IsNullOrEmpty(language) || 
+            var selectedTrack = textTracks.FirstOrDefault(t =>
+                string.IsNullOrEmpty(language) ||
                 (t.Language?.Contains(language, StringComparison.OrdinalIgnoreCase) == true)) ?? textTracks.First();
 
             // Extract text subtitle content

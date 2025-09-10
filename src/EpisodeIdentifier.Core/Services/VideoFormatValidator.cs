@@ -106,11 +106,11 @@ public class VideoFormatValidator
                 if (stream.TryGetProperty("codec_name", out var codecName))
                 {
                     var codecNameStr = codecName.GetString();
-                    
+
                     // Check for both PGS and text-based subtitle codecs
-                    if (codecNameStr == "hdmv_pgs_subtitle" || 
-                        codecNameStr == "subrip" || 
-                        codecNameStr == "ass" || 
+                    if (codecNameStr == "hdmv_pgs_subtitle" ||
+                        codecNameStr == "subrip" ||
+                        codecNameStr == "ass" ||
                         codecNameStr == "webvtt" ||
                         codecNameStr == "mov_text" ||
                         codecNameStr == "srt")
@@ -134,7 +134,7 @@ public class VideoFormatValidator
                         }
 
                         tracks.Add(track);
-                        _logger.LogInformation("Found subtitle track: Index={Index}, Codec={Codec}, Language={Language}, Title={Title}", 
+                        _logger.LogInformation("Found subtitle track: Index={Index}, Codec={Codec}, Language={Language}, Title={Title}",
                             track.Index, track.CodecName, track.Language ?? "unknown", track.Title ?? "untitled");
                     }
                 }

@@ -28,24 +28,24 @@ public class AssFormatHandler : ISubtitleFormatHandler
             throw new ArgumentNullException(nameof(stream));
 
         var textEncoding = GetEncoding(encoding);
-        
+
         try
         {
             // Read bytes first to check for malformed data
             var buffer = new byte[stream.Length];
             await stream.ReadAsync(buffer, 0, (int)stream.Length, cancellationToken);
-            
+
             // Check for invalid UTF-8 sequences
             if (IsInvalidUtf8(buffer))
             {
                 throw new InvalidDataException("The subtitle file contains malformed data or invalid encoding.");
             }
-            
+
             // Reset stream position and read as text
             stream.Position = 0;
             using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
             var content = await reader.ReadToEndAsync(cancellationToken);
-            
+
             return ParseAssContent(content);
         }
         catch (DecoderFallbackException ex)
@@ -122,7 +122,7 @@ public class AssFormatHandler : ISubtitleFormatHandler
         var secondsParts = parts[2].Split('.');
         var seconds = int.Parse(secondsParts[0]);
         var centiseconds = secondsParts.Length > 1 ? int.Parse(secondsParts[1]) : 0;
-        
+
         return (hours * 3600 + minutes * 60 + seconds) * 1000 + centiseconds * 10;
     }
 
@@ -142,7 +142,7 @@ public class AssFormatHandler : ISubtitleFormatHandler
             if (b == 0xFF || b == 0xFE)
                 return true;
         }
-        
+
         // Additional check: try to convert to string and see if it contains replacement characters
         try
         {

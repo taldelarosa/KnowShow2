@@ -42,7 +42,7 @@ public class TextSubtitleExtractor : ITextSubtitleExtractor
     {
         if (string.IsNullOrWhiteSpace(videoFilePath))
             throw new ArgumentException("Video file path cannot be null or empty.", nameof(videoFilePath));
-        
+
         if (track == null)
             throw new ArgumentNullException(nameof(track));
 
@@ -61,7 +61,7 @@ public class TextSubtitleExtractor : ITextSubtitleExtractor
                 track.Content = string.Join("\n", subtitleResult.Entries.Select(e => e.Text));
                 track.SubtitleCount = subtitleResult.Entries.Count;
                 track.Status = ProcessingStatus.Completed;
-                
+
                 result.ExtractedTracks = new List<TextSubtitleTrack> { track };
                 result.Status = ProcessingStatus.Completed;
                 result.SuccessfulExtractions = 1;
@@ -150,7 +150,7 @@ public class TextSubtitleExtractor : ITextSubtitleExtractor
             return Task.FromResult<IEnumerable<TextSubtitleTrack>>(tracks);
 
         var subtitleExtensions = new[] { ".srt", ".ass", ".ssa", ".vtt" };
-        
+
         // First try to find files that match the video filename exactly
         var searchPatterns = new[]
         {
@@ -160,11 +160,11 @@ public class TextSubtitleExtractor : ITextSubtitleExtractor
 
         var index = 0;
         var foundFiles = new HashSet<string>();
-        
+
         foreach (var pattern in searchPatterns)
         {
             var files = Directory.GetFiles(videoDirectory, pattern, SearchOption.TopDirectoryOnly);
-            
+
             foreach (var file in files)
             {
                 var extension = Path.GetExtension(file).ToLowerInvariant();
@@ -188,14 +188,14 @@ public class TextSubtitleExtractor : ITextSubtitleExtractor
                 }
             }
         }
-        
+
         // If no matching files found, look for any subtitle files in the directory
         if (tracks.Count == 0)
         {
             var allSubtitleFiles = subtitleExtensions
                 .SelectMany(ext => Directory.GetFiles(videoDirectory, $"*{ext}", SearchOption.TopDirectoryOnly))
                 .ToArray();
-                
+
             foreach (var file in allSubtitleFiles)
             {
                 if (!foundFiles.Contains(file))
@@ -251,7 +251,7 @@ public class TextSubtitleExtractor : ITextSubtitleExtractor
     private static string? ExtractLanguageFromFilename(string filePath)
     {
         var fileName = Path.GetFileNameWithoutExtension(filePath);
-        
+
         // Look for language codes in common patterns
         // e.g., "movie.en.srt", "movie.english.srt", "movie_en.srt"
         var patterns = new[]
@@ -270,7 +270,7 @@ public class TextSubtitleExtractor : ITextSubtitleExtractor
             if (match.Success)
             {
                 var language = match.Groups[1].Value.ToLowerInvariant();
-                
+
                 // Map common language names to ISO codes
                 return language switch
                 {

@@ -18,7 +18,7 @@ public class PgsPriorityTests
     {
         // Create required dependencies manually (like other working tests)
         var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-        
+
         // Create core services
         var validatorLogger = loggerFactory.CreateLogger<VideoFormatValidator>();
         var pgsExtractorLogger = loggerFactory.CreateLogger<SubtitleExtractor>();
@@ -26,34 +26,34 @@ public class PgsPriorityTests
         var pgsConverterLogger = loggerFactory.CreateLogger<PgsToTextConverter>();
         var enhancedConverterLogger = loggerFactory.CreateLogger<EnhancedPgsToTextConverter>();
         var coordinatorLogger = loggerFactory.CreateLogger<SubtitleWorkflowCoordinator>();
-        
+
         var validator = new VideoFormatValidator(validatorLogger);
         var pgsExtractor = new SubtitleExtractor(pgsExtractorLogger, validator);
-        
+
         // Create text extractor with format handlers
         var formatHandlers = new List<ISubtitleFormatHandler>
         {
             new SrtFormatHandler(),
-            new AssFormatHandler(), 
+            new AssFormatHandler(),
             new VttFormatHandler()
         };
         var textExtractor = new TextSubtitleExtractor(formatHandlers);
-        
+
         // Create converter services
         var pgsRipService = new PgsRipService(pgsRipLogger);
         var pgsConverter = new PgsToTextConverter(pgsConverterLogger);
         var enhancedConverter = new EnhancedPgsToTextConverter(enhancedConverterLogger, pgsRipService, pgsConverter);
-        
+
         // Create matching services
         var fuzzyLogger = loggerFactory.CreateLogger<FuzzyHashService>();
         var normalizationLogger = loggerFactory.CreateLogger<SubtitleNormalizationService>();
         var matcherLogger = loggerFactory.CreateLogger<SubtitleMatcher>();
-        
+
         var normalizationService = new SubtitleNormalizationService(normalizationLogger);
         var testDbPath = "/mnt/c/Users/Ragma/KnowShow_Specd/test_constraint.db";
         var hashService = new FuzzyHashService(testDbPath, fuzzyLogger, normalizationService);
         var matcher = new SubtitleMatcher(hashService, matcherLogger);
-        
+
         // Create coordinator
         _coordinator = new SubtitleWorkflowCoordinator(
             coordinatorLogger,
@@ -75,16 +75,16 @@ public class PgsPriorityTests
 
         // Assert
         result.Should().NotBeNull();
-        
+
         // Should have used PGS subtitles (existing workflow)
         result.SubtitleSource.Should().Be(SubtitleSourceType.PGS);
-        
+
         // Should not have processed text subtitles
         if (result is SubtitleProcessingResult processingResult)
         {
             processingResult.ProcessedTracks.Should().BeEmpty("text tracks should not be processed when PGS available");
         }
-        
+
         // Should have successful identification from PGS
         result.IsMatch.Should().BeTrue();
         result.SeriesName.Should().NotBeNullOrEmpty();
@@ -104,17 +104,17 @@ public class PgsPriorityTests
 
         // Assert
         result.Should().NotBeNull();
-        
+
         // Should have used text subtitle fallback
         result.SubtitleSource.Should().Be(SubtitleSourceType.TextBased);
-        
+
         // Should have processed text subtitles
         if (result is SubtitleProcessingResult processingResult)
         {
             processingResult.ProcessedTracks.Should().NotBeEmpty();
             processingResult.SuccessfulTrack.Should().NotBeNull();
         }
-        
+
         // Should indicate text subtitle source in metadata
         result.SubtitleMetadata.Should().NotBeNull();
         result.SubtitleMetadata.Should().ContainKey("source_type");
@@ -132,17 +132,17 @@ public class PgsPriorityTests
 
         // Assert
         result.Should().NotBeNull();
-        
+
         // Should not have found any subtitles (no PGS available, text disabled)
         result.IsMatch.Should().BeFalse();
-        
+
         // Should not have processed text subtitles
         if (result is SubtitleProcessingResult processingResult)
         {
             processingResult.ProcessedTracks.Should().BeEmpty();
             processingResult.SuccessfulTrack.Should().BeNull();
         }
-        
+
         // Should maintain existing behavior when text subtitles disabled
         result.SubtitleSource.Should().Be(SubtitleSourceType.PGS); // Attempted PGS first
     }
@@ -158,17 +158,17 @@ public class PgsPriorityTests
 
         // Assert
         result.Should().NotBeNull();
-        
+
         // Should fall back to text subtitles when PGS fails
         result.SubtitleSource.Should().Be(SubtitleSourceType.TextBased);
-        
+
         // Should have successful text subtitle processing
         if (result is SubtitleProcessingResult processingResult)
         {
             processingResult.ProcessedTracks.Should().NotBeEmpty();
             processingResult.SuccessfulTrack.Should().NotBeNull();
         }
-        
+
         // Should indicate fallback in metadata
         result.SubtitleMetadata.Should().NotBeNull();
         result.SubtitleMetadata.Should().ContainKey("pgs_attempted");
@@ -186,16 +186,16 @@ public class PgsPriorityTests
 
         // Assert
         result.Should().NotBeNull();
-        
+
         // Should use PGS workflow by default (existing behavior)
         result.SubtitleSource.Should().Be(SubtitleSourceType.PGS);
-        
+
         // Should not have processed text subtitles (existing behavior preserved)
         if (result is SubtitleProcessingResult processingResult)
         {
             processingResult.ProcessedTracks.Should().BeEmpty();
         }
-        
+
         // Should maintain all existing functionality
         result.IsMatch.Should().BeTrue();
         result.SeriesName.Should().NotBeNullOrEmpty();
@@ -214,16 +214,16 @@ public class PgsPriorityTests
 
         // Assert
         result.Should().NotBeNull();
-        
+
         // Should prefer PGS result even if text would also match
         result.SubtitleSource.Should().Be(SubtitleSourceType.PGS);
-        
+
         // Should not have processed text subtitles at all
         if (result is SubtitleProcessingResult processingResult)
         {
             processingResult.ProcessedTracks.Should().BeEmpty();
         }
-        
+
         // Should use PGS confidence and match data
         result.Confidence.Should().BeGreaterThan(0.5);
         result.IsMatch.Should().BeTrue();
@@ -248,12 +248,12 @@ public class PgsPriorityTests
         // Assert
         var enhancedTime = endTime - startTime;
         var baselineTime = baselineEnd - baselineStart;
-        
+
         // Should have minimal overhead when PGS is available and used
         var overhead = enhancedTime - baselineTime;
-        overhead.Should().BeLessThan(TimeSpan.FromSeconds(2), 
+        overhead.Should().BeLessThan(TimeSpan.FromSeconds(2),
             "text subtitle capability should add minimal overhead when PGS is used");
-        
+
         // Both should have same result (PGS)
         result.SubtitleSource.Should().Be(baselineResult.SubtitleSource);
         result.IsMatch.Should().Be(baselineResult.IsMatch);
@@ -270,12 +270,12 @@ public class PgsPriorityTests
 
         // Assert
         result.Should().NotBeNull();
-        
+
         // Should have metadata indicating processing path
         result.SubtitleMetadata.Should().NotBeNull();
         result.SubtitleMetadata.Should().ContainKey("processing_path");
         result.SubtitleMetadata!["processing_path"].Should().Be("pgs_primary");
-        
+
         // Should not indicate text subtitle processing was attempted
         result.SubtitleMetadata.Should().ContainKey("text_subtitles_attempted");
         result.SubtitleMetadata!["text_subtitles_attempted"].Should().Be(false);

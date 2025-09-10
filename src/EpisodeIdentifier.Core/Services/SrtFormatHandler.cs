@@ -36,24 +36,24 @@ public class SrtFormatHandler : ISubtitleFormatHandler
             throw new ArgumentNullException(nameof(stream));
 
         var textEncoding = GetEncoding(encoding);
-        
+
         try
         {
             // Read bytes first to check for malformed data
             var buffer = new byte[stream.Length];
             await stream.ReadAsync(buffer, 0, (int)stream.Length, cancellationToken);
-            
+
             // Check for invalid UTF-8 sequences
             if (IsInvalidUtf8(buffer))
             {
                 throw new InvalidDataException("The subtitle file contains malformed data or invalid encoding.");
             }
-            
+
             // Reset stream position and read as text
             stream.Position = 0;
             using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
             var content = await reader.ReadToEndAsync(cancellationToken);
-            
+
             return ParseSrtContent(content);
         }
         catch (DecoderFallbackException ex)
@@ -99,7 +99,7 @@ public class SrtFormatHandler : ISubtitleFormatHandler
                 var startTime = ParseSrtTimestamp(match.Groups[2].Value);
                 var endTime = ParseSrtTimestamp(match.Groups[3].Value);
                 var rawText = match.Groups[4].Value.Trim().Replace("\n", " ");
-                
+
                 // Strip HTML tags from the text
                 var cleanText = HtmlTagRegex.Replace(rawText, "").Trim();
 
@@ -130,7 +130,7 @@ public class SrtFormatHandler : ISubtitleFormatHandler
         var secondsParts = parts[2].Split(',');
         var seconds = int.Parse(secondsParts[0]);
         var milliseconds = int.Parse(secondsParts[1]);
-        
+
         return (hours * 3600 + minutes * 60 + seconds) * 1000 + milliseconds;
     }
 
@@ -143,7 +143,7 @@ public class SrtFormatHandler : ISubtitleFormatHandler
             if (b == 0xFF || b == 0xFE)
                 return true;
         }
-        
+
         // Additional check: try to convert to string and see if it contains replacement characters
         try
         {

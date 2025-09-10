@@ -116,8 +116,8 @@ public class SubtitleWorkflowCoordinator
 
             // Check if video has PGS subtitle tracks
             var subtitleTracks = await _validator.GetSubtitleTracks(videoFilePath);
-            var pgsTrack = subtitleTracks.FirstOrDefault(t => 
-                string.IsNullOrEmpty(language) || 
+            var pgsTrack = subtitleTracks.FirstOrDefault(t =>
+                string.IsNullOrEmpty(language) ||
                 (t.Language?.Contains(language, StringComparison.OrdinalIgnoreCase) ?? false));
 
             if (pgsTrack == null)
@@ -133,7 +133,7 @@ public class SubtitleWorkflowCoordinator
                 };
             }
 
-            _logger.LogInformation("Found PGS subtitle track (index: {Index}, language: {Language})", 
+            _logger.LogInformation("Found PGS subtitle track (index: {Index}, language: {Language})",
                 pgsTrack.Index, pgsTrack.Language ?? "unknown");
 
             // Check if OCR tools are available
@@ -152,8 +152,8 @@ public class SubtitleWorkflowCoordinator
             // Extract and OCR subtitle images from video file
             var ocrLanguage = GetOcrLanguageCode(language);
             var subtitleText = await _pgsConverter.ConvertPgsFromVideoToText(
-                videoFilePath, 
-                pgsTrack.Index, 
+                videoFilePath,
+                pgsTrack.Index,
                 ocrLanguage);
 
             if (string.IsNullOrWhiteSpace(subtitleText))
@@ -172,11 +172,11 @@ public class SubtitleWorkflowCoordinator
 
             // Match against database
             var result = await _matcher.IdentifyEpisode(subtitleText);
-            
+
             // Add workflow metadata
             if (!result.HasError)
             {
-                _logger.LogInformation("PGS workflow successfully identified: {Series} S{Season}E{Episode}", 
+                _logger.LogInformation("PGS workflow successfully identified: {Series} S{Season}E{Episode}",
                     result.Series, result.Season, result.Episode);
             }
 
@@ -210,7 +210,7 @@ public class SubtitleWorkflowCoordinator
 
             // Detect available text subtitle tracks
             var textTracks = await _textExtractor.DetectTextSubtitleTracksAsync(videoFilePath, cancellationToken);
-            
+
             if (!textTracks.Any())
             {
                 _logger.LogDebug("No text subtitle tracks found for {VideoFile}", videoFilePath);
@@ -228,17 +228,17 @@ public class SubtitleWorkflowCoordinator
 
             // Select the best track based on language preference
             var selectedTrack = SelectBestTextTrack(textTracks, language);
-            
-            _logger.LogInformation("Selected text subtitle track: {Format} (index: {Index}, language: {Language})", 
+
+            _logger.LogInformation("Selected text subtitle track: {Format} (index: {Index}, language: {Language})",
                 selectedTrack.Format, selectedTrack.Index, selectedTrack.Language ?? "unknown");
 
             // Extract subtitle content
             var extractionResult = await _textExtractor.ExtractTextSubtitleContentAsync(
-                videoFilePath, 
-                selectedTrack, 
+                videoFilePath,
+                selectedTrack,
                 cancellationToken);
 
-            if (extractionResult.Status != ProcessingStatus.Completed || 
+            if (extractionResult.Status != ProcessingStatus.Completed ||
                 extractionResult.ExtractedTracks.Count == 0)
             {
                 return new IdentificationResult
@@ -268,11 +268,11 @@ public class SubtitleWorkflowCoordinator
 
             // Match against database
             var result = await _matcher.IdentifyEpisode(extractedTrack.Content);
-            
+
             // Add workflow metadata
             if (!result.HasError)
             {
-                _logger.LogInformation("Text subtitle workflow successfully identified: {Series} S{Season}E{Episode} (using {Format})", 
+                _logger.LogInformation("Text subtitle workflow successfully identified: {Series} S{Season}E{Episode} (using {Format})",
                     result.Series, result.Season, result.Episode, selectedTrack.Format);
             }
 
@@ -300,7 +300,7 @@ public class SubtitleWorkflowCoordinator
         // If preferred language specified, try to find it
         if (!string.IsNullOrEmpty(preferredLanguage))
         {
-            var langTrack = tracks.FirstOrDefault(t => 
+            var langTrack = tracks.FirstOrDefault(t =>
                 string.Equals(t.Language, preferredLanguage, StringComparison.OrdinalIgnoreCase));
             if (langTrack != null)
             {
@@ -309,11 +309,11 @@ public class SubtitleWorkflowCoordinator
         }
 
         // Default preferences: English first, then default track, then first available
-        var englishTrack = tracks.FirstOrDefault(t => 
+        var englishTrack = tracks.FirstOrDefault(t =>
             string.Equals(t.Language, "eng", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(t.Language, "en", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(t.Language, "english", StringComparison.OrdinalIgnoreCase));
-        
+
         if (englishTrack != null)
             return englishTrack;
 

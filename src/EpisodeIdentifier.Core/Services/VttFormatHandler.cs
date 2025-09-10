@@ -20,7 +20,7 @@ public class VttFormatHandler : ISubtitleFormatHandler
         RegexOptions.Multiline | RegexOptions.Compiled);
 
     public async Task<SubtitleParsingResult> ParseSubtitleTextAsync(
-        Stream stream, 
+        Stream stream,
         string? encoding = null,
         CancellationToken cancellationToken = default)
     {
@@ -28,24 +28,24 @@ public class VttFormatHandler : ISubtitleFormatHandler
             throw new ArgumentNullException(nameof(stream));
 
         var textEncoding = GetEncoding(encoding);
-        
+
         try
         {
             // Read bytes first to check for malformed data
             var buffer = new byte[stream.Length];
             await stream.ReadAsync(buffer, 0, (int)stream.Length, cancellationToken);
-            
+
             // Check for invalid UTF-8 sequences
             if (IsInvalidUtf8(buffer))
             {
                 throw new InvalidDataException("The subtitle file contains malformed data or invalid encoding.");
             }
-            
+
             // Reset stream position and read as text
             stream.Position = 0;
             using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
             var content = await reader.ReadToEndAsync(cancellationToken);
-            
+
             return ParseVttContent(content);
         }
         catch (DecoderFallbackException ex)
@@ -81,10 +81,10 @@ public class VttFormatHandler : ISubtitleFormatHandler
     private static SubtitleParsingResult ParseVttContent(string content)
     {
         var entries = new List<SubtitleEntry>();
-        
+
         // Remove WEBVTT header and any metadata
         var contentWithoutHeader = Regex.Replace(content, @"^WEBVTT[^\r\n]*[\r\n]*", "", RegexOptions.Multiline);
-        
+
         var matches = VttCueRegex.Matches(contentWithoutHeader);
 
         foreach (Match match in matches)
@@ -117,7 +117,7 @@ public class VttFormatHandler : ISubtitleFormatHandler
     {
         // Parse VTT timestamp format: "HH:MM:SS.mmm" or "MM:SS.mmm"
         var parts = timestamp.Split(':');
-        
+
         if (parts.Length == 2)
         {
             // MM:SS.mmm format
@@ -125,7 +125,7 @@ public class VttFormatHandler : ISubtitleFormatHandler
             var secondsParts = parts[1].Split('.');
             var seconds = int.Parse(secondsParts[0]);
             var milliseconds = int.Parse(secondsParts[1]);
-            
+
             return (minutes * 60 + seconds) * 1000 + milliseconds;
         }
         else if (parts.Length == 3)
@@ -136,10 +136,10 @@ public class VttFormatHandler : ISubtitleFormatHandler
             var secondsParts = parts[2].Split('.');
             var seconds = int.Parse(secondsParts[0]);
             var milliseconds = int.Parse(secondsParts[1]);
-            
+
             return (hours * 3600 + minutes * 60 + seconds) * 1000 + milliseconds;
         }
-        
+
         return 0;
     }
 
@@ -159,7 +159,7 @@ public class VttFormatHandler : ISubtitleFormatHandler
             if (b == 0xFF || b == 0xFE)
                 return true;
         }
-        
+
         // Additional check: try to convert to string and see if it contains replacement characters
         try
         {

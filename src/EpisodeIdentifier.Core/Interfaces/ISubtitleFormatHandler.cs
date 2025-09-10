@@ -23,7 +23,7 @@ public interface ISubtitleFormatHandler
     /// <param name="cancellationToken">Token to cancel the parsing operation.</param>
     /// <returns>Structured parsing result with subtitle entries and metadata.</returns>
     Task<SubtitleParsingResult> ParseSubtitleTextAsync(
-        Stream stream, 
+        Stream stream,
         string? encoding = null,
         CancellationToken cancellationToken = default);
 

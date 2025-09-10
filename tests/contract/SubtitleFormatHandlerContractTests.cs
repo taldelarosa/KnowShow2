@@ -94,7 +94,7 @@ in one subtitle
         result.Should().NotBeNull();
         result.IsSuccessful.Should().BeTrue();
         result.Entries.Should().NotBeEmpty();
-        
+
         var allText = string.Join(" ", result.Entries.Select(e => e.Text));
         allText.Should().Contain("Hello world!");
         allText.Should().Contain("This is italic text");
@@ -132,7 +132,7 @@ Dialogue: 0,0:00:05.00,0:00:07.00,Default,,0,0,0,,{\i1}Italic text{\i0}
         result.Should().NotBeNull();
         result.IsSuccessful.Should().BeTrue();
         result.Entries.Should().NotBeEmpty();
-        
+
         var allText = string.Join(" ", result.Entries.Select(e => e.Text));
         allText.Should().Contain("Hello from ASS!");
         allText.Should().Contain("Italic text");
@@ -169,7 +169,7 @@ Text with <c.className>styling</c>
         result.Should().NotBeNull();
         result.IsSuccessful.Should().BeTrue();
         result.Entries.Should().NotBeEmpty();
-        
+
         var allText = string.Join(" ", result.Entries.Select(e => e.Text));
         allText.Should().Contain("Hello from WebVTT!");
         allText.Should().Contain("Multiple speakers");
