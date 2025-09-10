@@ -8,6 +8,7 @@ using EpisodeIdentifier.Core.Services;
 using EpisodeIdentifier.Core.Models;
 using EpisodeIdentifier.Core.Interfaces;
 using Microsoft.Extensions.Logging;
+using EpisodeIdentifier.Tests.Contract;
 
 namespace EpisodeIdentifier.Tests.Integration;
 
@@ -38,7 +39,7 @@ public class SrtWorkflowTests
         var matcherLogger = loggerFactory.CreateLogger<SubtitleMatcher>();
         
         var normalizationService = new SubtitleNormalizationService(normalizationLogger);
-        var testDbPath = "/mnt/c/Users/Ragma/KnowShow_Specd/test_constraint.db";
+        var testDbPath = TestDatabaseConfig.GetTestDatabasePath();
         var hashService = new FuzzyHashService(testDbPath, fuzzyLogger, normalizationService);
         _matcher = new SubtitleMatcher(hashService, matcherLogger);
     }
