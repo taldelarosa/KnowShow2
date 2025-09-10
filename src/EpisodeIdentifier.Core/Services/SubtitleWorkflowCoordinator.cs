@@ -116,9 +116,12 @@ public class SubtitleWorkflowCoordinator
 
             // Check if video has PGS subtitle tracks
             var subtitleTracks = await _validator.GetSubtitleTracks(videoFilePath);
-            var pgsTrack = subtitleTracks.FirstOrDefault(t =>
-                string.IsNullOrEmpty(language) ||
-                (t.Language?.Contains(language, StringComparison.OrdinalIgnoreCase) ?? false));
+            var pgsTrack = subtitleTracks
+                .Where(t => string.Equals(t.Codec, "pgs", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(t.Codec, "hdmv_pgs_subtitle", StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault(t =>
+                    string.IsNullOrEmpty(language) ||
+                    (t.Language?.Contains(language, StringComparison.OrdinalIgnoreCase) ?? false));
 
             if (pgsTrack == null)
             {
