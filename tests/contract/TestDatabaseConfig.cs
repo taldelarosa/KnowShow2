@@ -34,11 +34,20 @@ public static class TestDatabaseConfig
 
     /// <summary>
     /// Gets the standard test hash database path.
+    /// For integration tests, uses a temporary database if the standard test file doesn't exist.
     /// </summary>
     /// <returns>Path to the test hash database</returns>
     public static string GetTestHashDatabasePath()
     {
-        return GetTestDataPath("hashes.sqlite");
+        var standardPath = GetTestDataPath("hashes.sqlite");
+        
+        // For integration tests: if the test file doesn't exist, use a temp database
+        if (!File.Exists(standardPath))
+        {
+            return GetTempDatabasePath();
+        }
+        
+        return standardPath;
     }
 
     /// <summary>
