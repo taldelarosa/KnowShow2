@@ -1,10 +1,11 @@
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Interfaces;
 
 namespace EpisodeIdentifier.Core.Services;
 
-public class SubtitleExtractor
+public class SubtitleExtractor : ISubtitleExtractor
 {
     private readonly ILogger<SubtitleExtractor> _logger;
     private readonly VideoFormatValidator _validator;
@@ -50,8 +51,6 @@ public class SubtitleExtractor
         // Fallback to ffmpeg with specific stream
         return await ExtractWithFfmpeg(videoPath, selectedTrack.Index);
     }
-
-
 
     private async Task<byte[]> ExtractWithMkvextract(string videoPath, int trackIndex)
     {
@@ -155,5 +154,25 @@ public class SubtitleExtractor
                 }
             }
         }
+    }
+
+    public async Task<string> ExtractAndConvertSubtitles(string videoPath, string? preferredLanguage = null)
+    {
+        _logger.LogInformation("Extracting and converting subtitles from {VideoPath}, preferred language: {Language}", 
+            videoPath, preferredLanguage ?? "any");
+
+        // Extract PGS subtitles
+        var pgsData = await ExtractPgsSubtitles(videoPath, preferredLanguage);
+        
+        if (pgsData.Length == 0)
+        {
+            _logger.LogWarning("No PGS subtitle data extracted from {VideoPath}", videoPath);
+            return string.Empty;
+        }
+
+        // TODO: Convert PGS data to text using OCR
+        // For now, return a placeholder message
+        _logger.LogInformation("Extracted {Size} bytes of PGS data from {VideoPath}", pgsData.Length, videoPath);
+        return $"[PGS Subtitles extracted: {pgsData.Length} bytes]";
     }
 }

@@ -17,7 +17,7 @@ public class PgsConversionDemo
         services.AddScoped<PgsToTextConverter>();
         services.AddScoped<PgsRipService>();
         services.AddScoped<EnhancedPgsToTextConverter>();
-        
+
         var serviceProvider = services.BuildServiceProvider();
         var logger = serviceProvider.GetRequiredService<ILogger<PgsConversionDemo>>();
         var enhancedConverter = serviceProvider.GetRequiredService<EnhancedPgsToTextConverter>();
@@ -50,7 +50,7 @@ public class PgsConversionDemo
         logger.LogInformation("Language: {Language}", language);
 
         var extension = Path.GetExtension(inputFile).ToLowerInvariant();
-        
+
         try
         {
             string result;
@@ -88,7 +88,7 @@ public class PgsConversionDemo
                 // Show preview
                 var lines = result.Split('\n');
                 var previewLines = lines.Take(Math.Min(20, lines.Length));
-                
+
                 logger.LogInformation("Preview (first 20 lines):");
                 logger.LogInformation("========================");
                 foreach (var line in previewLines)

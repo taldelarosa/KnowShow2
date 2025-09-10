@@ -6,8 +6,8 @@
 **Status**: Draft  
 **Input**: User description: "Build an application that can identify the Season and Episode number of a provided AV1 encoded video file by extracting the PGS subtitles and comparing them to other known labelled subtitles that exist on the file system in a folder structure of Subtitles=>Series=>Season. This will be part of an automated workflow so it will only run on the command line and will always output JSON responses."
 
-
 ## Execution Flow (main)
+
 ```
 1. Parse user description from Input
    → If empty: ERROR "No feature description provided"
@@ -30,17 +30,21 @@
 ---
 
 ## ⚡ Quick Guidelines
+
 - ✅ Focus on WHAT users need and WHY
 - ❌ Avoid HOW to implement (no tech stack, APIs, code structure)
 - 👥 Written for business stakeholders, not developers
 
 ### Section Requirements
+
 - **Mandatory sections**: Must be completed for every feature
 - **Optional sections**: Include only when relevant to the feature
 - When a section doesn't apply, remove it entirely (don't leave as "N/A")
 
 ### For AI Generation
+
 When creating this spec from a user prompt:
+
 1. **Mark all ambiguities**: Use [NEEDS CLARIFICATION: specific question] for any assumption you'd need to make
 2. **Don't guess**: If the prompt doesn't specify something (e.g., "login system" without auth method), mark it
 3. **Think like a tester**: Every vague requirement should fail the "testable and unambiguous" checklist item
@@ -54,28 +58,30 @@ When creating this spec from a user prompt:
 
 ---
 
-
 ## User Scenarios & Testing *(mandatory)*
 
 ### Primary User Story
+
 A user (or automated workflow) provides an AV1 encoded video file via the command line. The system extracts the PGS subtitles, compares them to a set of known, labelled subtitles organized in a Subtitles=>Series=>Season folder structure, and returns the identified Season and Episode number as a JSON response.
 
 ### Acceptance Scenarios
+
 1. **Given** a valid AV1 video file with embedded PGS subtitles, **When** the user runs the CLI tool with the file path, **Then** the system outputs a JSON object with the correct Season and Episode number based on subtitle comparison.
 2. **Given** a video file with no or unreadable PGS subtitles, **When** the user runs the CLI tool, **Then** the system outputs a JSON error message indicating identification is not possible.
 3. **Given** a video file that is not AV1 encoded, **When** the user runs the CLI tool, **Then** the system outputs a JSON error message indicating unsupported file type.
 
 ### Edge Cases
+
 - What happens when the provided video file is not AV1 encoded? [NEEDS CLARIFICATION: Should the system reject non-AV1 files or attempt processing?]
 - How does the system handle subtitle files with partial or poor matches? [NEEDS CLARIFICATION: What is the minimum match threshold for identification?]
 - What if multiple episodes have highly similar subtitles? [NEEDS CLARIFICATION: How should ties or ambiguities be reported in JSON?]
 - How are subtitle language mismatches handled? [NEEDS CLARIFICATION: Should the system support multiple languages or only a default?]
 - What is the expected JSON schema for output (fields, error structure)? [NEEDS CLARIFICATION: Please specify required JSON structure.]
 
-
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
+
 - **FR-001**: System MUST allow users (or automated workflows) to provide an AV1 encoded video file via the command line.
 - **FR-002**: System MUST extract PGS subtitles from the provided video file.
 - **FR-003**: System MUST compare extracted subtitles to a database of known, labelled subtitles organized in a Subtitles=>Series=>Season folder structure.
@@ -90,6 +96,7 @@ A user (or automated workflow) provides an AV1 encoded video file via the comman
 - **FR-012**: System MUST support integration into automated workflows (non-interactive, no prompts).
 
 ### Key Entities
+
 - **Video File**: Represents the user-provided AV1 video, with attributes such as file name, encoding type, and embedded subtitles.
 - **PGS Subtitle**: Represents the extracted subtitle data, including language, timing, and text/image content.
 - **Labelled Subtitle Database**: A collection of known subtitles, each labelled with Series, Season, and Episode metadata, organized in a Subtitles=>Series=>Season folder structure.
@@ -97,17 +104,19 @@ A user (or automated workflow) provides an AV1 encoded video file via the comman
 
 ---
 
-
 ## Review & Acceptance Checklist
+
 *GATE: Automated checks run during main() execution*
 
 ### Content Quality
+
 - [ ] No implementation details (languages, frameworks, APIs)
 - [ ] Focused on user value and business needs
 - [ ] Written for non-technical stakeholders
 - [ ] All mandatory sections completed
 
 ### Requirement Completeness
+
 - [ ] No [NEEDS CLARIFICATION] markers remain
 - [ ] Requirements are testable and unambiguous  
 - [ ] Success criteria are measurable
@@ -117,6 +126,7 @@ A user (or automated workflow) provides an AV1 encoded video file via the comman
 ---
 
 ## Execution Status
+
 *Updated by main() during processing*
 
 - [ ] User description parsed

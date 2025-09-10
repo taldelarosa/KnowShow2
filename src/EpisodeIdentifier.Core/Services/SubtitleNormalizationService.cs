@@ -55,7 +55,7 @@ public class SubtitleNormalizationService
 
         // Pattern to match SRT timecode lines: "00:01:23,456 --> 00:01:25,789"
         var timecodePattern = @"^\d{2}:\d{2}:\d{2},\d{3}\s*-->\s*\d{2}:\d{2}:\d{2},\d{3}$";
-        
+
         // Also remove sequence numbers (standalone digits on their own line)
         var sequencePattern = @"^\d+$";
 
@@ -65,9 +65,9 @@ public class SubtitleNormalizationService
         foreach (var line in lines)
         {
             var trimmedLine = line.Trim();
-            
+
             // Skip timecode lines and sequence numbers
-            if (Regex.IsMatch(trimmedLine, timecodePattern) || 
+            if (Regex.IsMatch(trimmedLine, timecodePattern) ||
                 Regex.IsMatch(trimmedLine, sequencePattern))
             {
                 continue;
@@ -80,7 +80,7 @@ public class SubtitleNormalizationService
         // Clean up excessive empty lines while preserving subtitle boundaries
         var result = string.Join('\n', filteredLines);
         result = Regex.Replace(result, @"\n{3,}", "\n\n"); // Replace 3+ newlines with 2
-        
+
         return result.Trim();
     }
 
@@ -94,7 +94,7 @@ public class SubtitleNormalizationService
 
         // Remove HTML/XML tags
         var noTags = Regex.Replace(subtitleText, @"<[^>]+>", "");
-        
+
         // Decode common HTML entities
         noTags = noTags.Replace("&lt;", "<");
         noTags = noTags.Replace("&gt;", ">");
@@ -105,7 +105,7 @@ public class SubtitleNormalizationService
 
         // Clean up any double spaces that might have been created
         noTags = Regex.Replace(noTags, @"\s{2,}", " ");
-        
+
         return noTags.Trim();
     }
 
@@ -117,7 +117,7 @@ public class SubtitleNormalizationService
         // Apply both transformations
         var noTimecodes = RemoveTimecodes(subtitleText);
         var clean = RemoveHtml(noTimecodes);
-        
+
         return clean;
     }
 }

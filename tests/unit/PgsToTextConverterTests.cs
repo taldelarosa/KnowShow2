@@ -38,7 +38,7 @@ public class PgsToTextConverterTests
         var result = converter.IsOcrAvailable();
 
         // Assert
-        Assert.IsTrue(result is true or false); // Just checking it returns a boolean
+        Assert.IsInstanceOfType(result, typeof(bool)); // Just checking it returns a boolean
     }
 
     [TestMethod]
