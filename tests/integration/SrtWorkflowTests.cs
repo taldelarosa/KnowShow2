@@ -49,9 +49,12 @@ public class SrtWorkflowTests
         // Arrange
         var nonExistentFile = "nonexistent.mkv";
 
-        // Act & Assert - Should throw exception for non-existent file
-        var action = async () => await _textExtractor.DetectTextSubtitleTracksAsync(nonExistentFile);
-        await action.Should().ThrowAsync<ArgumentException>();
+        // Act - Should handle non-existent file gracefully without throwing
+        var result = await _textExtractor.DetectTextSubtitleTracksAsync(nonExistentFile);
+
+        // Assert - Should return empty list for non-existent file
+        result.Should().NotBeNull();
+        result.Should().BeEmpty();
     }
 
     [Fact]

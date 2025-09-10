@@ -21,19 +21,19 @@ public class AssWorkflowTests
             new AssFormatHandler(),
             new VttFormatHandler()
         };
-
+        
         _extractor = new TextSubtitleExtractor(formatHandlers);
-
+        
         // Create required dependencies for SubtitleMatcher
         var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
         var fuzzyLogger = loggerFactory.CreateLogger<FuzzyHashService>();
         var normalizationLogger = loggerFactory.CreateLogger<SubtitleNormalizationService>();
         var matcherLogger = loggerFactory.CreateLogger<SubtitleMatcher>();
-
+        
         var normalizationService = new SubtitleNormalizationService(normalizationLogger);
         var testDbPath = "/mnt/c/Users/Ragma/KnowShow_Specd/test_constraint.db"; // Use existing test database
         var hashService = new FuzzyHashService(testDbPath, fuzzyLogger, normalizationService);
-
+        
         _matcher = new SubtitleMatcher(hashService, matcherLogger);
     }
 
@@ -42,26 +42,26 @@ public class AssWorkflowTests
     {
         // This is a simplified test that doesn't rely on external video files
         // that may not exist in the test environment
-
+        
         // Act - Test the workflow components
         var testVideoPath = "test.mkv"; // Non-existent file for testing
-
+        
         // The extractor should handle missing files gracefully
         var tracks = await _extractor.DetectTextSubtitleTracksAsync(testVideoPath);
-
+        
         // Assert - Basic functionality test
         tracks.Should().NotBeNull();
         tracks.Should().BeEmpty(); // No tracks from non-existent file
-
+        
         // Test matcher with sample text
         var sampleText = "Hello, this is a test subtitle";
         var result = await _matcher.IdentifyEpisode(sampleText);
-
+        
         result.Should().NotBeNull();
     }
 
     [Fact]
-    public async Task AssProcessingWorkflow_WithFormatHandlers_ProcessesCorrectly()
+    public void AssProcessingWorkflow_WithFormatHandlers_ProcessesCorrectly()
     {
         // Arrange
         var sampleAssContent = @"[V4+ Styles]
@@ -85,7 +85,7 @@ Dialogue: 0,0:00:05.00,0:00:08.00,Default,,0,0,0,,This is a test";
         // Test that format handlers work
         var assHandler = new AssFormatHandler();
         var canHandle = assHandler.CanHandle(sampleAssContent);
-
+        
         // Assert
         canHandle.Should().BeTrue();
         track.Format.Should().Be(SubtitleFormat.ASS);
@@ -100,7 +100,7 @@ Dialogue: 0,0:00:05.00,0:00:08.00,Default,,0,0,0,,This is a test";
 
         // Act & Assert - Should not throw, should return empty list
         var result = await _extractor.DetectTextSubtitleTracksAsync(nonExistentPath);
-
+        
         result.Should().NotBeNull();
         result.Should().BeEmpty();
     }
@@ -140,10 +140,10 @@ Dialogue: 0,0:00:05.00,0:00:08.00,Default,,0,0,0,,This is a test";
 
         srtHandler.CanHandle(srtContent).Should().BeTrue();
         srtHandler.CanHandle(assContent).Should().BeFalse();
-
+        
         assHandler.CanHandle(assContent).Should().BeTrue();
         assHandler.CanHandle(srtContent).Should().BeFalse();
-
+        
         vttHandler.CanHandle(vttContent).Should().BeTrue();
         vttHandler.CanHandle(assContent).Should().BeFalse();
     }
