@@ -41,16 +41,16 @@ public class SubtitleWorkflowPerformanceTests : IDisposable
         _validator = _serviceProvider.GetRequiredService<VideoFormatValidator>();
         _textExtractor = _serviceProvider.GetRequiredService<ITextSubtitleExtractor>();
         
-        _testVideoPath = "/mnt/c/src/KnowShow/TestData/media/Episode S02E01.mkv";
+        _testVideoPath = Environment.GetEnvironmentVariable("TEST_VIDEO_PATH");
     }
 
     [Fact]
     public async Task ProcessVideo_Performance_CompletesWithinTimeLimit()
     {
         // Skip if test file not available
-        if (!File.Exists(_testVideoPath))
+        if (string.IsNullOrEmpty(_testVideoPath) || !File.Exists(_testVideoPath))
         {
-            Assert.True(true, "Test video file not available");
+            Assert.True(true, "Test video file not available or TEST_VIDEO_PATH not set");
             return;
         }
 
