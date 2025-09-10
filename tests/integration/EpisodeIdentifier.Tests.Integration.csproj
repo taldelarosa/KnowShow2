@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\EpisodeIdentifier.Core\EpisodeIdentifier.Core.csproj" />
+    <ProjectReference Include="..\contract\EpisodeIdentifier.Tests.Contract.csproj" />
   </ItemGroup>
 
 </Project>

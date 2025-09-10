@@ -12,7 +12,7 @@ public class EndToEndIdentificationTests
         // Arrange
         var testVideoPath = "TestData/TestShow_S01E02.mkv"; // TODO: Create test data
         var subtitleDbPath = "TestData/Subtitles";
-        var hashDbPath = "TestData/hashes.sqlite";
+        var hashDbPath = EpisodeIdentifier.Tests.Contract.TestDatabaseConfig.GetTestHashDatabasePath();
 
         // Act
         // TODO: Implement full identification flow

@@ -1,7 +1,4 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
-using System;
 using System.Threading.Tasks;
 using System.IO;
 using EpisodeIdentifier.Core.Models;
@@ -12,16 +9,6 @@ namespace EpisodeIdentifier.Tests.Contract;
 [TestClass]
 public class FuzzyHashDbTests
 {
-    private string GetTempFilePath()
-    {
-        return Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".db");
-    }
-
-    private ILogger<FuzzyHashService> CreateLogger()
-    {
-        return LoggerFactory.Create(builder => builder.AddConsole())
-                          .CreateLogger<FuzzyHashService>();
-    }
 
     [TestMethod]
     public async Task HashInsertAndLookup_StoresAndRetrievesCorrectly()
@@ -36,10 +23,10 @@ public class FuzzyHashDbTests
             SubtitleText = subtitleText
         };
 
-        var tempFile = GetTempFilePath();
+        var tempFile = TestDatabaseConfig.GetTempDatabasePath();
         try
         {
-            var service = new FuzzyHashService(tempFile, CreateLogger());
+            var service = TestDatabaseConfig.CreateTestFuzzyHashService(tempFile);
 
             // Act
             await service.StoreHash(subtitle);
@@ -54,10 +41,7 @@ public class FuzzyHashDbTests
         }
         finally
         {
-            if (File.Exists(tempFile))
-            {
-                File.Delete(tempFile);
-            }
+            TestDatabaseConfig.CleanupTempDatabase(tempFile);
         }
     }
 
@@ -74,10 +58,10 @@ public class FuzzyHashDbTests
             SubtitleText = "Completely different content"
         };
 
-        var tempFile = GetTempFilePath();
+        var tempFile = TestDatabaseConfig.GetTempDatabasePath();
         try
         {
-            var service = new FuzzyHashService(tempFile, CreateLogger());
+            var service = TestDatabaseConfig.CreateTestFuzzyHashService(tempFile);
 
             // Act
             await service.StoreHash(storedSubtitle);
@@ -88,10 +72,7 @@ public class FuzzyHashDbTests
         }
         finally
         {
-            if (File.Exists(tempFile))
-            {
-                File.Delete(tempFile);
-            }
+            TestDatabaseConfig.CleanupTempDatabase(tempFile);
         }
     }
 
@@ -106,10 +87,10 @@ public class FuzzyHashDbTests
             new LabelledSubtitle { Series = "Show2", Season = "02", Episode = "02", SubtitleText = "The quick brown fox runs fast" }
         };
 
-        var tempFile = GetTempFilePath();
+        var tempFile = TestDatabaseConfig.GetTempDatabasePath();
         try
         {
-            var service = new FuzzyHashService(tempFile, CreateLogger());
+            var service = TestDatabaseConfig.CreateTestFuzzyHashService(tempFile);
 
             // Act
             foreach (var subtitle in similarSubtitles)
@@ -127,10 +108,7 @@ public class FuzzyHashDbTests
         }
         finally
         {
-            if (File.Exists(tempFile))
-            {
-                File.Delete(tempFile);
-            }
+            TestDatabaseConfig.CleanupTempDatabase(tempFile);
         }
     }
 }
