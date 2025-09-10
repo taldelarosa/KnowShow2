@@ -30,7 +30,6 @@ public class SubtitleExtractor : ISubtitleExtractor
         }
 
         // Select the best track based on language preference
-        // Select the best track based on language preference
         var selectedTrack = PgsTrackSelector.SelectBestTrack(subtitleTracks, preferredLanguage);
         _logger.LogInformation("Selected subtitle track: Index={Index}, Language={Language}", 
             selectedTrack.Index, selectedTrack.Language ?? "unknown");
