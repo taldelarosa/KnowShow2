@@ -87,29 +87,29 @@ public class SubtitleFilenameParser
     {
         // Remove common quality indicators and release group tags
         var cleaned = seriesName.Trim();
-        
+
         // Remove patterns like [1080p], (2020), etc.
         cleaned = Regex.Replace(cleaned, @"\[.*?\]", "", RegexOptions.IgnoreCase);
         cleaned = Regex.Replace(cleaned, @"\(.*?\)", "", RegexOptions.IgnoreCase);
-        
+
         // Remove common resolution/quality tags
         var qualityPatterns = new[] { "1080p", "720p", "480p", "4K", "HDR", "x264", "x265", "HEVC", "BluRay", "WEB-DL", "WEBRip" };
         foreach (var pattern in qualityPatterns)
         {
             cleaned = Regex.Replace(cleaned, @"\b" + Regex.Escape(pattern) + @"\b", "", RegexOptions.IgnoreCase);
         }
-        
+
         // Clean up extra spaces and punctuation
         cleaned = Regex.Replace(cleaned, @"\s+", " ");
         cleaned = cleaned.Trim(' ', '.', '-', '_');
-        
+
         return cleaned;
     }
 
     /// <summary>
     /// Scans a directory for subtitle files and parses their information
     /// </summary>
-    public async Task<List<SubtitleFileInfo>> ScanDirectory(string directoryPath, bool recursive = true)
+    public Task<List<SubtitleFileInfo>> ScanDirectory(string directoryPath, bool recursive = true)
     {
         if (!Directory.Exists(directoryPath))
         {
@@ -118,7 +118,7 @@ public class SubtitleFilenameParser
 
         var searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
         var subtitleExtensions = new[] { "*.srt", "*.vtt", "*.ass", "*.ssa", "*.sub", "*.sbv" };
-        
+
         var allFiles = new List<string>();
         foreach (var extension in subtitleExtensions)
         {
@@ -135,10 +135,10 @@ public class SubtitleFilenameParser
             }
         }
 
-        _logger.LogInformation("Scanned {TotalFiles} subtitle files, parsed {ParsedFiles} successfully", 
+        _logger.LogInformation("Scanned {TotalFiles} subtitle files, parsed {ParsedFiles} successfully",
             allFiles.Count, results.Count);
 
-        return results;
+        return Task.FromResult(results);
     }
 }
 

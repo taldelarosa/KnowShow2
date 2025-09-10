@@ -41,7 +41,7 @@ public class FuzzyHashService
 
         // Migrate existing data if needed
         MigrateExistingData(connection);
-        
+
         // Add unique constraint if table already exists without it
         AddUniqueConstraintIfNeeded(connection);
     }
@@ -51,7 +51,7 @@ public class FuzzyHashService
         // Check if we have old schema
         using var checkCommand = connection.CreateCommand();
         checkCommand.CommandText = "PRAGMA table_info(SubtitleHashes);";
-        
+
         var columns = new List<string>();
         using var reader = checkCommand.ExecuteReader();
         while (reader.Read())
@@ -64,7 +64,7 @@ public class FuzzyHashService
         if (columns.Contains("SubtitleText") && !columns.Contains("OriginalText"))
         {
             _logger.LogInformation("Migrating database schema to support normalized versions");
-            
+
             // Add new columns
             using var alterCommand = connection.CreateCommand();
             alterCommand.CommandText = @"
@@ -84,7 +84,7 @@ public class FuzzyHashService
                     CleanText = SubtitleText
                 WHERE OriginalText = '';";
             var updated = updateCommand.ExecuteNonQuery();
-            
+
             _logger.LogInformation("Migrated {Count} existing records to new schema", updated);
         }
     }
@@ -99,7 +99,7 @@ public class FuzzyHashService
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_episode 
                 ON SubtitleHashes(Series, Season, Episode);";
             command.ExecuteNonQuery();
-            
+
             _logger.LogDebug("Unique constraint ensured on (Series, Season, Episode)");
         }
         catch (Exception ex)
@@ -125,7 +125,7 @@ public class FuzzyHashService
         command.CommandText = @"
             INSERT INTO SubtitleHashes (Series, Season, Episode, OriginalText, NoTimecodesText, NoHtmlText, CleanText)
             VALUES (@series, @season, @episode, @original, @noTimecodes, @noHtml, @clean);";
-        
+
         command.Parameters.AddWithValue("@series", subtitle.Series);
         command.Parameters.AddWithValue("@season", subtitle.Season);
         command.Parameters.AddWithValue("@episode", subtitle.Episode);
@@ -137,12 +137,12 @@ public class FuzzyHashService
         try
         {
             await command.ExecuteNonQueryAsync();
-            _logger.LogInformation("Stored subtitle with {VersionCount} normalized versions: {Series} S{Season}E{Episode}", 
+            _logger.LogInformation("Stored subtitle with {VersionCount} normalized versions: {Series} S{Season}E{Episode}",
                 4, subtitle.Series, subtitle.Season, subtitle.Episode);
         }
         catch (SqliteException ex) when (ex.Message.Contains("UNIQUE constraint failed"))
         {
-            _logger.LogWarning("Episode {Series} S{Season}E{Episode} already exists in database, skipping duplicate entry", 
+            _logger.LogWarning("Episode {Series} S{Season}E{Episode} already exists in database, skipping duplicate entry",
                 subtitle.Series, subtitle.Season, subtitle.Episode);
         }
     }
@@ -150,10 +150,10 @@ public class FuzzyHashService
     public async Task<List<(LabelledSubtitle Subtitle, double Confidence)>> FindMatches(string subtitleText, double threshold = 0.8)
     {
         var results = new List<(LabelledSubtitle, double)>();
-        
+
         // Create normalized versions of the input text
         var inputNormalized = _normalizationService.CreateNormalizedVersions(subtitleText);
-        
+
         using var connection = new SqliteConnection($"Data Source={_dbPath}");
         await connection.OpenAsync();
 
@@ -197,7 +197,7 @@ public class FuzzyHashService
             };
 
             var confidences = new List<(string strategy, double confidence)>();
-            
+
             // Try all 16 combinations
             foreach (var (inputName, inputText) in inputVersions)
             {
@@ -216,13 +216,13 @@ public class FuzzyHashService
             if (confidence >= threshold)
             {
                 results.Add((subtitle, confidence));
-                _logger.LogDebug("Match found: {Series} S{Season}E{Episode} with confidence {Confidence:P2} (strategy: {Strategy})", 
+                _logger.LogDebug("Match found: {Series} S{Season}E{Episode} with confidence {Confidence:P2} (strategy: {Strategy})",
                     subtitle.Series, subtitle.Season, subtitle.Episode, confidence, bestMatch.strategy);
             }
         }
 
         var sortedResults = results.OrderByDescending(x => x.Item2).ToList();
-        _logger.LogInformation("Found {Count} matches above threshold {Threshold:P2}", 
+        _logger.LogInformation("Found {Count} matches above threshold {Threshold:P2}",
             sortedResults.Count, threshold);
 
         return sortedResults;
@@ -235,7 +235,7 @@ public class FuzzyHashService
     {
         // Create normalized versions of the input text
         var inputNormalized = _normalizationService.CreateNormalizedVersions(subtitleText);
-        
+
         using var connection = new SqliteConnection($"Data Source={_dbPath}");
         await connection.OpenAsync();
 
@@ -283,7 +283,7 @@ public class FuzzyHashService
             };
 
             var confidences = new List<(string strategy, double confidence)>();
-            
+
             // Try all 16 combinations
             foreach (var (inputName, inputText) in inputVersions)
             {
@@ -297,7 +297,7 @@ public class FuzzyHashService
 
             // Find the best confidence score from any strategy
             var bestMatchForThisSubtitle = confidences.OrderByDescending(c => c.confidence).First();
-            
+
             if (bestMatchForThisSubtitle.confidence > bestConfidence)
             {
                 bestConfidence = bestMatchForThisSubtitle.confidence;
@@ -312,7 +312,7 @@ public class FuzzyHashService
             return null;
         }
 
-        _logger.LogDebug("Best overall match: {Series} S{Season}E{Episode} with confidence {Confidence:P2} (strategy: {Strategy})", 
+        _logger.LogDebug("Best overall match: {Series} S{Season}E{Episode} with confidence {Confidence:P2} (strategy: {Strategy})",
             bestSubtitle.Series, bestSubtitle.Season, bestSubtitle.Episode, bestConfidence, bestStrategy);
 
         return (bestSubtitle, bestConfidence);

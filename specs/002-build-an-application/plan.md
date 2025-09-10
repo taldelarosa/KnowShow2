@@ -5,6 +5,7 @@
 **Input**: Feature specification from `/specs/002-build-an-application/spec.md`
 
 ## Execution Flow (/plan command scope)
+
 ```
 1. Load feature spec from Input path
    → If not found: ERROR "No feature spec at {path}"
@@ -25,22 +26,24 @@
 8. STOP - Ready for /tasks command
 ```
 
-**IMPORTANT Git Workflow**: 
+**IMPORTANT Git Workflow**:
+
 - All changes MUST be made in feature branches (format: `###-feature-name`)
 - NO direct pushes to `main` branch allowed
 - All changes merge to `main` via Pull Request with code review
 - Branch protection rules enforce this workflow
 
 **IMPORTANT**: The /plan command STOPS at step 7. Phases 2-4 are executed by other commands:
+
 - Phase 2: /tasks command creates tasks.md
 - Phase 3-4: Implementation execution (manual or via tools)
 
-
 ## Summary
+
 This feature provides a CLI-only tool to identify the Season and Episode of an AV1 video file by extracting PGS subtitles and comparing them to known, labelled subtitles stored as text files in a Subtitles=>Series=>Season folder structure. The tool uses standalone utilities for video/subtitle extraction, fuzzy hashing for comparison, and a local SQLite database for hash storage. All output is in JSON format for automation.
 
-
 ## Technical Context
+
 **Language/Version**: C# (latest stable)  
 **Primary Dependencies**: ffmpeg, mkvextract, sqlite3, fuzzy hash tool (e.g., ssdeep), .NET CLI  
 **Storage**: Text files (subtitles), SQLite (hashes)  
@@ -52,7 +55,9 @@ This feature provides a CLI-only tool to identify the Season and Episode of an A
 **Scale/Scope**: Single-user, batch/automation use, local or mounted file shares
 
 ## Git Workflow Requirements
+
 **Feature Branch Model**: All development MUST follow feature branch workflow
+
 - **Main branch**: Protected, no direct pushes allowed
 - **Feature branches**: Named `###-feature-description` (e.g., `005-add-ocr-optimization`)
 - **Pull Requests**: Required for all merges to main with:
@@ -60,8 +65,11 @@ This feature provides a CLI-only tool to identify the Season and Episode of an A
   - All checks passing (tests, linting, build)
   - Branch up-to-date with main
 - **Branch protection**: Enforced via GitHub rules (see `.github/` configuration)
+- **Infrastructure as Code**: Repository settings defined in `.github/repository-config.yml`
+- **Automated deployment**: Use `./scripts/setup-branch-protection.sh` to apply settings
 
 **Development Flow**:
+
 1. Create feature branch from main: `git checkout -b ###-feature-name`
 2. Make changes, commit, and push feature branch
 3. Create Pull Request to main with description and testing notes
@@ -70,21 +78,25 @@ This feature provides a CLI-only tool to identify the Season and Episode of an A
 6. Delete feature branch after successful merge
 
 ## Constitution Check
+
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 **Simplicity**:
+
 - Projects: 1 (cli + supporting libraries)
 - Using framework directly: Yes (C#/.NET CLI)
 - Single data model: Yes (see data-model.md)
 - Avoiding patterns: Yes (no unnecessary abstractions)
 
 **Architecture**:
+
 - Feature as library: Yes (core logic in library, CLI as entrypoint)
 - Libraries listed: core (identification logic), cli (entrypoint)
 - CLI per library: Yes (see contracts/cli-contract.md)
 - Library docs: Planned in llms.txt format
 
 **Testing (NON-NEGOTIABLE)**:
+
 - RED-GREEN-Refactor cycle enforced? (test MUST fail first)
 - Git commits show tests before implementation?
 - Order: Contract→Integration→E2E→Unit strictly followed?
@@ -93,11 +105,13 @@ This feature provides a CLI-only tool to identify the Season and Episode of an A
 - FORBIDDEN: Implementation before test, skipping RED phase
 
 **Observability**:
+
 - Structured logging included?
 - Frontend logs → backend? (unified stream)
 - Error context sufficient?
 
 **Versioning**:
+
 - Version number assigned? (MAJOR.MINOR.BUILD)
 - BUILD increments on every change?
 - Breaking changes handled? (parallel tests, migration plan)
@@ -105,6 +119,7 @@ This feature provides a CLI-only tool to identify the Season and Episode of an A
 ## Project Structure
 
 ### Documentation (this feature)
+
 ```
 specs/[###-feature]/
 ├── plan.md              # This file (/plan command output)
@@ -116,6 +131,7 @@ specs/[###-feature]/
 ```
 
 ### Source Code (repository root)
+
 ```
 # Option 1: Single project (DEFAULT)
 src/
@@ -154,19 +170,20 @@ ios/ or android/
 
 **Structure Decision**: [DEFAULT to Option 1 unless Technical Context indicates web/mobile app]
 
-
 ## Phase 0: Outline & Research
+
 See research.md for open questions, technology choices, best practices, and decisions. All clarifications and research tasks are tracked there.
 
-
 ## Phase 1: Design & Contracts
+
 See data-model.md for entities, contracts/ for CLI and DB contracts, quickstart.md for usage and test scenarios. Contract tests are defined for CLI and fuzzy hash DB. All outputs are in the specs/002-build-an-application directory.
 
-
 ## Phase 2: Task Planning Approach
+
 The /tasks command will generate tasks based on contracts, data model, and quickstart. Tasks will include contract tests, model creation, integration tests, and implementation steps, ordered for TDD and parallelizable where possible. See tasks-template.md for base structure. Estimated 25-30 tasks.
 
 ## Phase 3+: Future Implementation
+
 *These phases are beyond the scope of the /plan command*
 
 **Phase 3**: Task execution (/tasks command creates tasks.md)  
@@ -174,6 +191,7 @@ The /tasks command will generate tasks based on contracts, data model, and quick
 **Phase 5**: Validation (run tests, execute quickstart.md, performance validation)
 
 ## Complexity Tracking
+
 *Fill ONLY if Constitution Check has violations that must be justified*
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
@@ -181,12 +199,12 @@ The /tasks command will generate tasks based on contracts, data model, and quick
 | [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
 | [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
 
-
-
 ## Progress Tracking
+
 *This checklist is updated during execution flow*
 
 **Phase Status**:
+
 - [x] Phase 0: Research complete (/plan command)
 - [x] Phase 1: Design complete (/plan command)
 - [x] Phase 2: Task planning complete (/plan command - describe approach only)
@@ -195,6 +213,7 @@ The /tasks command will generate tasks based on contracts, data model, and quick
 - [x] Phase 5: Validation passed
 
 **Gate Status**:
+
 - [x] Initial Constitution Check: PASS
 - [x] Post-Design Constitution Check: PASS
 - [x] All NEEDS CLARIFICATION resolved
