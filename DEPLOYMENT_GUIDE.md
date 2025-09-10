@@ -17,11 +17,13 @@ dotnet build src/EpisodeIdentifier.Core/EpisodeIdentifier.Core.csproj --configur
 ```
 
 **Pros:**
+
 - Smaller file size (~80KB + dependencies)
 - Fast build time
 - Easy to update
 
 **Cons:**
+
 - Requires .NET 8.0 runtime on target machine
 
 ## Option 2: Self-Contained Deployment
@@ -41,11 +43,13 @@ dotnet publish src/EpisodeIdentifier.Core/EpisodeIdentifier.Core.csproj \
 ```
 
 **Pros:**
+
 - No .NET runtime required on target machine
 - Single directory contains everything
 - Portable across machines
 
 **Cons:**
+
 - Larger size (~75MB)
 - Longer build time
 
@@ -67,11 +71,13 @@ dotnet publish src/EpisodeIdentifier.Core/EpisodeIdentifier.Core.csproj \
 ```
 
 **Pros:**
+
 - Single executable file
 - No dependencies to manage
 - Easy distribution
 
 **Cons:**
+
 - Largest size (~75MB+)
 - Slower startup time
 
@@ -132,21 +138,27 @@ docker run -v "$(pwd)":/data episode-identifier \
 ## Production Recommendations
 
 ### For Development/Testing
+
 Use **Option 1** (Framework-Dependent) for fast iteration:
+
 ```bash
 dotnet build --configuration Release
 ./src/EpisodeIdentifier.Core/bin/Release/net8.0/EpisodeIdentifier.Core --input video.mkv --hash-db hashes.db
 ```
 
 ### For Production Deployment
+
 Use **Option 2** (Self-Contained) for reliability:
+
 ```bash
 dotnet publish --configuration Release --self-contained true --runtime linux-x64 --output ./dist
 ./dist/EpisodeIdentifier.Core --input video.mkv --hash-db hashes.db
 ```
 
 ### For Distribution
+
 Use **Option 3** (Single File) for easy sharing:
+
 ```bash
 dotnet publish --configuration Release --self-contained true --runtime linux-x64 --property:PublishSingleFile=true --output ./release
 ```
@@ -154,6 +166,7 @@ dotnet publish --configuration Release --self-contained true --runtime linux-x64
 ## Dependencies
 
 Remember that your application still requires external tools regardless of deployment method:
+
 - **pgsrip** (primary subtitle extraction)
 - **ffmpeg** (fallback and video validation)
 - **mkvtoolnix** (container manipulation)

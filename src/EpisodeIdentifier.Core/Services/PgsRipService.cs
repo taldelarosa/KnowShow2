@@ -43,9 +43,9 @@ public class PgsRipService
 
             process.Start();
             await process.WaitForExitAsync();
-            
+
             _isAvailable = process.ExitCode == 0;
-            
+
             if (_isAvailable.Value)
             {
                 _logger.LogInformation("pgsrip is available and ready to use");
@@ -54,7 +54,7 @@ public class PgsRipService
             {
                 _logger.LogWarning("pgsrip is not available - install with: pip install pgsrip");
             }
-            
+
             return _isAvailable.Value;
         }
         catch (Exception ex)
@@ -86,7 +86,7 @@ public class PgsRipService
         // Create temporary files
         var tempSupFile = Path.GetTempFileName() + ".sup";
         var expectedSrtFile = Path.ChangeExtension(tempSupFile, ".srt");
-        
+
         try
         {
             // Write PGS data to SUP file
@@ -95,11 +95,11 @@ public class PgsRipService
 
             // Run pgsrip
             var success = await RunPgsRipAsync(tempSupFile, language);
-            
+
             if (success && File.Exists(expectedSrtFile))
             {
                 var srtContent = await File.ReadAllTextAsync(expectedSrtFile);
-                _logger.LogInformation("pgsrip converted {DataSize} bytes to {SrtLength} characters", 
+                _logger.LogInformation("pgsrip converted {DataSize} bytes to {SrtLength} characters",
                     pgsData.Length, srtContent.Length);
                 return srtContent;
             }
@@ -146,22 +146,22 @@ public class PgsRipService
 
         var videoDir = Path.GetDirectoryName(videoPath)!;
         var videoName = Path.GetFileNameWithoutExtension(videoPath);
-        
+
         try
         {
             // Run pgsrip on the video file
             var success = await RunPgsRipAsync(videoPath, language);
-            
+
             if (success)
             {
                 // Look for generated SRT files
                 var srtFiles = Directory.GetFiles(videoDir, $"{videoName}*.srt");
-                
+
                 if (srtFiles.Length > 0)
                 {
                     // Combine all SRT files or return the first one
                     var srtContent = await File.ReadAllTextAsync(srtFiles[0]);
-                    _logger.LogInformation("pgsrip extracted subtitles from {VideoPath}: {SrtFiles} files, {ContentLength} characters", 
+                    _logger.LogInformation("pgsrip extracted subtitles from {VideoPath}: {SrtFiles} files, {ContentLength} characters",
                         videoPath, srtFiles.Length, srtContent.Length);
                     return srtContent;
                 }
@@ -216,10 +216,10 @@ public class PgsRipService
             _logger.LogDebug("Running pgsrip: {Command} {Arguments}", process.StartInfo.FileName, process.StartInfo.Arguments);
 
             process.Start();
-            
+
             var output = await process.StandardOutput.ReadToEndAsync();
             var error = await process.StandardError.ReadToEndAsync();
-            
+
             await process.WaitForExitAsync();
 
             if (process.ExitCode == 0)

@@ -5,6 +5,7 @@ This application identifies Season and Episode numbers from AV1 encoded video fi
 ## Quick Setup (Fresh Linux System)
 
 **⚡ One-Command Setup:**
+
 ```bash
 # Check what's needed
 ./scripts/setup-prerequisites.sh --check-only
@@ -18,10 +19,11 @@ dotnet test
 ```
 
 **Manual verification:** The setup script will install all required dependencies including:
+
 - .NET 8.0 SDK
 - FFmpeg & MKVToolNix (video processing)
 - Tesseract OCR with language packs
-- pgsrip (advanced PGS processor) 
+- pgsrip (advanced PGS processor)
 - Enhanced OCR training data
 
 ## Git Workflow
@@ -41,14 +43,53 @@ git push origin main  # This will fail!
 ```
 
 **Required for all changes:**
+
 - Feature branches (`###-feature-name` format)
 - Pull Request with code review
 - All CI/CD checks must pass
 - See [branch protection guide](.github/branch-protection-config.md) for setup
 
+## Development & CI/CD
+
+### Code Quality Standards
+
+**Automated Formatting & Linting:**
+
+```bash
+# C# code formatting
+dotnet format EpisodeIdentifier.sln
+
+# Markdown documentation linting  
+npx markdownlint-cli2 "**/*.md" --fix
+```
+
+**Configuration Files:**
+- `.markdownlint.json` - Markdown linting rules optimized for technical documentation
+- Solution-wide formatting enforced via `dotnet format`
+
+### GitHub Actions Workflow
+
+**Build Process:**
+- Solution-based builds using `EpisodeIdentifier.sln`
+- Parallel test execution: Unit tests (8) + Contract tests (30) = 38 total
+- Integration tests temporarily disabled due to API compatibility issues
+
+**Quality Gates:**
+- ✅ .NET Code formatting validation via `dotnet format`  
+- ✅ Markdown documentation linting via `markdownlint-cli2`
+- ✅ Automated security scanning with Trivy
+- ✅ Dependency caching for faster builds
+- ✅ All deprecated GitHub Actions updated to current versions
+
+**Environment:**
+- NPM 11.6.0 (latest)
+- markdownlint-cli2 for documentation quality
+- Updated GitHub Actions (upload-artifact@v4, cache@v4, codeql-action@v3)
+
 ## Features
 
 ### Core Functionality
+
 - **AV1 Video Support**: Validates that input files are AV1 encoded
 - **PGS Subtitle Extraction**: Extracts PGS subtitles from video containers
 - **OCR Conversion**: Converts PGS image-based subtitles to searchable text
@@ -56,6 +97,7 @@ git push origin main  # This will fail!
 - **JSON Output**: All responses formatted as JSON for automation
 
 ### New PGS Extraction Features (FR-002 Implementation)
+
 - **Multi-Track Support**: Automatically detects all PGS subtitle tracks in video
 - **Language Selection**: Supports preferred language selection (e.g., `--language eng`)
 - **Smart Track Selection**: Defaults to English, falls back to first available track
@@ -68,6 +110,7 @@ git push origin main  # This will fail!
 **🎯 Automated Setup:** Use `./scripts/setup-prerequisites.sh --install` to install everything automatically.
 
 ### Required External Tools
+
 ```bash
 # Video processing
 sudo apt-get install ffmpeg mkvtoolnix-cli
@@ -83,6 +126,7 @@ pip install pgsrip
 ```
 
 ### .NET Dependencies (auto-restored)
+
 - Microsoft.Data.Sqlite
 - Microsoft.Extensions.Logging
 - System.CommandLine
@@ -91,16 +135,19 @@ pip install pgsrip
 ## Usage
 
 ### Basic Identification
+
 ```bash
 dotnet run -- --input video.mkv --hash-db hashes.sqlite
 ```
 
 ### With Language Preference
+
 ```bash
 dotnet run -- --input video.mkv --hash-db hashes.sqlite --language eng
 ```
 
 ### Store Known Subtitle
+
 ```bash
 dotnet run -- --input subtitle.txt --hash-db hashes.sqlite --store --series "Show Name" --season "01" --episode "02"
 ```
@@ -140,6 +187,7 @@ The application supports multiple subtitle languages through Tesseract OCR:
 ## Output Examples
 
 ### Successful Identification
+
 ```json
 {
   "series": "Example Show",
@@ -152,6 +200,7 @@ The application supports multiple subtitle languages through Tesseract OCR:
 ```
 
 ### AV1 Validation Error
+
 ```json
 {
   "error": {
@@ -162,6 +211,7 @@ The application supports multiple subtitle languages through Tesseract OCR:
 ```
 
 ### Missing OCR Dependencies
+
 ```json
 {
   "error": {
@@ -172,6 +222,7 @@ The application supports multiple subtitle languages through Tesseract OCR:
 ```
 
 ### No Subtitles Found
+
 ```json
 {
   "error": {
@@ -182,6 +233,7 @@ The application supports multiple subtitle languages through Tesseract OCR:
 ```
 
 ### OCR Processing Failed
+
 ```json
 {
   "error": {
@@ -194,6 +246,7 @@ The application supports multiple subtitle languages through Tesseract OCR:
 ## Technical Implementation
 
 ### PGS Extraction Process
+
 1. **Format Validation**: Verify input is AV1 encoded using ffprobe
 2. **Track Discovery**: Identify all PGS subtitle tracks with metadata
 3. **Track Selection**: Choose best track based on language preference
@@ -203,6 +256,7 @@ The application supports multiple subtitle languages through Tesseract OCR:
 7. **Text Combination**: Combine all extracted text for matching
 
 ### Error Handling
+
 - **Dependency Checks**: Validates external tools before processing
 - **File Validation**: Ensures input files exist and are accessible
 - **Format Verification**: Confirms AV1 encoding before processing
@@ -210,6 +264,7 @@ The application supports multiple subtitle languages through Tesseract OCR:
 - **Resource Cleanup**: Automatically removes temporary files
 
 ### Performance Considerations
+
 - **Temporary Files**: Uses unique temporary filenames to avoid conflicts
 - **Memory Management**: Streams large files instead of loading into memory
 - **Parallel Processing**: Supports concurrent OCR processing of multiple images
@@ -218,16 +273,19 @@ The application supports multiple subtitle languages through Tesseract OCR:
 ## Testing
 
 ### Unit Tests
+
 ```bash
 dotnet test tests/unit/
 ```
 
 ### Integration Tests
+
 ```bash
 dotnet test tests/integration/
 ```
 
 ### Contract Tests
+
 ```bash
 dotnet test tests/contract/
 ```
@@ -235,11 +293,13 @@ dotnet test tests/contract/
 ## Architecture
 
 ### New Service Classes
+
 - `VideoFormatValidator`: AV1 validation and subtitle track discovery
 - `PgsToTextConverter`: PGS to text conversion via OCR
 - `SubtitleExtractor`: Enhanced PGS extraction with track selection
 
 ### Models
+
 - `SubtitleTrackInfo`: Represents discovered subtitle tracks
 - `IdentificationResult`: Enhanced with new error types
 - `IdentificationError`: Extended error codes for new scenarios
@@ -249,6 +309,7 @@ dotnet test tests/contract/
 ### Setup Issues
 
 **"Command not found" or missing dependencies**
+
 ```bash
 # Run the comprehensive setup checker
 ./scripts/setup-prerequisites.sh --check-only --verbose
@@ -258,6 +319,7 @@ dotnet test tests/contract/
 ```
 
 **"Permission denied" when running setup**
+
 ```bash
 # Make the script executable
 chmod +x scripts/setup-prerequisites.sh
@@ -266,24 +328,30 @@ chmod +x scripts/setup-prerequisites.sh
 ### Common Issues
 
 **"Tesseract OCR is required but not available"**
+
 - Install tesseract-ocr: `sudo apt-get install tesseract-ocr`
 - Verify installation: `tesseract --version`
 
 **"No PGS subtitles could be extracted"**
+
 - Check if video has embedded subtitles: `ffprobe -show_streams video.mkv`
 - Verify subtitle format is PGS/hdmv_pgs_subtitle
 
 **"The provided file is not AV1 encoded"**
+
 - Verify video codec: `ffprobe -show_streams video.mkv | grep codec_name`
 - Look for `av01` or `libaom-av1` codec
 
 **"Failed to extract readable text from PGS subtitles"**
+
 - Check if PGS contains text (some may be graphics only)
 - Try different language pack: `--language spa`
 - Verify image quality is sufficient for OCR
 
 ### Debug Logging
+
 Set environment variable for detailed logging:
+
 ```bash
 export DOTNET_LOGGING_CONSOLE_DISABLECOLORS=true
 dotnet run -- --input video.mkv --hash-db hashes.db

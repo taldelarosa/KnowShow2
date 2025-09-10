@@ -29,7 +29,7 @@ public class EnhancedPgsToTextConverter
     /// </summary>
     public async Task<string> ConvertPgsToText(byte[] pgsData, string language = "eng")
     {
-        _logger.LogInformation("Converting PGS subtitle data, size: {Size} bytes, language: {Language}", 
+        _logger.LogInformation("Converting PGS subtitle data, size: {Size} bytes, language: {Language}",
             pgsData.Length, language);
 
         if (pgsData.Length == 0)
@@ -65,7 +65,7 @@ public class EnhancedPgsToTextConverter
     /// </summary>
     public async Task<string> ConvertPgsFromVideoToText(string videoPath, int subtitleTrackIndex, string language = "eng")
     {
-        _logger.LogInformation("Converting PGS from video: {VideoPath}, track {TrackIndex}, language: {Language}", 
+        _logger.LogInformation("Converting PGS from video: {VideoPath}, track {TrackIndex}, language: {Language}",
             videoPath, subtitleTrackIndex, language);
 
         // Try pgsrip first (best quality)

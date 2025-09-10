@@ -1,4 +1,5 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
+using FluentAssertions;
 using System.Threading.Tasks;
 using System.IO;
 using EpisodeIdentifier.Core.Models;
@@ -6,11 +7,10 @@ using EpisodeIdentifier.Core.Services;
 
 namespace EpisodeIdentifier.Tests.Contract;
 
-[TestClass]
 public class FuzzyHashDbTests
 {
 
-    [TestMethod]
+    [Fact]
     public async Task HashInsertAndLookup_StoresAndRetrievesCorrectly()
     {
         // Arrange
@@ -33,11 +33,11 @@ public class FuzzyHashDbTests
             var matches = await service.FindMatches(subtitleText);
 
             // Assert
-            Assert.AreEqual(1, matches.Count, "Should find exactly one match");
-            Assert.AreEqual(subtitle.Series, matches[0].Subtitle.Series);
-            Assert.AreEqual(subtitle.Season, matches[0].Subtitle.Season);
-            Assert.AreEqual(subtitle.Episode, matches[0].Subtitle.Episode);
-            Assert.AreEqual(1.0, matches[0].Confidence, 0.001, "Should have 100% confidence for exact match");
+            matches.Should().HaveCount(1, "Should find exactly one match");
+            matches[0].Subtitle.Series.Should().Be(subtitle.Series);
+            matches[0].Subtitle.Season.Should().Be(subtitle.Season);
+            matches[0].Subtitle.Episode.Should().Be(subtitle.Episode);
+            matches[0].Confidence.Should().BeApproximately(1.0, 0.001, "Should have 100% confidence for exact match");
         }
         finally
         {
@@ -45,7 +45,7 @@ public class FuzzyHashDbTests
         }
     }
 
-    [TestMethod]
+    [Fact]
     public async Task NoMatchFound_ReturnsLowConfidence()
     {
         // Arrange
@@ -68,7 +68,7 @@ public class FuzzyHashDbTests
             var matches = await service.FindMatches(unmatchedSubtitle);
 
             // Assert
-            Assert.AreEqual(0, matches.Count, "Should find no matches above threshold");
+            matches.Should().HaveCount(0, "Should find no matches above threshold");
         }
         finally
         {
@@ -76,7 +76,7 @@ public class FuzzyHashDbTests
         }
     }
 
-    [TestMethod]
+    [Fact]
     public async Task AmbiguousMatch_ReturnsMultipleResults()
     {
         // Arrange
@@ -100,10 +100,10 @@ public class FuzzyHashDbTests
             var matches = await service.FindMatches(similarContent, threshold: 0.5);
 
             // Assert
-            Assert.IsTrue(matches.Count >= 2, "Should find multiple similar matches");
+            matches.Should().HaveCountGreaterOrEqualTo(2, "Should find multiple similar matches");
             foreach (var match in matches)
             {
-                Assert.IsTrue(match.Confidence >= 0.5, "All matches should meet threshold");
+                match.Confidence.Should().BeGreaterOrEqualTo(0.5, "All matches should meet threshold");
             }
         }
         finally

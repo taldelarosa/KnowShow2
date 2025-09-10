@@ -25,7 +25,7 @@ public class PgsToTextConverter
         // Save PGS data to temporary .sup file for processing
         var tempPgsFile = Path.GetTempFileName() + ".sup";
         var tempImagesDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-        
+
         try
         {
             await File.WriteAllBytesAsync(tempPgsFile, pgsData);
@@ -33,7 +33,7 @@ public class PgsToTextConverter
 
             // Extract images from PGS data using ffmpeg
             var imageFiles = await ExtractImagesFromPgsFile(tempPgsFile, tempImagesDir);
-            
+
             if (!imageFiles.Any())
             {
                 _logger.LogWarning("No images could be extracted from PGS subtitle data for OCR");
@@ -43,7 +43,7 @@ public class PgsToTextConverter
             // OCR each image and build SRT format text
             var srtBuilder = new StringBuilder();
             var subtitleIndex = 1;
-            
+
             foreach (var imageFile in imageFiles.OrderBy(f => f))
             {
                 var text = await ExtractTextFromImage(imageFile, language);
@@ -52,18 +52,18 @@ public class PgsToTextConverter
                     // Create basic timestamps (in production, these would come from PGS timing data)
                     var startTime = TimeSpan.FromSeconds((subtitleIndex - 1) * 3);
                     var endTime = TimeSpan.FromSeconds(subtitleIndex * 3);
-                    
+
                     srtBuilder.AppendLine(subtitleIndex.ToString());
                     srtBuilder.AppendLine($"{FormatSrtTime(startTime)} --> {FormatSrtTime(endTime)}");
                     srtBuilder.AppendLine(text.Trim());
                     srtBuilder.AppendLine();
-                    
+
                     subtitleIndex++;
                 }
             }
 
             var result = srtBuilder.ToString().Trim();
-            _logger.LogInformation("OCR extracted text from {ImageCount} PGS images, total SRT length: {TextLength}", 
+            _logger.LogInformation("OCR extracted text from {ImageCount} PGS images, total SRT length: {TextLength}",
                 imageFiles.Count, result.Length);
 
             return result;
@@ -75,7 +75,7 @@ public class PgsToTextConverter
             {
                 if (File.Exists(tempPgsFile))
                     File.Delete(tempPgsFile);
-                
+
                 if (Directory.Exists(tempImagesDir))
                     Directory.Delete(tempImagesDir, true);
             }
@@ -89,16 +89,16 @@ public class PgsToTextConverter
     public async Task<string> ConvertPgsFromVideoToText(string videoPath, int subtitleTrackIndex, string language = "eng")
     {
         _logger.LogInformation("Converting PGS subtitles directly from video: {VideoPath}, track {TrackIndex}", videoPath, subtitleTrackIndex);
-        
+
         var tempImagesDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-        
+
         try
         {
             Directory.CreateDirectory(tempImagesDir);
 
             // Extract images directly from video file using ffmpeg
             var imageFiles = await ExtractImagesFromVideoSubtitleTrack(videoPath, subtitleTrackIndex, tempImagesDir);
-            
+
             if (!imageFiles.Any())
             {
                 _logger.LogWarning("No images extracted from video PGS subtitles");
@@ -108,7 +108,7 @@ public class PgsToTextConverter
             // OCR each image and build SRT format text
             var srtBuilder = new StringBuilder();
             var subtitleIndex = 1;
-            
+
             foreach (var imageFile in imageFiles.OrderBy(f => f))
             {
                 var text = await ExtractTextFromImage(imageFile, language);
@@ -117,18 +117,18 @@ public class PgsToTextConverter
                     // Create timestamps based on image sequence
                     var startTime = TimeSpan.FromSeconds((subtitleIndex - 1) * 3);
                     var endTime = TimeSpan.FromSeconds(subtitleIndex * 3);
-                    
+
                     srtBuilder.AppendLine(subtitleIndex.ToString());
                     srtBuilder.AppendLine($"{FormatSrtTime(startTime)} --> {FormatSrtTime(endTime)}");
                     srtBuilder.AppendLine(text.Trim());
                     srtBuilder.AppendLine();
-                    
+
                     subtitleIndex++;
                 }
             }
 
             var result = srtBuilder.ToString().Trim();
-            _logger.LogInformation("Extracted text from {ImageCount} images, total SRT length: {TextLength}", 
+            _logger.LogInformation("Extracted text from {ImageCount} images, total SRT length: {TextLength}",
                 imageFiles.Count, result.Length);
 
             return result;
@@ -187,14 +187,14 @@ public class PgsToTextConverter
                 var pngFiles = Directory.GetFiles(outputDir, "subtitle_*.png")
                     .OrderBy(f => f)
                     .ToList();
-                
+
                 imageFiles.AddRange(pngFiles);
                 _logger.LogInformation("Extracted {Count} images from PGS file using ffmpeg", pngFiles.Count);
             }
             else
             {
                 _logger.LogWarning("ffmpeg failed to extract images from PGS: {Error}", error);
-                
+
                 // Alternative approach: Try using ffmpeg with different options
                 await TryAlternativePgsExtraction(pgsFile, outputDir, imageFiles);
             }
@@ -233,7 +233,7 @@ public class PgsToTextConverter
                 var pngFiles = Directory.GetFiles(outputDir, "sub_*.png")
                     .OrderBy(f => f)
                     .ToList();
-                
+
                 imageFiles.AddRange(pngFiles);
                 _logger.LogInformation("Extracted {Count} images using alternative method", pngFiles.Count);
             }
@@ -273,7 +273,7 @@ public class PgsToTextConverter
                 var pngFiles = Directory.GetFiles(outputDir, "subtitle_*.png")
                     .OrderBy(f => f)
                     .ToList();
-                
+
                 imageFiles.AddRange(pngFiles);
                 _logger.LogInformation("Extracted {Count} images from video subtitle track", pngFiles.Count);
             }
@@ -332,7 +332,7 @@ public class PgsToTextConverter
         {
             _logger.LogError(ex, "Failed to extract text from image {ImagePath}", imagePath);
         }
-        
+
         return string.Empty;
     }
 
@@ -373,7 +373,7 @@ public class PgsToTextConverter
                 var pngFiles = Directory.GetFiles(outputDir, "subtitle_*.png")
                     .OrderBy(f => f)
                     .ToList();
-                
+
                 imageFiles.AddRange(pngFiles);
                 _logger.LogInformation("Extracted {Count} images from video subtitle track {TrackIndex}", pngFiles.Count, trackIndex);
             }
