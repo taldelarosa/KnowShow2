@@ -61,4 +61,60 @@ public class IdentificationError
         Code = "NO_MATCHES_FOUND",
         Message = "No matching episodes found in the database with sufficient confidence."
     };
+
+    public static IdentificationError RenameFailedFileNotFound => new()
+    {
+        Code = "RENAME_FAILED_FILE_NOT_FOUND",
+        Message = "File rename failed: Original file not found."
+    };
+
+    public static IdentificationError RenameFailedTargetExists => new()
+    {
+        Code = "RENAME_FAILED_TARGET_EXISTS",
+        Message = "File rename failed: Target filename already exists."
+    };
+
+    public static IdentificationError RenameFailedPermissionDenied => new()
+    {
+        Code = "RENAME_FAILED_PERMISSION_DENIED",
+        Message = "File rename failed: Permission denied."
+    };
+
+    public static IdentificationError RenameFailedInvalidPath => new()
+    {
+        Code = "RENAME_FAILED_INVALID_PATH",
+        Message = "File rename failed: Invalid path or filename."
+    };
+
+    public static IdentificationError RenameFailedDiskFull => new()
+    {
+        Code = "RENAME_FAILED_DISK_FULL",
+        Message = "File rename failed: Insufficient disk space."
+    };
+
+    public static IdentificationError RenameFailedPathTooLong => new()
+    {
+        Code = "RENAME_FAILED_PATH_TOO_LONG",
+        Message = "File rename failed: Path or filename too long."
+    };
+
+    public static IdentificationError RenameFailedUnknown(string message) => new()
+    {
+        Code = "RENAME_FAILED_UNKNOWN",
+        Message = $"File rename failed: {message}"
+    };
+
+    public static IdentificationError FromFileRenameError(FileRenameError renameError, string? customMessage = null)
+    {
+        return renameError switch
+        {
+            FileRenameError.FileNotFound => RenameFailedFileNotFound,
+            FileRenameError.TargetExists => RenameFailedTargetExists,
+            FileRenameError.PermissionDenied => RenameFailedPermissionDenied,
+            FileRenameError.InvalidPath => RenameFailedInvalidPath,
+            FileRenameError.DiskFull => RenameFailedDiskFull,
+            FileRenameError.PathTooLong => RenameFailedPathTooLong,
+            _ => RenameFailedUnknown(customMessage ?? "Unknown error")
+        };
+    }
 }

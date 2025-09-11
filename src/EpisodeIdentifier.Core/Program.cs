@@ -10,7 +10,7 @@ public class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        var rootCommand = new RootCommand("Identify Season and Episode from AV1 video via PGS subtitle comparison");
+        var rootCommand = new RootCommand("Identify Season and Episode from AV1 video via PGS subtitle comparison. Optionally rename files with standardized naming.");
 
         var inputOption = new Option<FileInfo>(
             "--input",
@@ -58,7 +58,10 @@ public class Program
 
         var renameOption = new Option<bool>(
             "--rename",
-            "Automatically rename the video file based on episode identification (requires high confidence match)")
+            "Automatically rename the video file when episode identification is successful. " +
+            "Requires high confidence match (>= 90%). " +
+            "Filename format: 'SeriesName - S01E01 - EpisodeName.ext'. " +
+            "If rename fails, identification result will include error details and suggested filename.")
         { IsRequired = false };
         rootCommand.Add(renameOption);
 
@@ -91,22 +94,25 @@ public class Program
         string? language,
         bool rename)
     {
+        // Configure JSON serialization with camelCase for consistent API
+        var jsonSerializationOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        
         // Validate input parameters
         if (bulkDirectory != null && input != null)
         {
-            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "CONFLICTING_OPTIONS", message = "Cannot specify both --input and --bulk-store options" } }));
+            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "CONFLICTING_OPTIONS", message = "Cannot specify both --input and --bulk-store options" } }, jsonSerializationOptions));
             return 1;
         }
 
         if (bulkDirectory == null && input == null)
         {
-            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "MISSING_INPUT", message = "Must specify either --input or --bulk-store option" } }));
+            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "MISSING_INPUT", message = "Must specify either --input or --bulk-store option" } }, jsonSerializationOptions));
             return 1;
         }
 
         if (input != null && !input.Exists)
         {
-            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "INVALID_INPUT", message = "Input file not found" } }));
+            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "INVALID_INPUT", message = "Input file not found" } }, jsonSerializationOptions));
             return 1;
         }
 
@@ -281,11 +287,11 @@ public class Program
                     var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, matcher, rename, filenameService, fileRenameService);
                     if (textSubtitleResult != null)
                     {
-                        Console.WriteLine(JsonSerializer.Serialize(textSubtitleResult));
+                        Console.WriteLine(JsonSerializer.Serialize(textSubtitleResult, jsonSerializationOptions));
                         return textSubtitleResult.HasError ? 1 : 0;
                     }
 
-                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLES_FOUND", message = "No PGS or text subtitles could be found in the video file" } }));
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLES_FOUND", message = "No PGS or text subtitles could be found in the video file" } }, jsonSerializationOptions));
                     return 1;
                 }
 
@@ -337,32 +343,41 @@ public class Program
                                 SuggestedFilename = filenameResult.SuggestedFilename
                             };
 
-                            // Attempt to rename the file
-                            var renameResult = await fileRenameService.RenameFileAsync(renameRequest);
-                            
-                            if (renameResult.Success)
+                            try
                             {
-                                // Update identification result with rename success
-                                result.SuggestedFilename = filenameResult.SuggestedFilename;
-                                result.FileRenamed = true;
-                                result.OriginalFilename = Path.GetFileName(input.FullName);
+                                // Attempt to rename the file
+                                var renameResult = await fileRenameService.RenameFileAsync(renameRequest);
+                                
+                                if (renameResult.Success)
+                                {
+                                    // Update identification result with rename success
+                                    result.SuggestedFilename = filenameResult.SuggestedFilename;
+                                    result.FileRenamed = true;
+                                    result.OriginalFilename = Path.GetFileName(input.FullName);
+                                }
+                                else
+                                {
+                                    // Include filename suggestion but set error for rename failure
+                                    result.SuggestedFilename = filenameResult.SuggestedFilename;
+                                    result.FileRenamed = false;
+                                    
+                                    // Set appropriate error based on rename failure type
+                                    if (renameResult.ErrorType.HasValue)
+                                    {
+                                        result.Error = IdentificationError.FromFileRenameError(renameResult.ErrorType.Value, renameResult.ErrorMessage);
+                                    }
+                                    else
+                                    {
+                                        result.Error = IdentificationError.RenameFailedUnknown(renameResult.ErrorMessage ?? "Unknown rename error");
+                                    }
+                                }
                             }
-                            else
+                            catch (Exception ex)
                             {
-                                // Include filename suggestion but note rename failure
+                                // Handle unexpected exceptions during rename operation
                                 result.SuggestedFilename = filenameResult.SuggestedFilename;
                                 result.FileRenamed = false;
-                                
-                                // Add rename error to result (we'll need to extend IdentificationResult to include rename errors)
-                                Console.WriteLine(JsonSerializer.Serialize(new
-                                {
-                                    warning = new
-                                    {
-                                        code = "RENAME_FAILED",
-                                        message = $"File identification successful but rename failed: {renameResult.ErrorMessage}",
-                                        suggestedFilename = filenameResult.SuggestedFilename
-                                    }
-                                }));
+                                result.Error = IdentificationError.RenameFailedUnknown($"Unexpected error during file rename: {ex.Message}");
                             }
                         }
                         else
@@ -401,14 +416,14 @@ public class Program
                     }));
                 }
 
-                Console.WriteLine(JsonSerializer.Serialize(result));
+                Console.WriteLine(JsonSerializer.Serialize(result, jsonSerializationOptions));
 
                 return result.HasError ? 1 : 0;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "PROCESSING_ERROR", message = ex.Message } }));
+            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "PROCESSING_ERROR", message = ex.Message } }, jsonSerializationOptions));
             return 1;
         }
     }
@@ -484,30 +499,30 @@ public class Program
             // Handle file renaming if --rename flag is specified
             if (rename && !result.HasError && result.MatchConfidence >= 0.9)
             {
-                try
+                // Generate filename using FilenameService
+                var filenameRequest = new FilenameGenerationRequest
                 {
-                    // Generate filename using FilenameService
-                    var filenameRequest = new FilenameGenerationRequest
+                    Series = result.Series ?? "",
+                    Season = result.Season ?? "",
+                    Episode = result.Episode ?? "",
+                    EpisodeName = result.EpisodeName ?? "",
+                    FileExtension = Path.GetExtension(videoFilePath),
+                    MatchConfidence = result.MatchConfidence
+                };
+
+                var filenameResult = filenameService.GenerateFilename(filenameRequest);
+                
+                if (filenameResult.IsValid && !string.IsNullOrEmpty(filenameResult.SuggestedFilename))
+                {
+                    // Prepare file rename request
+                    var renameRequest = new FileRenameRequest
                     {
-                        Series = result.Series ?? "",
-                        Season = result.Season ?? "",
-                        Episode = result.Episode ?? "",
-                        EpisodeName = result.EpisodeName ?? "",
-                        FileExtension = Path.GetExtension(videoFilePath),
-                        MatchConfidence = result.MatchConfidence
+                        OriginalPath = videoFilePath,
+                        SuggestedFilename = filenameResult.SuggestedFilename
                     };
 
-                    var filenameResult = filenameService.GenerateFilename(filenameRequest);
-                    
-                    if (filenameResult.IsValid && !string.IsNullOrEmpty(filenameResult.SuggestedFilename))
+                    try
                     {
-                        // Prepare file rename request
-                        var renameRequest = new FileRenameRequest
-                        {
-                            OriginalPath = videoFilePath,
-                            SuggestedFilename = filenameResult.SuggestedFilename
-                        };
-
                         // Attempt to rename the file
                         var renameResult = await fileRenameService.RenameFileAsync(renameRequest);
                         
@@ -520,15 +535,28 @@ public class Program
                         }
                         else
                         {
-                            // Include filename suggestion but note rename failure
+                            // Include filename suggestion but set error for rename failure
                             result.SuggestedFilename = filenameResult.SuggestedFilename;
                             result.FileRenamed = false;
+                            
+                            // Set appropriate error based on rename failure type
+                            if (renameResult.ErrorType.HasValue)
+                            {
+                                result.Error = IdentificationError.FromFileRenameError(renameResult.ErrorType.Value, renameResult.ErrorMessage);
+                            }
+                            else
+                            {
+                                result.Error = IdentificationError.RenameFailedUnknown(renameResult.ErrorMessage ?? "Unknown rename error");
+                            }
                         }
                     }
-                }
-                catch (Exception)
-                {
-                    // Silently continue if rename fails - result will not have rename info
+                    catch (Exception ex)
+                    {
+                        // Handle unexpected exceptions during rename operation
+                        result.SuggestedFilename = filenameResult.SuggestedFilename;
+                        result.FileRenamed = false;
+                        result.Error = IdentificationError.RenameFailedUnknown($"Unexpected error during file rename: {ex.Message}");
+                    }
                 }
             }
             

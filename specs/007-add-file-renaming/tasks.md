@@ -82,19 +82,19 @@
 
 - [x] T025 Integrate FilenameService into episode identification workflow in src/EpisodeIdentifier.Core/Program.cs
 - [x] T026 Integrate FileRenameService for --rename flag handling in src/EpisodeIdentifier.Core/Program.cs
-- [ ] T027 Update JSON serialization to include new IdentificationResult fields in src/EpisodeIdentifier.Core/Program.cs
-- [ ] T028 Add error handling for file rename failures in src/EpisodeIdentifier.Core/Program.cs
-- [ ] T029 Update CLI help text to document --rename flag in src/EpisodeIdentifier.Core/Program.cs
+- [x] T027 Update JSON serialization to include new IdentificationResult fields in src/EpisodeIdentifier.Core/Program.cs
+- [x] T028 Add error handling for file rename failures in src/EpisodeIdentifier.Core/Program.cs
+- [x] T029 Update CLI help text to document --rename flag in src/EpisodeIdentifier.Core/Program.cs
 
 ## Phase 3.5: Polish
 
-- [ ] T030 [P] Unit tests for filename sanitization edge cases in tests/unit/FilenameServiceTests.cs
-- [ ] T031 [P] Unit tests for file rename error scenarios in tests/unit/FileRenameServiceTests.cs
-- [ ] T032 [P] Unit tests for Windows path length validation in tests/unit/FilenameServiceTests.cs
-- [ ] T033 [P] Performance test for filename generation (<10ms) in tests/performance/FilenamePerformanceTests.cs
-- [ ] T034 [P] Update quickstart.md with actual test results
-- [ ] T035 Update README.md with --rename flag documentation
-- [ ] T036 Run end-to-end validation per quickstart.md scenarios
+- [x] T030 [P] Unit tests for filename sanitization edge cases in tests/unit/FilenameServiceTests.cs
+- [x] T031 [P] Unit tests for file rename error scenarios in tests/unit/FileRenameServiceTests.cs
+- [x] T032 [P] Unit tests for Windows path length validation in tests/unit/FilenameServiceTests.cs
+- [x] T033 [P] Performance test for filename generation (<10ms) in tests/performance/FilenamePerformanceTests.cs
+- [x] T034 [P] Update quickstart.md with actual test results
+- [x] T035 Update README.md with --rename flag documentation
+- [x] T036 Run end-to-end validation per quickstart.md scenarios
 
 ## Dependencies
 
