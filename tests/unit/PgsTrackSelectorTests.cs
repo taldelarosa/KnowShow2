@@ -1,32 +1,31 @@
 using EpisodeIdentifier.Core.Models;
 using EpisodeIdentifier.Core.Services;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace EpisodeIdentifier.Tests.Unit;
 
-[TestClass]
 public class PgsTrackSelectorTests
 {
-    [TestMethod]
+    [Fact]
     public void SelectBestTrack_WithNoTracks_ThrowsArgumentException()
     {
         // Arrange
         var tracks = new List<SubtitleTrackInfo>();
 
         // Act & Assert
-        Assert.ThrowsException<ArgumentException>(() =>
+        Assert.Throws<ArgumentException>(() =>
             PgsTrackSelector.SelectBestTrack(tracks));
     }
 
-    [TestMethod]
+    [Fact]
     public void SelectBestTrack_WithNullTracks_ThrowsArgumentException()
     {
         // Act & Assert
-        Assert.ThrowsException<ArgumentException>(() =>
+        Assert.Throws<ArgumentException>(() =>
             PgsTrackSelector.SelectBestTrack(null!));
     }
 
-    [TestMethod]
+    [Fact]
     public void SelectBestTrack_WithPreferredLanguageMatch_ReturnsMatchingTrack()
     {
         // Arrange
@@ -41,11 +40,11 @@ public class PgsTrackSelectorTests
         var result = PgsTrackSelector.SelectBestTrack(tracks, "fra");
 
         // Assert
-        Assert.AreEqual(2, result.Index);
-        Assert.AreEqual("fra", result.Language);
+        Assert.Equal(2, result.Index);
+        Assert.Equal("fra", result.Language);
     }
 
-    [TestMethod]
+    [Fact]
     public void SelectBestTrack_WithPreferredLanguageCaseInsensitive_ReturnsMatchingTrack()
     {
         // Arrange
@@ -60,11 +59,11 @@ public class PgsTrackSelectorTests
         var result = PgsTrackSelector.SelectBestTrack(tracks, "eng");
 
         // Assert
-        Assert.AreEqual(1, result.Index);
-        Assert.AreEqual("ENG", result.Language);
+        Assert.Equal(1, result.Index);
+        Assert.Equal("ENG", result.Language);
     }
 
-    [TestMethod]
+    [Fact]
     public void SelectBestTrack_WithPreferredLanguageNotFound_FallsBackToEnglish()
     {
         // Arrange
@@ -79,11 +78,11 @@ public class PgsTrackSelectorTests
         var result = PgsTrackSelector.SelectBestTrack(tracks, "deu");
 
         // Assert
-        Assert.AreEqual(1, result.Index);
-        Assert.AreEqual("eng", result.Language);
+        Assert.Equal(1, result.Index);
+        Assert.Equal("eng", result.Language);
     }
 
-    [TestMethod]
+    [Fact]
     public void SelectBestTrack_WithNoPreferredLanguage_DefaultsToEnglish()
     {
         // Arrange
@@ -98,11 +97,11 @@ public class PgsTrackSelectorTests
         var result = PgsTrackSelector.SelectBestTrack(tracks);
 
         // Assert
-        Assert.AreEqual(1, result.Index);
-        Assert.AreEqual("eng", result.Language);
+        Assert.Equal(1, result.Index);
+        Assert.Equal("eng", result.Language);
     }
 
-    [TestMethod]
+    [Fact]
     public void SelectBestTrack_WithEnglishVariants_ReturnsEnglishTrack()
     {
         // Arrange
@@ -117,11 +116,11 @@ public class PgsTrackSelectorTests
         var result = PgsTrackSelector.SelectBestTrack(tracks);
 
         // Assert
-        Assert.AreEqual(1, result.Index);
-        Assert.AreEqual("en", result.Language);
+        Assert.Equal(1, result.Index);
+        Assert.Equal("en", result.Language);
     }
 
-    [TestMethod]
+    [Fact]
     public void SelectBestTrack_WithEnglishFullName_ReturnsEnglishTrack()
     {
         // Arrange
@@ -136,11 +135,11 @@ public class PgsTrackSelectorTests
         var result = PgsTrackSelector.SelectBestTrack(tracks);
 
         // Assert
-        Assert.AreEqual(1, result.Index);
-        Assert.AreEqual("english", result.Language);
+        Assert.Equal(1, result.Index);
+        Assert.Equal("english", result.Language);
     }
 
-    [TestMethod]
+    [Fact]
     public void SelectBestTrack_WithNoEnglish_ReturnsFirstTrack()
     {
         // Arrange
@@ -155,11 +154,11 @@ public class PgsTrackSelectorTests
         var result = PgsTrackSelector.SelectBestTrack(tracks);
 
         // Assert
-        Assert.AreEqual(0, result.Index);
-        Assert.AreEqual("spa", result.Language);
+        Assert.Equal(0, result.Index);
+        Assert.Equal("spa", result.Language);
     }
 
-    [TestMethod]
+    [Fact]
     public void SelectBestTrack_WithSingleTrack_ReturnsThatTrack()
     {
         // Arrange
@@ -172,11 +171,11 @@ public class PgsTrackSelectorTests
         var result = PgsTrackSelector.SelectBestTrack(tracks);
 
         // Assert
-        Assert.AreEqual(5, result.Index);
-        Assert.AreEqual("spa", result.Language);
+        Assert.Equal(5, result.Index);
+        Assert.Equal("spa", result.Language);
     }
 
-    [TestMethod]
+    [Fact]
     public void SelectBestTrack_WithNullLanguages_ReturnsFirstTrack()
     {
         // Arrange
@@ -190,7 +189,7 @@ public class PgsTrackSelectorTests
         var result = PgsTrackSelector.SelectBestTrack(tracks);
 
         // Assert
-        Assert.AreEqual(0, result.Index);
-        Assert.IsNull(result.Language);
+        Assert.Equal(0, result.Index);
+        Assert.Null(result.Language);
     }
 }

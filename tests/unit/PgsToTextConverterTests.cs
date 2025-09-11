@@ -1,10 +1,9 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Core.Services;
+using Xunit;
 
 namespace EpisodeIdentifier.Tests.Unit;
 
-[TestClass]
 public class PgsToTextConverterTests
 {
     private PgsToTextConverter GetConverter()
@@ -14,7 +13,7 @@ public class PgsToTextConverterTests
         return new PgsToTextConverter(logger);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ConvertPgsToText_WithEmptyData_ReturnsEmptyString()
     {
         // Arrange
@@ -25,10 +24,10 @@ public class PgsToTextConverterTests
         var result = await converter.ConvertPgsToText(emptyData);
 
         // Assert
-        Assert.AreEqual(string.Empty, result);
+        Assert.Equal(string.Empty, result);
     }
 
-    [TestMethod]
+    [Fact]
     public void IsOcrAvailable_ReturnsBoolean()
     {
         // Arrange
@@ -38,10 +37,10 @@ public class PgsToTextConverterTests
         var result = converter.IsOcrAvailable();
 
         // Assert
-        Assert.IsInstanceOfType(result, typeof(bool)); // Just checking it returns a boolean
+        Assert.IsType<bool>(result); // Just checking it returns a boolean
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ConvertPgsToText_WithValidLanguage_UsesCorrectLanguageCode()
     {
         // Arrange
@@ -56,12 +55,12 @@ public class PgsToTextConverterTests
             await converter.ConvertPgsToText(testData, "eng");
             await converter.ConvertPgsToText(testData, "spa");
             await converter.ConvertPgsToText(testData, "fra");
-            Assert.IsTrue(true); // If we get here, no exceptions were thrown
+            Assert.True(true); // If we get here, no exceptions were thrown
         }
         catch (Exception ex)
         {
             // OCR might fail due to missing dependencies in test environment
-            Assert.IsTrue(ex.Message.Contains("tesseract") || ex.Message.Contains("ffmpeg"));
+            Assert.True(ex.Message.Contains("tesseract") || ex.Message.Contains("ffmpeg"));
         }
     }
 }
