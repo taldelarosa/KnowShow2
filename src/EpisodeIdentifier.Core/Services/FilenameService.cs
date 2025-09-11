@@ -65,9 +65,10 @@ public class FilenameService : IFilenameService
         }
 
         // Handle length truncation if necessary
-        if (filename.Length > 260)
+        var maxLength = request.MaxLength ?? 260;
+        if (filename.Length > maxLength)
         {
-            filename = TruncateToLimit(filename, 260);
+            filename = TruncateToLimit(filename, maxLength);
             result.WasTruncated = true;
         }
 

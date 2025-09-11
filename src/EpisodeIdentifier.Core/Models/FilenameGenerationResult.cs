@@ -2,7 +2,7 @@ namespace EpisodeIdentifier.Core.Models;
 
 public class FilenameGenerationResult
 {
-    public string SuggestedFilename { get; set; } = string.Empty;
+    public string? SuggestedFilename { get; set; }
     
     public bool IsValid { get; set; }
     

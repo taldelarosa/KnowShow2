@@ -81,7 +81,7 @@
 ## Phase 3.4: Integration
 
 - [x] T025 Integrate FilenameService into episode identification workflow in src/EpisodeIdentifier.Core/Program.cs
-- [ ] T026 Integrate FileRenameService for --rename flag handling in src/EpisodeIdentifier.Core/Program.cs
+- [x] T026 Integrate FileRenameService for --rename flag handling in src/EpisodeIdentifier.Core/Program.cs
 - [ ] T027 Update JSON serialization to include new IdentificationResult fields in src/EpisodeIdentifier.Core/Program.cs
 - [ ] T028 Add error handling for file rename failures in src/EpisodeIdentifier.Core/Program.cs
 - [ ] T029 Update CLI help text to document --rename flag in src/EpisodeIdentifier.Core/Program.cs

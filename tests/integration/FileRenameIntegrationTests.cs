@@ -25,10 +25,15 @@ public class FileRenameIntegrationTests : IDisposable
         var services = new ServiceCollection();
         services.AddLogging(builder => builder.AddConsole());
         
-        // These service registrations will fail until services are implemented
+        // Register services
         services.AddScoped<IFilenameService, FilenameService>();
         services.AddScoped<IFileRenameService, FileRenameService>();
-        services.AddScoped<IFuzzyHashService, FuzzyHashService>();
+        services.AddScoped<SubtitleNormalizationService>();
+        services.AddScoped<FuzzyHashService>(provider => 
+            new FuzzyHashService(
+                ":memory:", // Use in-memory SQLite database for tests
+                provider.GetRequiredService<ILogger<FuzzyHashService>>(),
+                provider.GetRequiredService<SubtitleNormalizationService>()));
         
         _serviceProvider = services.BuildServiceProvider();
         _logger = _serviceProvider.GetRequiredService<ILogger<FileRenameIntegrationTests>>();

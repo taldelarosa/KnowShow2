@@ -20,4 +20,9 @@ public class FilenameGenerationRequest
     
     [Range(0.0, 1.0)]
     public double MatchConfidence { get; set; }
+    
+    /// <summary>
+    /// Maximum length for the generated filename. If not specified, defaults to 260 characters.
+    /// </summary>
+    public int? MaxLength { get; set; }
 }

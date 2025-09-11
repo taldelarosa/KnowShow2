@@ -3,6 +3,7 @@ using FluentAssertions;
 using EpisodeIdentifier.Core.Interfaces;
 using EpisodeIdentifier.Core.Models;
 using EpisodeIdentifier.Core.Services;
+using System.Runtime.InteropServices;
 
 namespace EpisodeIdentifier.Tests.Contract;
 
@@ -318,11 +319,16 @@ public class FileRenameServiceContractTests
     }
 
     [Fact]
-    public void GetTargetPath_WithWindowsPaths_ReturnsCorrectPath()
+    public void GetTargetPath_WithValidPaths_ReturnsCorrectPath()
     {
-        // Arrange
-        var originalPath = @"C:\Users\Test\Videos\original_file.mkv";
+        // Arrange - Use platform-appropriate path
+        var originalPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) 
+            ? @"C:\Users\Test\Videos\original_file.mkv"
+            : "/home/test/videos/original_file.mkv";
         var suggestedFilename = "new_filename.mkv";
+        var expectedPrefix = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? @"C:\Users\Test\Videos\"
+            : "/home/test/videos/";
 
         // Act
         var result = _fileRenameService.GetTargetPath(originalPath, suggestedFilename);
@@ -330,7 +336,7 @@ public class FileRenameServiceContractTests
         // Assert
         result.Should().NotBeNullOrEmpty();
         result.Should().EndWith("new_filename.mkv");
-        result.Should().StartWith(@"C:\Users\Test\Videos\");
+        result.Should().StartWith(expectedPrefix);
     }
 
     [Fact]

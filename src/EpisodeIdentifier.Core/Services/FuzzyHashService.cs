@@ -5,24 +5,41 @@ using FuzzySharp;
 
 namespace EpisodeIdentifier.Core.Services;
 
-public class FuzzyHashService
+public class FuzzyHashService : IDisposable
 {
     private readonly string _dbPath;
     private readonly ILogger<FuzzyHashService> _logger;
     private readonly SubtitleNormalizationService _normalizationService;
+    private readonly SqliteConnection? _sharedConnection; // For in-memory databases
 
     public FuzzyHashService(string dbPath, ILogger<FuzzyHashService> logger, SubtitleNormalizationService normalizationService)
     {
         _dbPath = dbPath;
         _logger = logger;
         _normalizationService = normalizationService;
-        InitializeDatabase();
+        
+        // For in-memory databases, keep a shared connection alive
+        if (dbPath == ":memory:")
+        {
+            _sharedConnection = new SqliteConnection($"Data Source={_dbPath}");
+            _sharedConnection.Open();
+            InitializeDatabaseWithConnection(_sharedConnection);
+        }
+        else
+        {
+            InitializeDatabase();
+        }
     }
 
     private void InitializeDatabase()
     {
         using var connection = new SqliteConnection($"Data Source={_dbPath}");
         connection.Open();
+        InitializeDatabaseWithConnection(connection);
+    }
+
+    private void InitializeDatabaseWithConnection(SqliteConnection connection)
+    {
 
         using var command = connection.CreateCommand();
         command.CommandText = @"
@@ -94,11 +111,19 @@ public class FuzzyHashService
         {
             _logger.LogInformation("Adding EpisodeName column to support file renaming feature");
 
-            using var alterCommand = connection.CreateCommand();
-            alterCommand.CommandText = "ALTER TABLE SubtitleHashes ADD COLUMN EpisodeName TEXT NULL;";
-            alterCommand.ExecuteNonQuery();
+            try
+            {
+                using var alterCommand = connection.CreateCommand();
+                alterCommand.CommandText = "ALTER TABLE SubtitleHashes ADD COLUMN EpisodeName TEXT NULL;";
+                alterCommand.ExecuteNonQuery();
 
-            _logger.LogInformation("EpisodeName column added successfully");
+                _logger.LogInformation("EpisodeName column added successfully");
+            }
+            catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.Message.Contains("duplicate column name"))
+            {
+                // Column already exists - this can happen with concurrent access in tests
+                _logger.LogDebug("EpisodeName column already exists, skipping migration");
+            }
         }
     }
 
@@ -131,9 +156,22 @@ public class FuzzyHashService
         // Create normalized versions
         var normalized = _normalizationService.CreateNormalizedVersions(subtitle.SubtitleText);
 
-        using var connection = new SqliteConnection($"Data Source={_dbPath}");
-        await connection.OpenAsync();
+        // Use shared connection for in-memory databases, or create new connection for file databases
+        if (_sharedConnection != null)
+        {
+            await StoreHashWithConnection(_sharedConnection, subtitle, normalized);
+        }
+        else
+        {
+            using var connection = new SqliteConnection($"Data Source={_dbPath}");
+            await connection.OpenAsync();
+            await StoreHashWithConnection(connection, subtitle, normalized);
+        }
+    }
 
+    private async Task StoreHashWithConnection(SqliteConnection connection, LabelledSubtitle subtitle, 
+        SubtitleNormalizedVersions normalized)
+    {
         using var command = connection.CreateCommand();
         command.CommandText = @"
             INSERT INTO SubtitleHashes (Series, Season, Episode, OriginalText, NoTimecodesText, NoHtmlText, CleanText, EpisodeName)
@@ -146,7 +184,7 @@ public class FuzzyHashService
         command.Parameters.AddWithValue("@noTimecodes", normalized.NoTimecodes);
         command.Parameters.AddWithValue("@noHtml", normalized.NoHtml);
         command.Parameters.AddWithValue("@clean", normalized.NoHtmlAndTimecodes);
-        command.Parameters.AddWithValue("@episodeName", subtitle.EpisodeName);
+        command.Parameters.AddWithValue("@episodeName", subtitle.EpisodeName ?? (object)DBNull.Value);
 
         try
         {
@@ -251,8 +289,23 @@ public class FuzzyHashService
         // Create normalized versions of the input text
         var inputNormalized = _normalizationService.CreateNormalizedVersions(subtitleText);
 
-        using var connection = new SqliteConnection($"Data Source={_dbPath}");
-        await connection.OpenAsync();
+        // Use shared connection for in-memory databases, or create new connection for file databases
+        if (_sharedConnection != null)
+        {
+            return await GetBestMatchWithConnection(_sharedConnection, subtitleText, inputNormalized);
+        }
+        else
+        {
+            using var connection = new SqliteConnection($"Data Source={_dbPath}");
+            await connection.OpenAsync();
+            return await GetBestMatchWithConnection(connection, subtitleText, inputNormalized);
+        }
+    }
+
+    private async Task<(LabelledSubtitle Subtitle, double Confidence)?> GetBestMatchWithConnection(
+        SqliteConnection connection, string subtitleText, 
+        SubtitleNormalizedVersions inputNormalized)
+    {
 
         using var command = connection.CreateCommand();
         command.CommandText = @"
@@ -332,5 +385,10 @@ public class FuzzyHashService
             bestSubtitle.Series, bestSubtitle.Season, bestSubtitle.Episode, bestConfidence, bestStrategy);
 
         return (bestSubtitle, bestConfidence);
+    }
+
+    public void Dispose()
+    {
+        _sharedConnection?.Dispose();
     }
 }

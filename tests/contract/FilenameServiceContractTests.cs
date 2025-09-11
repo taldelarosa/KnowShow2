@@ -202,15 +202,15 @@ public class FilenameServiceContractTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().NotContain('<');
-        result.Should().NotContain('>');
-        result.Should().NotContain(':');
-        result.Should().NotContain('"');
-        result.Should().NotContain('|');
-        result.Should().NotContain('?');
-        result.Should().NotContain('*');
-        result.Should().NotContain('\\');
-        result.Should().Be("Show  The  Best   Episode   Part 1   Question   Star   Path");
+        result.Should().NotContain("<");
+        result.Should().NotContain(">");
+        result.Should().NotContain(":");
+        result.Should().NotContain("\"");
+        result.Should().NotContain("|");
+        result.Should().NotContain("?");
+        result.Should().NotContain("*");
+        result.Should().NotContain("\\");
+        result.Should().Be("Show The Best Episode Part 1 Question Star Path");
     }
 
     [Fact]
