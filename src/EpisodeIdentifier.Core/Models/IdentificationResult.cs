@@ -5,9 +5,29 @@ public class IdentificationResult
     public string? Series { get; set; }
     public string? Season { get; set; }
     public string? Episode { get; set; }
+    public string? EpisodeName { get; set; }
     public double MatchConfidence { get; set; }
     public string? AmbiguityNotes { get; set; }
     public IdentificationError? Error { get; set; }
+    
+    /// <summary>
+    /// Suggested filename for high confidence episode identifications.
+    /// Format: "SeriesName - S01E01 - EpisodeName.ext"
+    /// Only populated when MatchConfidence >= 0.9
+    /// </summary>
+    public string? SuggestedFilename { get; set; }
+
+    /// <summary>
+    /// Indicates whether the video file was actually renamed using the suggested filename.
+    /// True when the --rename flag was used and the rename operation succeeded.
+    /// </summary>
+    public bool FileRenamed { get; set; } = false;
+
+    /// <summary>
+    /// The original filename of the video file before renaming.
+    /// Only populated when FileRenamed is true.
+    /// </summary>
+    public string? OriginalFilename { get; set; }
 
     public bool IsAmbiguous => MatchConfidence < 0.9 && !string.IsNullOrEmpty(AmbiguityNotes);
     public bool HasError => Error != null;

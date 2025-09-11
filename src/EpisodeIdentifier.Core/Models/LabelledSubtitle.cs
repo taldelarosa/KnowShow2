@@ -7,6 +7,7 @@ public class LabelledSubtitle
     public string Episode { get; set; } = string.Empty;
     public string SubtitleText { get; set; } = string.Empty;
     public string FuzzyHash { get; set; } = string.Empty;
+    public string? EpisodeName { get; set; }
 
     public bool IsValid => !string.IsNullOrWhiteSpace(SubtitleText);
 }

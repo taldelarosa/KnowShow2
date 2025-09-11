@@ -35,6 +35,7 @@ public class FuzzyHashService
                 NoTimecodesText TEXT NOT NULL,
                 NoHtmlText TEXT NOT NULL,
                 CleanText TEXT NOT NULL,
+                EpisodeName TEXT NULL,
                 UNIQUE(Series, Season, Episode)
             );";
         command.ExecuteNonQuery();
@@ -60,7 +61,7 @@ public class FuzzyHashService
         }
         reader.Close();
 
-        // If old schema (has SubtitleText but not the new columns), migrate
+        // Migration 1: If old schema (has SubtitleText but not the new columns), migrate
         if (columns.Contains("SubtitleText") && !columns.Contains("OriginalText"))
         {
             _logger.LogInformation("Migrating database schema to support normalized versions");
@@ -86,6 +87,18 @@ public class FuzzyHashService
             var updated = updateCommand.ExecuteNonQuery();
 
             _logger.LogInformation("Migrated {Count} existing records to new schema", updated);
+        }
+
+        // Migration 2: Add EpisodeName column if it doesn't exist (T023)
+        if (!columns.Contains("EpisodeName"))
+        {
+            _logger.LogInformation("Adding EpisodeName column to support file renaming feature");
+
+            using var alterCommand = connection.CreateCommand();
+            alterCommand.CommandText = "ALTER TABLE SubtitleHashes ADD COLUMN EpisodeName TEXT NULL;";
+            alterCommand.ExecuteNonQuery();
+
+            _logger.LogInformation("EpisodeName column added successfully");
         }
     }
 
@@ -123,8 +136,8 @@ public class FuzzyHashService
 
         using var command = connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO SubtitleHashes (Series, Season, Episode, OriginalText, NoTimecodesText, NoHtmlText, CleanText)
-            VALUES (@series, @season, @episode, @original, @noTimecodes, @noHtml, @clean);";
+            INSERT INTO SubtitleHashes (Series, Season, Episode, OriginalText, NoTimecodesText, NoHtmlText, CleanText, EpisodeName)
+            VALUES (@series, @season, @episode, @original, @noTimecodes, @noHtml, @clean, @episodeName);";
 
         command.Parameters.AddWithValue("@series", subtitle.Series);
         command.Parameters.AddWithValue("@season", subtitle.Season);
@@ -133,6 +146,7 @@ public class FuzzyHashService
         command.Parameters.AddWithValue("@noTimecodes", normalized.NoTimecodes);
         command.Parameters.AddWithValue("@noHtml", normalized.NoHtml);
         command.Parameters.AddWithValue("@clean", normalized.NoHtmlAndTimecodes);
+        command.Parameters.AddWithValue("@episodeName", subtitle.EpisodeName);
 
         try
         {
@@ -159,7 +173,7 @@ public class FuzzyHashService
 
         using var command = connection.CreateCommand();
         command.CommandText = @"
-            SELECT Series, Season, Episode, OriginalText, NoTimecodesText, NoHtmlText, CleanText
+            SELECT Series, Season, Episode, OriginalText, NoTimecodesText, NoHtmlText, CleanText, EpisodeName
             FROM SubtitleHashes;";
 
         using var reader = await command.ExecuteReaderAsync();
@@ -170,7 +184,8 @@ public class FuzzyHashService
                 Series = reader.GetString(0),
                 Season = reader.GetString(1),
                 Episode = reader.GetString(2),
-                SubtitleText = reader.GetString(3) // Use original text for the result
+                SubtitleText = reader.GetString(3), // Use original text for the result
+                EpisodeName = reader.IsDBNull(7) ? null : reader.GetString(7)
             };
 
             // Try matching against all normalized versions and take the best score
@@ -241,7 +256,7 @@ public class FuzzyHashService
 
         using var command = connection.CreateCommand();
         command.CommandText = @"
-            SELECT Series, Season, Episode, OriginalText, NoTimecodesText, NoHtmlText, CleanText
+            SELECT Series, Season, Episode, OriginalText, NoTimecodesText, NoHtmlText, CleanText, EpisodeName
             FROM SubtitleHashes;";
 
         double bestConfidence = 0;
@@ -256,7 +271,8 @@ public class FuzzyHashService
                 Series = reader.GetString(0),
                 Season = reader.GetString(1),
                 Episode = reader.GetString(2),
-                SubtitleText = reader.GetString(3) // Use original text for the result
+                SubtitleText = reader.GetString(3), // Use original text for the result
+                EpisodeName = reader.IsDBNull(7) ? null : reader.GetString(7)
             };
 
             // Try matching against all normalized versions and take the best score
