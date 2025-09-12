@@ -1,11 +1,10 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Core.Services;
 using EpisodeIdentifier.Core.Models;
+using Xunit;
 
 namespace EpisodeIdentifier.Tests.Unit;
 
-[TestClass]
 public class VideoFormatValidatorTests
 {
     private VideoFormatValidator GetValidator()
@@ -15,7 +14,7 @@ public class VideoFormatValidatorTests
         return new VideoFormatValidator(logger);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task IsAV1Encoded_WithNonexistentFile_ReturnsFalse()
     {
         // Arrange
@@ -26,10 +25,10 @@ public class VideoFormatValidatorTests
         var result = await validator.IsAV1Encoded(nonexistentPath);
 
         // Assert
-        Assert.IsFalse(result);
+        Assert.False(result);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task GetSubtitleTracks_WithNonexistentFile_ReturnsEmptyList()
     {
         // Arrange
@@ -40,7 +39,7 @@ public class VideoFormatValidatorTests
         var tracks = await validator.GetSubtitleTracks(nonexistentPath);
 
         // Assert
-        Assert.IsNotNull(tracks);
-        Assert.AreEqual(0, tracks.Count);
+        Assert.NotNull(tracks);
+        Assert.Empty(tracks);
     }
 }

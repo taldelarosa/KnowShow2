@@ -64,17 +64,20 @@ npx markdownlint-cli2 "**/*.md" --fix
 ```
 
 **Configuration Files:**
+
 - `.markdownlint.json` - Markdown linting rules optimized for technical documentation
 - Solution-wide formatting enforced via `dotnet format`
 
 ### GitHub Actions Workflow
 
 **Build Process:**
+
 - Solution-based builds using `EpisodeIdentifier.sln`
 - Parallel test execution: Unit tests (8) + Contract tests (30) = 38 total
 - Integration tests temporarily disabled due to API compatibility issues
 
 **Quality Gates:**
+
 - ✅ .NET Code formatting validation via `dotnet format`  
 - ✅ Markdown documentation linting via `markdownlint-cli2`
 - ✅ Automated security scanning with Trivy
@@ -82,6 +85,7 @@ npx markdownlint-cli2 "**/*.md" --fix
 - ✅ All deprecated GitHub Actions updated to current versions
 
 **Environment:**
+
 - NPM 11.6.0 (latest)
 - markdownlint-cli2 for documentation quality
 - Updated GitHub Actions (upload-artifact@v4, cache@v4, codeql-action@v3)
@@ -95,6 +99,15 @@ npx markdownlint-cli2 "**/*.md" --fix
 - **OCR Conversion**: Converts PGS image-based subtitles to searchable text
 - **Fuzzy Matching**: Compares extracted text against known subtitle database
 - **JSON Output**: All responses formatted as JSON for automation
+
+### New File Renaming Features (FR-007 Implementation)
+
+- **Filename Suggestions**: Automatically generates standardized filenames for identified episodes
+- **Automatic Renaming**: Optional `--rename` flag to automatically rename files
+- **Windows Compatibility**: Sanitizes filenames for Windows file system compatibility
+- **Smart Confidence Thresholds**: Only suggests filenames for high-confidence matches (≥90%)
+- **Error Recovery**: Preserves original files if rename operations fail
+- **Standardized Format**: Uses "SeriesName - S##E## - EpisodeName.ext" naming convention
 
 ### New PGS Extraction Features (FR-002 Implementation)
 
@@ -146,6 +159,12 @@ dotnet run -- --input video.mkv --hash-db hashes.sqlite
 dotnet run -- --input video.mkv --hash-db hashes.sqlite --language eng
 ```
 
+### With Automatic File Renaming
+
+```bash
+dotnet run -- --input video.mkv --hash-db hashes.sqlite --rename
+```
+
 ### Store Known Subtitle
 
 ```bash
@@ -162,7 +181,9 @@ dotnet run -- --input subtitle.txt --hash-db hashes.sqlite --store --series "Sho
 | `--series` | Series name (store mode only) | ✅** | - |
 | `--season` | Season number (store mode only) | ✅** | - |
 | `--episode` | Episode number (store mode only) | ✅** | - |
+| `--episode-name` | Episode title (store mode only) | ❌ | - |
 | `--language` | Preferred subtitle language | ❌ | eng |
+| `--rename` | Automatically rename file to suggested filename | ❌ | false |
 
 *Required for identification mode  
 **Required when using `--store`
@@ -186,7 +207,9 @@ The application supports multiple subtitle languages through Tesseract OCR:
 
 ## Output Examples
 
-### Successful Identification
+## Output Examples
+
+### Successful Identification with Filename Suggestion
 
 ```json
 {
@@ -194,8 +217,56 @@ The application supports multiple subtitle languages through Tesseract OCR:
   "season": "01", 
   "episode": "02",
   "matchConfidence": 0.95,
+  "suggestedFilename": "Example Show - S01E02 - Episode Title.mkv",
   "ambiguityNotes": null,
   "error": null
+}
+```
+
+### Successful Identification with Automatic Rename
+
+```json
+{
+  "series": "Example Show",
+  "season": "01", 
+  "episode": "02",
+  "matchConfidence": 0.95,
+  "suggestedFilename": "Example Show - S01E02 - Episode Title.mkv",
+  "fileRenamed": true,
+  "originalFilename": "unclear-filename.mkv",
+  "ambiguityNotes": null,
+  "error": null
+}
+```
+
+### Low Confidence Identification (No Filename Suggestion)
+
+```json
+{
+  "series": "Example Show",
+  "season": "01", 
+  "episode": "02",
+  "matchConfidence": 0.75,
+  "ambiguityNotes": "Multiple possible matches found",
+  "error": null
+}
+```
+
+### File Rename Error
+
+```json
+{
+  "series": "Example Show",
+  "season": "01", 
+  "episode": "02",
+  "matchConfidence": 0.95,
+  "suggestedFilename": "Example Show - S01E02 - Episode Title.mkv",
+  "fileRenamed": false,
+  "originalFilename": "video.mkv",
+  "error": {
+    "code": "FILE_RENAME_FAILED",
+    "message": "Target file already exists: Example Show - S01E02 - Episode Title.mkv"
+  }
 }
 ```
 
@@ -347,6 +418,18 @@ chmod +x scripts/setup-prerequisites.sh
 - Check if PGS contains text (some may be graphics only)
 - Try different language pack: `--language spa`
 - Verify image quality is sufficient for OCR
+
+**"Target file already exists" when using --rename**
+
+- Check if suggested filename already exists in directory
+- Original file is preserved when rename fails
+- Review suggested filename in JSON output before retrying
+
+**"Permission denied" during file rename**
+
+- Ensure write permissions to directory
+- Check if file is in use by another application
+- Verify sufficient disk space for rename operation
 
 ### Debug Logging
 

@@ -10,7 +10,7 @@ public class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        var rootCommand = new RootCommand("Identify Season and Episode from AV1 video via PGS subtitle comparison");
+        var rootCommand = new RootCommand("Identify Season and Episode from AV1 video via PGS subtitle comparison. Optionally rename files with standardized naming.");
 
         var inputOption = new Option<FileInfo>(
             "--input",
@@ -56,7 +56,29 @@ public class Program
         { IsRequired = false };
         rootCommand.Add(languageOption);
 
-        rootCommand.SetHandler(HandleCommand, inputOption, hashDbOption, storeOption, bulkOption, seriesOption, seasonOption, episodeOption, languageOption);
+        var renameOption = new Option<bool>(
+            "--rename",
+            "Automatically rename the video file when episode identification is successful. " +
+            "Requires high confidence match (>= 90%). " +
+            "Filename format: 'SeriesName - S01E01 - EpisodeName.ext'. " +
+            "If rename fails, identification result will include error details and suggested filename.")
+        { IsRequired = false };
+        rootCommand.Add(renameOption);
+
+        rootCommand.SetHandler(async (context) =>
+        {
+            var input = context.ParseResult.GetValueForOption(inputOption);
+            var hashDb = context.ParseResult.GetValueForOption(hashDbOption);
+            var store = context.ParseResult.GetValueForOption(storeOption);
+            var bulkDirectory = context.ParseResult.GetValueForOption(bulkOption);
+            var series = context.ParseResult.GetValueForOption(seriesOption);
+            var season = context.ParseResult.GetValueForOption(seasonOption);
+            var episode = context.ParseResult.GetValueForOption(episodeOption);
+            var language = context.ParseResult.GetValueForOption(languageOption);
+            var rename = context.ParseResult.GetValueForOption(renameOption);
+
+            Environment.Exit(await HandleCommand(input, hashDb!, store, bulkDirectory, series, season, episode, language, rename));
+        });
 
         return await rootCommand.InvokeAsync(args);
     }
@@ -69,24 +91,28 @@ public class Program
         string? series,
         string? season,
         string? episode,
-        string? language)
+        string? language,
+        bool rename)
     {
+        // Configure JSON serialization with camelCase for consistent API
+        var jsonSerializationOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
         // Validate input parameters
         if (bulkDirectory != null && input != null)
         {
-            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "CONFLICTING_OPTIONS", message = "Cannot specify both --input and --bulk-store options" } }));
+            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "CONFLICTING_OPTIONS", message = "Cannot specify both --input and --bulk-store options" } }, jsonSerializationOptions));
             return 1;
         }
 
         if (bulkDirectory == null && input == null)
         {
-            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "MISSING_INPUT", message = "Must specify either --input or --bulk-store option" } }));
+            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "MISSING_INPUT", message = "Must specify either --input or --bulk-store option" } }, jsonSerializationOptions));
             return 1;
         }
 
         if (input != null && !input.Exists)
         {
-            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "INVALID_INPUT", message = "Input file not found" } }));
+            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "INVALID_INPUT", message = "Input file not found" } }, jsonSerializationOptions));
             return 1;
         }
 
@@ -105,6 +131,8 @@ public class Program
         var matcher = new SubtitleMatcher(hashService, loggerFactory.CreateLogger<SubtitleMatcher>());
         var filenameParser = new SubtitleFilenameParser(loggerFactory.CreateLogger<SubtitleFilenameParser>());
         var textExtractor = new VideoTextSubtitleExtractor(loggerFactory.CreateLogger<VideoTextSubtitleExtractor>());
+        var filenameService = new FilenameService();
+        var fileRenameService = new FileRenameService();
 
         try
         {
@@ -252,18 +280,18 @@ public class Program
 
                 // Get subtitle track information for direct video processing
                 var subtitleTracks = await validator.GetSubtitleTracks(input.FullName);
-                
+
                 if (!subtitleTracks.Any())
                 {
                     // Try text subtitle fallback
-                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, matcher);
+                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, matcher, rename, filenameService, fileRenameService);
                     if (textSubtitleResult != null)
                     {
-                        Console.WriteLine(JsonSerializer.Serialize(textSubtitleResult));
+                        Console.WriteLine(JsonSerializer.Serialize(textSubtitleResult, jsonSerializationOptions));
                         return textSubtitleResult.HasError ? 1 : 0;
                     }
 
-                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLES_FOUND", message = "No PGS or text subtitles could be found in the video file" } }));
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLES_FOUND", message = "No PGS or text subtitles could be found in the video file" } }, jsonSerializationOptions));
                     return 1;
                 }
 
@@ -287,14 +315,115 @@ public class Program
                 }
 
                 var result = await matcher.IdentifyEpisode(subtitleText);
-                Console.WriteLine(JsonSerializer.Serialize(result));
+
+                // Handle file renaming if --rename flag is specified
+                if (rename && !result.HasError && result.MatchConfidence >= 0.9)
+                {
+                    try
+                    {
+                        // Generate filename using FilenameService
+                        var filenameRequest = new FilenameGenerationRequest
+                        {
+                            Series = result.Series ?? "",
+                            Season = result.Season ?? "",
+                            Episode = result.Episode ?? "",
+                            EpisodeName = result.EpisodeName ?? "",
+                            FileExtension = Path.GetExtension(input!.FullName),
+                            MatchConfidence = result.MatchConfidence
+                        };
+
+                        var filenameResult = filenameService.GenerateFilename(filenameRequest);
+
+                        if (filenameResult.IsValid && !string.IsNullOrEmpty(filenameResult.SuggestedFilename))
+                        {
+                            // Prepare file rename request
+                            var renameRequest = new FileRenameRequest
+                            {
+                                OriginalPath = input.FullName,
+                                SuggestedFilename = filenameResult.SuggestedFilename
+                            };
+
+                            try
+                            {
+                                // Attempt to rename the file
+                                var renameResult = await fileRenameService.RenameFileAsync(renameRequest);
+
+                                if (renameResult.Success)
+                                {
+                                    // Update identification result with rename success
+                                    result.SuggestedFilename = filenameResult.SuggestedFilename;
+                                    result.FileRenamed = true;
+                                    result.OriginalFilename = Path.GetFileName(input.FullName);
+                                }
+                                else
+                                {
+                                    // Include filename suggestion but set error for rename failure
+                                    result.SuggestedFilename = filenameResult.SuggestedFilename;
+                                    result.FileRenamed = false;
+
+                                    // Set appropriate error based on rename failure type
+                                    if (renameResult.ErrorType.HasValue)
+                                    {
+                                        result.Error = IdentificationError.FromFileRenameError(renameResult.ErrorType.Value, renameResult.ErrorMessage);
+                                    }
+                                    else
+                                    {
+                                        result.Error = IdentificationError.RenameFailedUnknown(renameResult.ErrorMessage ?? "Unknown rename error");
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                // Handle unexpected exceptions during rename operation
+                                result.SuggestedFilename = filenameResult.SuggestedFilename;
+                                result.FileRenamed = false;
+                                result.Error = IdentificationError.RenameFailedUnknown($"Unexpected error during file rename: {ex.Message}");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine(JsonSerializer.Serialize(new
+                            {
+                                warning = new
+                                {
+                                    code = "FILENAME_GENERATION_FAILED",
+                                    message = "File identification successful but filename generation failed"
+                                }
+                            }));
+                        }
+                    }
+                    catch (Exception renameEx)
+                    {
+                        Console.WriteLine(JsonSerializer.Serialize(new
+                        {
+                            warning = new
+                            {
+                                code = "RENAME_ERROR",
+                                message = $"File identification successful but rename operation encountered an error: {renameEx.Message}"
+                            }
+                        }));
+                    }
+                }
+                else if (rename && !result.HasError && result.MatchConfidence < 0.9)
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new
+                    {
+                        warning = new
+                        {
+                            code = "LOW_CONFIDENCE_RENAME",
+                            message = $"File rename skipped due to low confidence match ({result.MatchConfidence:F2}). Requires confidence >= 0.9 for automatic renaming."
+                        }
+                    }));
+                }
+
+                Console.WriteLine(JsonSerializer.Serialize(result, jsonSerializationOptions));
 
                 return result.HasError ? 1 : 0;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "PROCESSING_ERROR", message = ex.Message } }));
+            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "PROCESSING_ERROR", message = ex.Message } }, jsonSerializationOptions));
             return 1;
         }
     }
@@ -330,7 +459,10 @@ public class Program
         string? language,
         VideoFormatValidator validator,
         VideoTextSubtitleExtractor textExtractor,
-        SubtitleMatcher matcher)
+        SubtitleMatcher matcher,
+        bool rename,
+        FilenameService filenameService,
+        FileRenameService fileRenameService)
     {
         try
         {
@@ -362,7 +494,73 @@ public class Program
             }
 
             // Match against database
-            return await matcher.IdentifyEpisode(subtitleText);
+            var result = await matcher.IdentifyEpisode(subtitleText);
+
+            // Handle file renaming if --rename flag is specified
+            if (rename && !result.HasError && result.MatchConfidence >= 0.9)
+            {
+                // Generate filename using FilenameService
+                var filenameRequest = new FilenameGenerationRequest
+                {
+                    Series = result.Series ?? "",
+                    Season = result.Season ?? "",
+                    Episode = result.Episode ?? "",
+                    EpisodeName = result.EpisodeName ?? "",
+                    FileExtension = Path.GetExtension(videoFilePath),
+                    MatchConfidence = result.MatchConfidence
+                };
+
+                var filenameResult = filenameService.GenerateFilename(filenameRequest);
+
+                if (filenameResult.IsValid && !string.IsNullOrEmpty(filenameResult.SuggestedFilename))
+                {
+                    // Prepare file rename request
+                    var renameRequest = new FileRenameRequest
+                    {
+                        OriginalPath = videoFilePath,
+                        SuggestedFilename = filenameResult.SuggestedFilename
+                    };
+
+                    try
+                    {
+                        // Attempt to rename the file
+                        var renameResult = await fileRenameService.RenameFileAsync(renameRequest);
+
+                        if (renameResult.Success)
+                        {
+                            // Update identification result with rename success
+                            result.SuggestedFilename = filenameResult.SuggestedFilename;
+                            result.FileRenamed = true;
+                            result.OriginalFilename = Path.GetFileName(videoFilePath);
+                        }
+                        else
+                        {
+                            // Include filename suggestion but set error for rename failure
+                            result.SuggestedFilename = filenameResult.SuggestedFilename;
+                            result.FileRenamed = false;
+
+                            // Set appropriate error based on rename failure type
+                            if (renameResult.ErrorType.HasValue)
+                            {
+                                result.Error = IdentificationError.FromFileRenameError(renameResult.ErrorType.Value, renameResult.ErrorMessage);
+                            }
+                            else
+                            {
+                                result.Error = IdentificationError.RenameFailedUnknown(renameResult.ErrorMessage ?? "Unknown rename error");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Handle unexpected exceptions during rename operation
+                        result.SuggestedFilename = filenameResult.SuggestedFilename;
+                        result.FileRenamed = false;
+                        result.Error = IdentificationError.RenameFailedUnknown($"Unexpected error during file rename: {ex.Message}");
+                    }
+                }
+            }
+
+            return result;
         }
         catch (Exception)
         {

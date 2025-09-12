@@ -24,7 +24,7 @@ public static class PgsTrackSelector
         // If preferred language specified, try to find it
         if (!string.IsNullOrEmpty(preferredLanguage))
         {
-            var langTrack = tracks.FirstOrDefault(t => 
+            var langTrack = tracks.FirstOrDefault(t =>
                 string.Equals(t.Language, preferredLanguage, StringComparison.OrdinalIgnoreCase));
             if (langTrack != null)
             {
@@ -33,11 +33,11 @@ public static class PgsTrackSelector
         }
 
         // Default preferences: English first, then first available
-        var englishTrack = tracks.FirstOrDefault(t => 
+        var englishTrack = tracks.FirstOrDefault(t =>
             string.Equals(t.Language, "eng", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(t.Language, "en", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(t.Language, "english", StringComparison.OrdinalIgnoreCase));
-        
+
         return englishTrack ?? tracks.First();
     }
 }
