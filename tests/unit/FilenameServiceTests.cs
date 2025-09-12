@@ -144,22 +144,11 @@ public class FilenameServiceTests
     [InlineData("filename.txt", 10, false)]   // Too short for content
     public void IsValidWindowsFilename_PathLength_ValidatesCorrectly(string filename, int maxPathLength, bool expected)
     {
-        // Arrange
-        var longPath = new string('a', maxPathLength - filename.Length - 10) + "\\" + filename;
-
-        // Act
-        var result = _filenameService.IsValidWindowsFilename(filename);
+        // Act - use the overload that considers path length
+        var result = _filenameService.IsValidWindowsFilename(filename, maxPathLength);
 
         // Assert
-        if (expected)
-        {
-            Assert.True(result);
-        }
-        else
-        {
-            // For very short max lengths, we expect validation to fail for other reasons
-            Assert.False(string.IsNullOrWhiteSpace(filename) || filename.Length == 0);
-        }
+        Assert.Equal(expected, result);
     }
 
     [Theory]

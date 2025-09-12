@@ -1,5 +1,6 @@
 using EpisodeIdentifier.Core.Interfaces;
 using EpisodeIdentifier.Core.Models;
+using System.Linq;
 
 namespace EpisodeIdentifier.Core.Services;
 
@@ -52,7 +53,7 @@ public class FileRenameService : IFileRenameService
             {
                 Success = false,
                 ErrorType = FileRenameError.PathTooLong,
-                ErrorMessage = $"Target path exceeds maximum length of 260 characters: {targetPath.Length}"
+                ErrorMessage = $"Target path is too long (exceeds maximum length of 260 characters): {targetPath.Length}"
             };
         }
 
@@ -183,8 +184,8 @@ public class FileRenameService : IFileRenameService
             // Check if file is not locked by trying to open it
             try
             {
-                using var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.None);
-                // If we can open exclusively, it's not locked
+                using var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                // If we can open it for reading, it should be renamable
             }
             catch (IOException)
             {
@@ -212,13 +213,39 @@ public class FileRenameService : IFileRenameService
         if (string.IsNullOrWhiteSpace(suggestedFilename))
             throw new ArgumentException("Suggested filename cannot be null or empty", nameof(suggestedFilename));
 
+        // Validate filename for invalid characters (Windows-specific) - allow path separators for cross-directory renames
+        var invalidChars = new char[] { '<', '>', ':', '"', '|', '?', '*' };
+        if (suggestedFilename.IndexOfAny(invalidChars) >= 0)
+        {
+            throw new ArgumentException($"Suggested filename contains invalid characters: {suggestedFilename}", nameof(suggestedFilename));
+        }
+
         try
         {
             var directory = Path.GetDirectoryName(originalPath);
             if (string.IsNullOrEmpty(directory))
                 throw new ArgumentException("Cannot determine directory from original path", nameof(originalPath));
 
-            var targetPath = Path.Combine(directory, suggestedFilename);
+            // If suggested filename contains directory path, handle it properly
+            string targetPath;
+            if (Path.IsPathRooted(suggestedFilename))
+            {
+                // If it's an absolute path, use it directly
+                targetPath = suggestedFilename;
+            }
+            else
+            {
+                // If it's relative, combine with the original directory
+                // This handles cases like "subdirectory/filename.mkv"
+                targetPath = Path.Combine(directory, suggestedFilename);
+            }
+            
+            // Ensure the target directory exists
+            var targetDirectory = Path.GetDirectoryName(targetPath);
+            if (!string.IsNullOrEmpty(targetDirectory) && !Directory.Exists(targetDirectory))
+            {
+                Directory.CreateDirectory(targetDirectory);
+            }
             
             // Validate the resulting path
             var fullPath = Path.GetFullPath(targetPath);
@@ -262,8 +289,8 @@ public class FileRenameService : IFileRenameService
             };
         }
 
-        // Check for invalid characters in filename
-        var invalidChars = Path.GetInvalidFileNameChars();
+        // Check for invalid characters in filename - but allow path separators for cross-directory renames
+        var invalidChars = Path.GetInvalidFileNameChars().Where(c => c != '/' && c != '\\').ToArray();
         if (request.SuggestedFilename.IndexOfAny(invalidChars) >= 0)
         {
             return new FileRenameResult

@@ -26,7 +26,7 @@ public class SubtitleExtractorTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(0, result.Length);
+        Assert.Empty(result);
     }
 
     [Fact]

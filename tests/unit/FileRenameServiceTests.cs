@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace EpisodeIdentifier.Tests.Unit;
 
-public class FileRenameServiceTests
+public class FileRenameServiceTests : IDisposable
 {
     private readonly FileRenameService _fileRenameService;
     private readonly string _testDirectory;
@@ -221,7 +221,7 @@ public class FileRenameServiceTests
     public void CanRenameFile_NullPath_ReturnsFalse()
     {
         // Act
-        var result = _fileRenameService.CanRenameFile(null);
+        var result = _fileRenameService.CanRenameFile(null!);
 
         // Assert
         Assert.False(result);

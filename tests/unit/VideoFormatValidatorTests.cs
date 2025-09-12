@@ -40,6 +40,6 @@ public class VideoFormatValidatorTests
 
         // Assert
         Assert.NotNull(tracks);
-        Assert.Equal(0, tracks.Count);
+        Assert.Empty(tracks);
     }
 }

@@ -31,6 +31,14 @@ public interface IFilenameService
     bool IsValidWindowsFilename(string filename);
 
     /// <summary>
+    /// Validates whether a filename is compatible with Windows filesystem considering path length.
+    /// </summary>
+    /// <param name="filename">Filename to validate</param>
+    /// <param name="maxPathLength">Maximum allowed full path length</param>
+    /// <returns>True if valid for Windows with given path length, false otherwise</returns>
+    bool IsValidWindowsFilename(string filename, int maxPathLength);
+
+    /// <summary>
     /// Truncates a filename to fit within the specified length limit.
     /// Preserves file extension and essential format structure.
     /// </summary>
