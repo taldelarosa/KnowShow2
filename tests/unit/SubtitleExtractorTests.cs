@@ -1,11 +1,10 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Core.Services;
 using EpisodeIdentifier.Core.Models;
+using Xunit;
 
 namespace EpisodeIdentifier.Tests.Unit;
 
-[TestClass]
 public class SubtitleExtractorTests
 {
     private SubtitleExtractor GetExtractor()
@@ -15,7 +14,7 @@ public class SubtitleExtractorTests
         return new SubtitleExtractor(loggerFactory.CreateLogger<SubtitleExtractor>(), validator);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ExtractPgsSubtitles_WithNonexistentFile_ReturnsEmptyArray()
     {
         // Arrange
@@ -26,11 +25,11 @@ public class SubtitleExtractorTests
         var result = await extractor.ExtractPgsSubtitles(nonexistentPath);
 
         // Assert
-        Assert.IsNotNull(result);
-        Assert.AreEqual(0, result.Length);
+        Assert.NotNull(result);
+        Assert.Empty(result);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ExtractPgsSubtitles_WithLanguagePreference_CallsWithCorrectParameters()
     {
         // Arrange
@@ -42,7 +41,7 @@ public class SubtitleExtractorTests
         var result = await extractor.ExtractPgsSubtitles(nonexistentPath, preferredLanguage);
 
         // Assert
-        Assert.IsNotNull(result);
+        Assert.NotNull(result);
         // Since file doesn't exist, we expect empty result but method should not throw
     }
 }

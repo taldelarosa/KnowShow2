@@ -43,6 +43,7 @@
 - When a section doesn't apply, remove it entirely (don't leave as "N/A")
 
 ### For AI Generation
+
 When creating this spec from a user prompt:
 
 When creating this spec from a user prompt:
@@ -63,6 +64,7 @@ When creating this spec from a user prompt:
 ## User Scenarios & Testing
 
 ### Primary User Story
+
 A user has a video file that does not contain PGS (Presentation Graphic Stream) subtitles but does contain other text-based subtitle formats (such as .srt, .ass, .vtt files). The user wants to identify the series, season, and episode of this video using the text-based subtitles instead of falling back to manual identification or failing completely.
 
 ### Acceptance Scenarios
@@ -97,10 +99,11 @@ A user has a video file that does not contain PGS (Presentation Graphic Stream) 
 - **FR-008**: System MUST preserve all existing functionality for PGS subtitle processing (no regressions) ✅
 
 ### Key Entities ✅ IMPLEMENTED
+
 - **Text Subtitle Track** (`TextSubtitleTrack.cs`): Represents non-PGS subtitle content with format type, language, and extracted text content
 - **Subtitle Format Handler** (`ISubtitleFormatHandler` interface): Manages extraction logic for different text-based subtitle formats
   - `SrtFormatHandler.cs`: Handles SubRip (.srt) format with regex-based parsing
-  - `AssFormatHandler.cs`: Handles Advanced SubStation Alpha (.ass) format 
+  - `AssFormatHandler.cs`: Handles Advanced SubStation Alpha (.ass) format
 
 - **Text Subtitle Track** (`TextSubtitleTrack.cs`): Represents non-PGS subtitle content with format type, language, and extracted text content
 - **Subtitle Format Handler** (`ISubtitleFormatHandler` interface): Manages extraction logic for different text-based subtitle formats
@@ -121,6 +124,7 @@ A user has a video file that does not contain PGS (Presentation Graphic Stream) 
 ---
 
 ## Review & Acceptance Checklist
+
 *GATE: Automated checks run during main() execution*
 
 ### Content Quality
@@ -168,34 +172,39 @@ A user has a video file that does not contain PGS (Presentation Graphic Stream) 
 - **Testing**: Complete contract test coverage with business logic validation
 
 ### Infrastructure & CI/CD Enhancements ✅ COMPLETED
+
 **Date**: September 9, 2025
 
 #### GitHub Actions Workflow Improvements
-- **Updated Deprecated Actions**: 
+
+- **Updated Deprecated Actions**:
   - `actions/upload-artifact@v3` → `v4`
   - `actions/cache@v3` → `v4`
   - `github/codeql-action/upload-sarif@v2` → `v3`
-- **Build Strategy Optimization**: 
+- **Build Strategy Optimization**:
   - Solution-based building using `EpisodeIdentifier.sln`
   - Individual project builds for working test projects
   - Temporary exclusion of failing integration tests with compilation issues
 
 #### Code Quality & Formatting
+
 - **Automated .NET Formatting**: Applied `dotnet format` across 27 files with 323 insertions/307 deletions
-- **Markdown Linting Implementation**: 
+- **Markdown Linting Implementation**:
   - Added `markdownlint-cli2` with automatic fixes applied to 32 markdown files
   - Created comprehensive `.markdownlint.json` configuration with permissive rules for technical documentation
   - Resolved thousands of markdown violations including MD022 (headings require blank lines)
   - Disabled problematic rules: MD013 (line length), MD033 (inline HTML), MD036 (emphasis as heading), MD024 (duplicate headings), MD040 (code language), MD029 (list prefix), MD025 (single H1), MD041 (first line heading)
 
 #### Testing Infrastructure
-- **Test Execution Strategy**: 
+
+- **Test Execution Strategy**:
   - Unit Tests: 8 passing (MSTest framework)
   - Contract Tests: 30 passing (xUnit framework)
   - Integration Tests: Temporarily disabled due to API compatibility issues
 - **CI Pipeline**: Tests run successfully in GitHub Actions with `--no-build` strategy after solution-wide build
 
 #### NPM Environment
+
 - **NPM Version**: Updated from 10.8.2 to 11.6.0 for latest features and security updates
 
 ---
