@@ -1,6 +1,6 @@
 # Implementation Plan: Add File Renaming Recommendations
 
-**Branch**: `007-add-file-renaming` | **Date**: September 10, 2025 | **Spec**: [spec.md](/mnt/c/Users/Ragma/KnowShow_Specd/specs/007-add-file-renaming/spec.md)
+**Branch**: `007-add-file-renaming` | **Date**: September 10, 2025 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/007-add-file-renaming/spec.md`
 
 ## Execution Flow (/plan command scope)
