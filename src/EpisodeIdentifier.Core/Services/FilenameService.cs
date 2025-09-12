@@ -74,7 +74,22 @@ public class FilenameService : IFilenameService
 
         result.SuggestedFilename = filename;
         result.TotalLength = filename.Length;
-        result.IsValid = IsValidWindowsFilename(filename);
+        
+        // If we truncated the filename to fit within the specified limit,
+        // then it should be considered valid as long as it meets basic requirements
+        if (result.WasTruncated && filename.Length <= maxLength)
+        {
+            // For truncated filenames, do a basic validation without strict length limits
+            result.IsValid = !string.IsNullOrWhiteSpace(filename) && 
+                           filename.IndexOfAny(_invalidWindowsChars) < 0 && 
+                           !filename.EndsWith('.') && 
+                           !filename.EndsWith(' ') &&
+                           !string.IsNullOrEmpty(Path.GetExtension(filename));
+        }
+        else
+        {
+            result.IsValid = IsValidWindowsFilename(filename);
+        }
 
         if (!result.IsValid)
         {
