@@ -1,16 +1,19 @@
 # Service Contract: Filename Generation Service
 
 ## Overview
+
 Service contract for generating Windows-compatible filenames from episode identification data.
 
 ## IFilenameService Interface
 
 ### GenerateFilename Method
+
 ```csharp
 FilenameGenerationResult GenerateFilename(FilenameGenerationRequest request)
 ```
 
 **Input Contract**:
+
 ```csharp
 public class FilenameGenerationRequest
 {
@@ -34,6 +37,7 @@ public class FilenameGenerationRequest
 ```
 
 **Output Contract**:
+
 ```csharp
 public class FilenameGenerationResult
 {
@@ -47,17 +51,20 @@ public class FilenameGenerationResult
 ```
 
 ### SanitizeForWindows Method
+
 ```csharp
 string SanitizeForWindows(string input)
 ```
 
 **Behavior**:
+
 - Replace `< > : " | ? * \` with single space
 - Collapse multiple consecutive spaces to single space
 - Trim leading and trailing spaces
 - Return sanitized string
 
 **Examples**:
+
 ```csharp
 SanitizeForWindows("Show: Title") → "Show  Title"
 SanitizeForWindows("File\"Name\"") → "File Name "
@@ -65,22 +72,26 @@ SanitizeForWindows("Path\\To\\File") → "Path To File"
 ```
 
 ### IsValidWindowsFilename Method
+
 ```csharp
 bool IsValidWindowsFilename(string filename)
 ```
 
 **Validation Rules**:
+
 - Length ≤ 260 characters
 - No Windows invalid characters
 - Not empty or whitespace only
 - Valid file extension present
 
 ### TruncateToLimit Method
+
 ```csharp
 string TruncateToLimit(string filename, int maxLength = 260)
 ```
 
 **Behavior**:
+
 - Preserve file extension
 - Truncate episode name first
 - Truncate series name if necessary
@@ -90,11 +101,13 @@ string TruncateToLimit(string filename, int maxLength = 260)
 ## Service Contract Validation
 
 ### Confidence Threshold
+
 - **Requirement**: MatchConfidence ≥ 0.9
 - **Behavior**: Generate filename only for high confidence
 - **Error**: Return validation error for low confidence
 
 ### Required Fields Validation
+
 ```csharp
 // All required fields must be non-null and non-empty
 if (string.IsNullOrWhiteSpace(request.Series))
@@ -106,6 +119,7 @@ if (string.IsNullOrWhiteSpace(request.Series))
 ```
 
 ### Season/Episode Format Validation
+
 ```csharp
 // Season and Episode must be numeric strings
 if (!int.TryParse(request.Season, out int seasonNum) || seasonNum < 1)
@@ -117,6 +131,7 @@ if (!int.TryParse(request.Season, out int seasonNum) || seasonNum < 1)
 ```
 
 ### File Extension Validation
+
 ```csharp
 // Extension must start with dot and be valid
 if (!request.FileExtension.StartsWith(".") || request.FileExtension.Length < 2)
@@ -130,6 +145,7 @@ if (!request.FileExtension.StartsWith(".") || request.FileExtension.Length < 2)
 ## Filename Generation Algorithm
 
 ### Step 1: Format Construction
+
 ```csharp
 string baseFormat = EpisodeName != null 
     ? "{Series} - S{Season:D2}E{Episode:D2} - {EpisodeName}"
@@ -137,12 +153,14 @@ string baseFormat = EpisodeName != null
 ```
 
 ### Step 2: Component Sanitization
+
 ```csharp
 string sanitizedSeries = SanitizeForWindows(request.Series);
 string sanitizedEpisodeName = SanitizeForWindows(request.EpisodeName ?? "");
 ```
 
 ### Step 3: Length Validation and Truncation
+
 ```csharp
 string fullFilename = $"{baseFormat}.{extension}";
 if (fullFilename.Length > 260)
@@ -153,6 +171,7 @@ if (fullFilename.Length > 260)
 ```
 
 ### Step 4: Final Validation
+
 ```csharp
 result.IsValid = IsValidWindowsFilename(result.SuggestedFilename);
 result.TotalLength = result.SuggestedFilename.Length;
@@ -161,6 +180,7 @@ result.TotalLength = result.SuggestedFilename.Length;
 ## Error Handling Contract
 
 ### Input Validation Errors
+
 ```csharp
 // Low confidence
 { IsValid = false, ValidationError = "Confidence below threshold (0.9)" }
@@ -179,6 +199,7 @@ result.TotalLength = result.SuggestedFilename.Length;
 ```
 
 ### Generation Errors
+
 ```csharp
 // Filename too long after truncation
 { IsValid = false, ValidationError = "Cannot generate valid filename within length limit" }
@@ -190,20 +211,24 @@ result.TotalLength = result.SuggestedFilename.Length;
 ## Performance Contract
 
 ### Response Time
+
 - **Target**: < 10ms per filename generation
 - **Maximum**: < 50ms for complex sanitization
 
 ### Memory Usage
+
 - **Target**: < 1MB per request
 - **Behavior**: No memory leaks for repeated calls
 
 ### Thread Safety
+
 - **Requirement**: All methods must be thread-safe
 - **Implementation**: Stateless service design
 
 ## Test Scenarios
 
 ### Valid Inputs
+
 ```csharp
 // Standard case with episode name
 new FilenameGenerationRequest 
@@ -231,6 +256,7 @@ new FilenameGenerationRequest
 ```
 
 ### Sanitization Cases
+
 ```csharp
 // Windows invalid characters
 Series = "Show: Name"  // → "Show  Name"
@@ -241,6 +267,7 @@ Series = "Show    Name"  // → "Show Name"
 ```
 
 ### Edge Cases
+
 ```csharp
 // Very long names
 Series = "Very Long Series Name That Exceeds Normal Limits"
@@ -259,16 +286,19 @@ Series = ""
 ## Integration Points
 
 ### Database Integration
+
 - Service retrieves episode names from SubtitleHashes.EpisodeName column
 - Handles null episode names gracefully
 - No direct database dependencies (data passed via request)
 
 ### CLI Integration  
+
 - Called from Program.cs after successful episode identification
 - Result.SuggestedFilename added to JSON response
 - Error handling integrated with existing error patterns
 
 ### File System Integration
+
 - Generated filename passed to IFileRenameService
 - No direct file system access in this service
 - Pure string manipulation and validation only

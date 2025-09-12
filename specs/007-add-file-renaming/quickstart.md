@@ -1,11 +1,13 @@
 # Quickstart Guide: File Renaming Recommendations
 
 ## Overview
+
 Quick validation guide for the file renaming recommendations feature, covering core functionality and integration points.
 
 ## Feature Validation Steps
 
 ### 1. Filename Suggestion (Core Feature)
+
 ```bash
 # Test high-confidence episode identification with filename suggestion
 dotnet run -- --input test-video.mkv --hash-db test-hashes.db
@@ -22,6 +24,7 @@ dotnet run -- --input test-video.mkv --hash-db test-hashes.db
 ```
 
 ### 2. Automatic File Rename
+
 ```bash
 # Test automatic rename with --rename flag
 cp test-video.mkv temp-video.mkv
@@ -45,6 +48,7 @@ ls -la temp-video.mkv                    # Should not exist
 ```
 
 ### 3. Low Confidence Behavior
+
 ```bash
 # Test with low-confidence identification (no filename suggestion)
 dotnet run -- --input unclear-video.mkv --hash-db test-hashes.db
@@ -62,6 +66,7 @@ dotnet run -- --input unclear-video.mkv --hash-db test-hashes.db
 ```
 
 ### 4. Windows Character Sanitization
+
 ```bash
 # Test filename with Windows-invalid characters
 # (Mock episode with series name containing invalid chars)
@@ -75,6 +80,7 @@ dotnet run -- --input video-with-colons.mkv --hash-db test-hashes.db
 ```
 
 ### 5. Database Schema Validation
+
 ```bash
 # Check that EpisodeName column was added to database
 sqlite3 test-hashes.db ".schema SubtitleHashes"
@@ -94,6 +100,7 @@ sqlite3 test-hashes.db ".schema SubtitleHashes"
 ## Error Scenario Validation
 
 ### 1. File Rename Failure (Target Exists)
+
 ```bash
 # Create conflicting target filename
 touch "Test Show - S01E01 - Pilot.mkv"
@@ -114,6 +121,7 @@ dotnet run -- --input test-video.mkv --hash-db test-hashes.db --rename
 ```
 
 ### 2. Permission Denied
+
 ```bash
 # Test in read-only directory (if possible on test system)
 chmod 444 test-video.mkv
@@ -131,6 +139,7 @@ dotnet run -- --input test-video.mkv --hash-db test-hashes.db --rename
 ```
 
 ### 3. Very Long Filename Handling
+
 ```bash
 # Test with very long series/episode names (mock data)
 # Expected: Truncated filename that fits Windows 260-char limit
@@ -143,24 +152,28 @@ dotnet run -- --input test-video.mkv --hash-db test-hashes.db --rename
 ## Integration Testing Checklist
 
 ### ✅ CLI Integration
+
 - [ ] New --rename flag recognized by argument parser
 - [ ] Flag works in combination with existing parameters
 - [ ] Help text updated to include --rename description
 - [ ] Error handling maintains existing CLI patterns
 
 ### ✅ JSON Response Integration  
+
 - [ ] suggestedFilename field added to IdentificationResult
 - [ ] Field only present for high-confidence results (≥90%)
 - [ ] fileRenamed and originalFilename fields work with --rename flag
 - [ ] Backward compatibility maintained (existing clients unaffected)
 
 ### ✅ Database Integration
+
 - [ ] EpisodeName column added to SubtitleHashes table
 - [ ] Migration runs automatically on first startup
 - [ ] Existing data unaffected by schema change
 - [ ] Episode names retrieved and used in filename generation
 
 ### ✅ Service Integration
+
 - [ ] FilenameService generates proper Windows-compatible names
 - [ ] FileRenameService performs safe atomic rename operations
 - [ ] Error handling integrated with existing error response patterns
@@ -171,6 +184,7 @@ dotnet run -- --input test-video.mkv --hash-db test-hashes.db --rename
 ### Actual Test Results (September 2025)
 
 #### Filename Generation Performance Tests
+
 ```bash
 # Performance test results from dotnet test tests/performance/
 
@@ -187,6 +201,7 @@ dotnet run -- --input test-video.mkv --hash-db test-hashes.db --rename
 ```
 
 #### Memory Usage Testing
+
 ```bash
 # Memory performance test results
 ✅ PASSED: MemoryUsage_Performance_NoMemoryLeaks [3 ms]
@@ -198,6 +213,7 @@ dotnet run -- --input test-video.mkv --hash-db test-hashes.db --rename
 ```
 
 #### Integration Performance
+
 ```bash
 # Subtitle workflow performance results  
 ✅ PASSED: ProcessVideo_Performance_CompletesWithinTimeLimit [9 ms]
@@ -209,7 +225,8 @@ dotnet run -- --input test-video.mkv --hash-db test-hashes.db --rename
 ```
 
 #### Performance Summary
-- **Filename Generation**: 1-10ms per operation (target: <10ms) ✅ 
+
+- **Filename Generation**: 1-10ms per operation (target: <10ms) ✅
 - **Character Sanitization**: <1ms per operation (target: <1ms) ✅
 - **Path Validation**: <1ms per operation (target: <1ms) ✅  
 - **Concurrent Operations**: 12ms for multiple simultaneous calls ✅
@@ -219,6 +236,7 @@ dotnet run -- --input test-video.mkv --hash-db test-hashes.db --rename
 ## Manual Testing Scenarios
 
 ### Test Data Setup
+
 ```bash
 # Create test video files with known characteristics
 cp sample.mkv "Breaking Bad - S01E05.mkv"        # Known episode
@@ -232,6 +250,7 @@ dotnet run -- --input "Breaking Bad - S01E05.mkv" --hash-db test-hashes.db --sto
 ```
 
 ### User Workflow Testing
+
 ```bash
 # Scenario 1: User wants filename suggestion only
 dotnet run -- --input unclear-filename.mkv --hash-db test-hashes.db
@@ -252,32 +271,37 @@ done
 ## Validation Success Criteria
 
 ### ✅ Core Functionality (COMPLETED)
+
 - [x] High-confidence episodes generate suggested filenames  
 - [x] Low-confidence episodes do not generate suggestions
 - [x] --rename flag performs automatic file renaming
 - [x] Error scenarios handled gracefully with informative messages
 
 ### ✅ Data Quality (COMPLETED)
+
 - [x] Filenames follow "SeriesName - S##E## - EpisodeName.ext" format
 - [x] Windows invalid characters properly sanitized  
 - [x] Filename length respects 260-character limit
 - [x] File extensions preserved correctly
 
 ### ✅ System Integration (COMPLETED)
+
 - [x] Database schema migration successful
 - [x] Existing CLI functionality unaffected
 - [x] JSON response format backward compatible
 - [x] Error handling consistent with existing patterns
 
-### ✅ Robustness (COMPLETED) 
+### ✅ Robustness (COMPLETED)
+
 - [x] File operation errors handled safely
 - [x] Original files preserved on any failure
 - [x] Performance impact minimal (5-10ms total, target <50ms)
 - [x] Concurrent operations work correctly (12ms for multiple calls)
 
 ### ✅ Test Coverage (COMPLETED)
+
 - [x] **T030**: Unit tests for filename sanitization edge cases (FilenameServiceTests.cs)
-- [x] **T031**: Unit tests for file rename error scenarios (FileRenameServiceTests.cs) 
+- [x] **T031**: Unit tests for file rename error scenarios (FileRenameServiceTests.cs)
 - [x] **T032**: Unit tests for Windows path length validation (FilenameServiceTests.cs)
 - [x] **T033**: Performance test for filename generation <10ms (FilenamePerformanceTests.cs)
 - [x] **T034**: Updated quickstart.md with actual test results (this document)
@@ -285,6 +309,7 @@ done
 ## Rollback Procedures
 
 ### Feature Disable
+
 ```bash
 # Feature can be disabled by not using new parameters
 dotnet run -- --input video.mkv --hash-db hashes.db
@@ -296,6 +321,7 @@ sqlite3 hashes.db "ALTER TABLE SubtitleHashes DROP COLUMN EpisodeName;"
 ```
 
 ### Emergency Recovery
+
 ```bash
 # If rename operations cause issues, original functionality preserved
 # Users can continue using system without --rename flag

@@ -133,25 +133,30 @@ Task: "Performance test for filename generation in tests/performance/FilenamePer
 ## Notes
 
 ### TDD Enforcement
+
 - All contract and integration tests (T007-T016) MUST be completed and failing before ANY implementation tasks (T017-T024)
 - This ensures proper red-green-refactor cycle
 
 ### Database Migration Strategy
+
 - T023 adds EpisodeName column with backward compatibility (nullable)
 - T024 updates existing service to use new column
 - Migration runs automatically on application start
 
 ### Error Handling Integration
+
 - T028 integrates with existing error patterns in Program.cs
 - File rename errors included in JSON response with proper error codes
 - Maintains backward compatibility for existing error scenarios
 
 ### Performance Requirements
+
 - T021 must implement filename generation in <10ms (per plan.md)
 - T033 validates performance requirement
 - T022 must handle file operations efficiently
 
 ### Windows Compatibility
+
 - T021 implements character sanitization per contracts/filename-service-contract.md
 - T015 validates actual Windows compatibility with test scenarios
 - T032 ensures path length compliance

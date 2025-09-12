@@ -218,6 +218,7 @@ ios/ or android/
 **Estimated Output**: 20-25 numbered, ordered tasks in tasks.md
 
 **Task Categories**:
+
 1. **Phase 3.1**: Setup and model creation (5 tasks) - All [P]
 2. **Phase 3.2**: Contract tests for services (6 tasks) - FilenameService [P], FileRenameService [P], CLI tests
 3. **Phase 3.3**: Service implementations (4 tasks) - Make contract tests pass

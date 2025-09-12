@@ -1,16 +1,19 @@
 # Service Contract: File Rename Service
 
 ## Overview
+
 Service contract for performing safe file rename operations with error handling and validation.
 
 ## IFileRenameService Interface
 
 ### RenameFileAsync Method
+
 ```csharp
 Task<FileRenameResult> RenameFileAsync(FileRenameRequest request)
 ```
 
 **Input Contract**:
+
 ```csharp
 public class FileRenameRequest
 {
@@ -25,6 +28,7 @@ public class FileRenameRequest
 ```
 
 **Output Contract**:
+
 ```csharp
 public class FileRenameResult
 {
@@ -46,22 +50,26 @@ public enum FileRenameError
 ```
 
 ### CanRenameFile Method
+
 ```csharp
 bool CanRenameFile(string filePath)
 ```
 
 **Validation Checks**:
+
 - File exists at specified path
 - File is not locked/in use
 - Directory has write permissions
 - Path is valid format
 
 ### GetTargetPath Method
+
 ```csharp
 string GetTargetPath(string originalPath, string suggestedFilename)
 ```
 
 **Behavior**:
+
 - Extract directory from original path
 - Combine with suggested filename
 - Return full target path
@@ -70,6 +78,7 @@ string GetTargetPath(string originalPath, string suggestedFilename)
 ## Service Implementation Contract
 
 ### Pre-Operation Validation
+
 ```csharp
 // Input validation
 if (string.IsNullOrWhiteSpace(request.OriginalPath))
@@ -91,6 +100,7 @@ if (!File.Exists(request.OriginalPath))
 ```
 
 ### Target Path Generation
+
 ```csharp
 string directory = Path.GetDirectoryName(request.OriginalPath);
 string targetPath = Path.Combine(directory, request.SuggestedFilename);
@@ -106,6 +116,7 @@ if (targetPath.Length > 260)  // Windows path limit
 ```
 
 ### Collision Detection
+
 ```csharp
 // Target existence check
 if (File.Exists(targetPath) && !request.ForceOverwrite)
@@ -118,6 +129,7 @@ if (File.Exists(targetPath) && !request.ForceOverwrite)
 ```
 
 ### Atomic Rename Operation
+
 ```csharp
 try
 {
@@ -142,6 +154,7 @@ catch (UnauthorizedAccessException)
 ## Error Handling Contract
 
 ### File System Errors
+
 ```csharp
 // File not found
 { 
@@ -173,6 +186,7 @@ catch (UnauthorizedAccessException)
 ```
 
 ### Path Validation Errors
+
 ```csharp
 // Invalid path format
 { 
@@ -192,16 +206,19 @@ catch (UnauthorizedAccessException)
 ## Safety Requirements
 
 ### Atomic Operations
+
 - Use `File.Move()` for atomic rename operation
 - No intermediate states or temporary files
 - Either complete success or complete failure
 
 ### Data Preservation
+
 - Original file preserved on any error
 - No data loss under any circumstances
 - Rollback not required (operation is atomic)
 
 ### Validation Sequence
+
 1. Input parameter validation
 2. Source file existence check
 3. Target path generation and validation
@@ -213,15 +230,18 @@ catch (UnauthorizedAccessException)
 ## Performance Contract
 
 ### Response Time
+
 - **Target**: < 100ms for local file operations
 - **Maximum**: < 1000ms for network drives
 
 ### Resource Usage
+
 - **Memory**: < 1MB per operation (no file content loading)
 - **CPU**: Minimal (file system operations only)
 - **I/O**: Single file move operation
 
 ### Concurrency
+
 - **Thread Safety**: All methods must be thread-safe
 - **File Locking**: Handle file lock conflicts gracefully
 - **Simultaneous Operations**: Support multiple concurrent renames
@@ -229,6 +249,7 @@ catch (UnauthorizedAccessException)
 ## Test Scenarios
 
 ### Success Cases
+
 ```csharp
 // Standard rename
 Request: { OriginalPath = "/path/video.mkv", SuggestedFilename = "Show - S01E01.mkv" }
@@ -240,6 +261,7 @@ Result: { Success = true, NewPath = "/path/existing.mkv" }
 ```
 
 ### Error Cases
+
 ```csharp
 // File not found
 Request: { OriginalPath = "/nonexistent.mkv", SuggestedFilename = "new.mkv" }
@@ -259,6 +281,7 @@ Result: { Success = false, ErrorType = PathTooLong }
 ```
 
 ### Edge Cases
+
 ```csharp
 // Same filename (no-op)
 Request: { OriginalPath = "/video.mkv", SuggestedFilename = "video.mkv" }
@@ -276,16 +299,19 @@ Result: { Success = false, ErrorType = InvalidPath }
 ## Integration Points
 
 ### CLI Integration
+
 - Called from Program.cs when --rename flag is present
 - Result integrated into JSON response
 - Error handling follows existing CLI error patterns
 
 ### Filename Service Integration
+
 - Receives suggested filename from IFilenameService
 - No direct dependency (filename passed as parameter)
 - Validates filename format before attempting rename
 
 ### Logging Integration
+
 - Log all rename attempts (success and failure)
 - Include original and target paths in logs
 - Use structured logging for error categorization
@@ -293,16 +319,19 @@ Result: { Success = false, ErrorType = InvalidPath }
 ## Security Considerations
 
 ### Path Traversal Prevention
+
 - Validate all paths stay within intended directory
 - Reject paths containing "../" or similar patterns
 - Use Path.GetFullPath() for normalization
 
 ### Permission Validation
+
 - Check directory write permissions before attempting rename
 - Handle access denied scenarios gracefully
 - No elevation of privileges
 
 ### File System Safety
+
 - No deletion of original file until rename confirmed
 - Atomic operations prevent partial states
 - Validate target filename for security (no executable extensions in unexpected contexts)
