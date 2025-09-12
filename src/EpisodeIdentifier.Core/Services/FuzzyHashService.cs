@@ -17,7 +17,7 @@ public class FuzzyHashService : IDisposable
         _dbPath = dbPath;
         _logger = logger;
         _normalizationService = normalizationService;
-        
+
         // For in-memory databases, keep a shared connection alive
         if (dbPath == ":memory:")
         {
@@ -169,7 +169,7 @@ public class FuzzyHashService : IDisposable
         }
     }
 
-    private async Task StoreHashWithConnection(SqliteConnection connection, LabelledSubtitle subtitle, 
+    private async Task StoreHashWithConnection(SqliteConnection connection, LabelledSubtitle subtitle,
         SubtitleNormalizedVersions normalized)
     {
         using var command = connection.CreateCommand();
@@ -303,7 +303,7 @@ public class FuzzyHashService : IDisposable
     }
 
     private async Task<(LabelledSubtitle Subtitle, double Confidence)?> GetBestMatchWithConnection(
-        SqliteConnection connection, string subtitleText, 
+        SqliteConnection connection, string subtitleText,
         SubtitleNormalizedVersions inputNormalized)
     {
 

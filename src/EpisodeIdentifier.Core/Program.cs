@@ -76,7 +76,7 @@ public class Program
             var episode = context.ParseResult.GetValueForOption(episodeOption);
             var language = context.ParseResult.GetValueForOption(languageOption);
             var rename = context.ParseResult.GetValueForOption(renameOption);
-            
+
             Environment.Exit(await HandleCommand(input, hashDb!, store, bulkDirectory, series, season, episode, language, rename));
         });
 
@@ -96,7 +96,7 @@ public class Program
     {
         // Configure JSON serialization with camelCase for consistent API
         var jsonSerializationOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-        
+
         // Validate input parameters
         if (bulkDirectory != null && input != null)
         {
@@ -280,7 +280,7 @@ public class Program
 
                 // Get subtitle track information for direct video processing
                 var subtitleTracks = await validator.GetSubtitleTracks(input.FullName);
-                
+
                 if (!subtitleTracks.Any())
                 {
                     // Try text subtitle fallback
@@ -333,7 +333,7 @@ public class Program
                         };
 
                         var filenameResult = filenameService.GenerateFilename(filenameRequest);
-                        
+
                         if (filenameResult.IsValid && !string.IsNullOrEmpty(filenameResult.SuggestedFilename))
                         {
                             // Prepare file rename request
@@ -347,7 +347,7 @@ public class Program
                             {
                                 // Attempt to rename the file
                                 var renameResult = await fileRenameService.RenameFileAsync(renameRequest);
-                                
+
                                 if (renameResult.Success)
                                 {
                                     // Update identification result with rename success
@@ -360,7 +360,7 @@ public class Program
                                     // Include filename suggestion but set error for rename failure
                                     result.SuggestedFilename = filenameResult.SuggestedFilename;
                                     result.FileRenamed = false;
-                                    
+
                                     // Set appropriate error based on rename failure type
                                     if (renameResult.ErrorType.HasValue)
                                     {
@@ -386,7 +386,7 @@ public class Program
                             {
                                 warning = new
                                 {
-                                    code = "FILENAME_GENERATION_FAILED", 
+                                    code = "FILENAME_GENERATION_FAILED",
                                     message = "File identification successful but filename generation failed"
                                 }
                             }));
@@ -495,7 +495,7 @@ public class Program
 
             // Match against database
             var result = await matcher.IdentifyEpisode(subtitleText);
-            
+
             // Handle file renaming if --rename flag is specified
             if (rename && !result.HasError && result.MatchConfidence >= 0.9)
             {
@@ -511,7 +511,7 @@ public class Program
                 };
 
                 var filenameResult = filenameService.GenerateFilename(filenameRequest);
-                
+
                 if (filenameResult.IsValid && !string.IsNullOrEmpty(filenameResult.SuggestedFilename))
                 {
                     // Prepare file rename request
@@ -525,7 +525,7 @@ public class Program
                     {
                         // Attempt to rename the file
                         var renameResult = await fileRenameService.RenameFileAsync(renameRequest);
-                        
+
                         if (renameResult.Success)
                         {
                             // Update identification result with rename success
@@ -538,7 +538,7 @@ public class Program
                             // Include filename suggestion but set error for rename failure
                             result.SuggestedFilename = filenameResult.SuggestedFilename;
                             result.FileRenamed = false;
-                            
+
                             // Set appropriate error based on rename failure type
                             if (renameResult.ErrorType.HasValue)
                             {
@@ -559,7 +559,7 @@ public class Program
                     }
                 }
             }
-            
+
             return result;
         }
         catch (Exception)

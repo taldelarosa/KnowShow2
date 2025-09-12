@@ -9,7 +9,7 @@ public class IdentificationResult
     public double MatchConfidence { get; set; }
     public string? AmbiguityNotes { get; set; }
     public IdentificationError? Error { get; set; }
-    
+
     /// <summary>
     /// Suggested filename for high confidence episode identifications.
     /// Format: "SeriesName - S01E01 - EpisodeName.ext"

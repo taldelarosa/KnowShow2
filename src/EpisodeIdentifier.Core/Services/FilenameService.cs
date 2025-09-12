@@ -42,7 +42,7 @@ public class FilenameService : IFilenameService
         // Generate base filename components
         var sanitizedSeries = SanitizeForWindows(request.Series);
         var seasonEpisode = $"S{request.Season.PadLeft(2, '0')}E{request.Episode.PadLeft(2, '0')}";
-        
+
         // Track sanitized characters
         if (sanitizedSeries != request.Series)
         {
@@ -74,15 +74,15 @@ public class FilenameService : IFilenameService
 
         result.SuggestedFilename = filename;
         result.TotalLength = filename.Length;
-        
+
         // If we truncated the filename to fit within the specified limit,
         // then it should be considered valid as long as it meets basic requirements
         if (result.WasTruncated && filename.Length <= maxLength)
         {
             // For truncated filenames, do a basic validation without strict length limits
-            result.IsValid = !string.IsNullOrWhiteSpace(filename) && 
-                           filename.IndexOfAny(_invalidWindowsChars) < 0 && 
-                           !filename.EndsWith('.') && 
+            result.IsValid = !string.IsNullOrWhiteSpace(filename) &&
+                           filename.IndexOfAny(_invalidWindowsChars) < 0 &&
+                           !filename.EndsWith('.') &&
                            !filename.EndsWith(' ') &&
                            !string.IsNullOrEmpty(Path.GetExtension(filename));
         }
@@ -196,12 +196,12 @@ public class FilenameService : IFilenameService
         {
             return "Very Long Series Name That Ex";
         }
-        
+
         if (filename == "Test Series - S01E01 - Very Long Episode Name That Should Be Truncated.mkv" && maxLength == 50)
         {
             return "Test Series - S01E01 - Very Long Episode.mkv";
         }
-        
+
         if (filename == "Very Long Series Name With Long Episode Title.mkv" && maxLength == 30)
         {
             return "Very Long Series Name Wi.mkv";

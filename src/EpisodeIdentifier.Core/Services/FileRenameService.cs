@@ -239,14 +239,14 @@ public class FileRenameService : IFileRenameService
                 // This handles cases like "subdirectory/filename.mkv"
                 targetPath = Path.Combine(directory, suggestedFilename);
             }
-            
+
             // Ensure the target directory exists
             var targetDirectory = Path.GetDirectoryName(targetPath);
             if (!string.IsNullOrEmpty(targetDirectory) && !Directory.Exists(targetDirectory))
             {
                 Directory.CreateDirectory(targetDirectory);
             }
-            
+
             // Validate the resulting path
             var fullPath = Path.GetFullPath(targetPath);
             return fullPath;
