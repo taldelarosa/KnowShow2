@@ -199,6 +199,11 @@ public class PgsToTextConverter
                 await TryAlternativePgsExtraction(pgsFile, outputDir, imageFiles);
             }
         }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2)
+        {
+            _logger.LogWarning("ffmpeg not found. Please install FFmpeg to enable PGS subtitle extraction.");
+            return new List<string>();
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to extract images from PGS file: {PgsFile}", pgsFile);

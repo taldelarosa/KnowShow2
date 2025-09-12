@@ -18,6 +18,13 @@ public class VideoFormatValidator
     {
         _logger.LogInformation("Validating AV1 encoding for {VideoPath}", videoPath);
 
+        // Check if file exists first
+        if (!File.Exists(videoPath))
+        {
+            _logger.LogWarning("Video file not found: {VideoPath}", videoPath);
+            return false;
+        }
+
         try
         {
             using var process = new Process
@@ -60,6 +67,11 @@ public class VideoFormatValidator
 
             return false;
         }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2)
+        {
+            _logger.LogWarning("ffprobe not found. Please install FFmpeg to enable video format validation.");
+            return false;
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating AV1 encoding for {VideoPath}", videoPath);
@@ -70,6 +82,13 @@ public class VideoFormatValidator
     public async Task<List<SubtitleTrackInfo>> GetSubtitleTracks(string videoPath)
     {
         _logger.LogInformation("Getting subtitle tracks for {VideoPath}", videoPath);
+
+        // Check if file exists first
+        if (!File.Exists(videoPath))
+        {
+            _logger.LogWarning("Video file not found: {VideoPath}", videoPath);
+            return new List<SubtitleTrackInfo>();
+        }
 
         var tracks = new List<SubtitleTrackInfo>();
 
@@ -139,6 +158,11 @@ public class VideoFormatValidator
                     }
                 }
             }
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2)
+        {
+            _logger.LogWarning("ffprobe not found. Please install FFmpeg to enable subtitle track detection.");
+            return new List<SubtitleTrackInfo>();
         }
         catch (Exception ex)
         {

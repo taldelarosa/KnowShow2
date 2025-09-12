@@ -501,13 +501,13 @@ public class FilenameRecommendationTests : IDisposable
     {
         // Arrange
         var filenameService = _serviceProvider.GetRequiredService<IFilenameService>();
+        var tempDir = Path.GetTempPath();
 
         var pathTestCases = new[]
         {
-            "/home/user/videos/episode.mkv",      // Unix path
-            @"C:\Users\User\Videos\episode.mkv",  // Windows path
-            "./relative/path/episode.mkv",        // Relative path
-            "episode.mkv"                         // Filename only
+            Path.Combine(tempDir, "videos", "episode.mkv"),      // Temp directory path
+            Path.Combine("relative", "path", "episode.mkv"),     // Relative path
+            "episode.mkv"                                        // Filename only
         };
 
         foreach (var path in pathTestCases)

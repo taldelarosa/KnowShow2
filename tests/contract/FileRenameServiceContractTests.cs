@@ -305,7 +305,8 @@ public class FileRenameServiceContractTests
     public void GetTargetPath_WithValidInputs_ReturnsCorrectPath()
     {
         // Arrange
-        var originalPath = "/home/user/videos/original_file.mkv";
+        var tempDir = Path.GetTempPath();
+        var originalPath = Path.Combine(tempDir, "videos", "original_file.mkv");
         var suggestedFilename = "new_filename.mkv";
 
         // Act
@@ -314,21 +315,18 @@ public class FileRenameServiceContractTests
         // Assert
         result.Should().NotBeNullOrEmpty();
         result.Should().EndWith("new_filename.mkv");
-        result.Should().StartWith("/home/user/videos/");
-        result.Should().Be("/home/user/videos/new_filename.mkv");
+        result.Should().StartWith(Path.Combine(tempDir, "videos"));
+        result.Should().Be(Path.Combine(tempDir, "videos", "new_filename.mkv"));
     }
 
     [Fact]
     public void GetTargetPath_WithValidPaths_ReturnsCorrectPath()
     {
-        // Arrange - Use platform-appropriate path
-        var originalPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) 
-            ? @"C:\Users\Test\Videos\original_file.mkv"
-            : "/home/test/videos/original_file.mkv";
+        // Arrange - Use temporary directory
+        var tempDir = Path.GetTempPath();
+        var originalPath = Path.Combine(tempDir, "test_videos", "original_file.mkv");
         var suggestedFilename = "new_filename.mkv";
-        var expectedPrefix = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? @"C:\Users\Test\Videos\"
-            : "/home/test/videos/";
+        var expectedPrefix = Path.Combine(tempDir, "test_videos");
 
         // Act
         var result = _fileRenameService.GetTargetPath(originalPath, suggestedFilename);
@@ -355,7 +353,8 @@ public class FileRenameServiceContractTests
     public void GetTargetPath_WithEmptySuggestedFilename_ThrowsArgumentException()
     {
         // Arrange
-        var originalPath = "/home/user/videos/original_file.mkv";
+        var tempDir = Path.GetTempPath();
+        var originalPath = Path.Combine(tempDir, "videos", "original_file.mkv");
         var suggestedFilename = "";
 
         // Act & Assert
