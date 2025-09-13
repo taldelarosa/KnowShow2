@@ -3,28 +3,28 @@
 **Feature Branch**: `008-fuzzy-hashing-plus`  
 **Created**: September 12, 2025  
 **Status**: Draft  
-**Input**: User description: "fuzzy hashing plus configs. The app will now read a JSON config file for match threshold, name confidence threshold, and filename templates. It will also use Context-triggered piecewise hashing (CTPH) instead of SHA1/MD5 hashing."
+**Input**: User description: "fuzzy hashing plus configs. The app will now read a JSON config file for match threshold, name confidence threshold, and filename templates. It will also use Context-triggered piecewise hashing (CTPH) instead of SHA1/MD5 hashing. The app will now accept individual video files or a directory as input for bulk processing."
 
 ## Execution Flow (main)
 
 ```
 1. Parse user description from Input
-   → Key concepts identified: configuration system, fuzzy hashing, CTPH algorithm
+   → Key concepts identified: configuration system, fuzzy hashing, CTPH algorithm, bulk processing
 2. Extract key concepts from description
-   → Actors: users/administrators configuring thresholds
-   → Actions: reading config files, applying thresholds, using CTPH hashing
-   → Data: match thresholds, confidence thresholds, filename templates, hash values
-   → Constraints: JSON format, CTPH algorithm requirement
+   → Actors: users/administrators configuring thresholds and processing files/directories
+   → Actions: reading config files, applying thresholds, using CTPH hashing, processing individual files or directories
+   → Data: match thresholds, confidence thresholds, filename templates, hash values, video files, directory structures
+   → Constraints: JSON format, CTPH algorithm requirement, support for both single files and directories
 3. For each unclear aspect:
-   → Marked configuration storage location and validation requirements
+   → Marked configuration storage location and validation requirements, bulk processing workflow
 4. Fill User Scenarios & Testing section
-   → Clear user flow: configure thresholds → apply to episode identification
+   → Clear user flow: configure thresholds → select input (file/directory) → apply to episode identification
 5. Generate Functional Requirements
-   → Each requirement testable and specific to configuration and hashing
+   → Each requirement testable and specific to configuration, hashing, and bulk processing
 6. Identify Key Entities
-   → Configuration, HashingAlgorithm, MatchingThreshold entities
+   → Configuration, HashingAlgorithm, MatchingThreshold, InputProcessor entities
 7. Run Review Checklist
-   → Some configuration details need clarification
+   → Some configuration and processing details need clarification
 8. Return: SUCCESS (spec ready for planning)
 ```
 
@@ -44,6 +44,8 @@
 
 As a system administrator or power user, I need to configure the episode identification system with custom matching thresholds and filename templates so that the system can be tuned for different content libraries and identification accuracy requirements. The system should use more sophisticated fuzzy hashing to improve matching accuracy while allowing fine-tuned control over matching behavior.
 
+Additionally, I need to process either individual video files or entire directories containing multiple video files to efficiently identify and organize large collections of content.
+
 ### Acceptance Scenarios
 
 1. **Given** a JSON configuration file with match threshold settings, **When** the system starts, **Then** it loads and applies these thresholds for episode identification
@@ -51,6 +53,11 @@ As a system administrator or power user, I need to configure the episode identif
 3. **Given** filename templates in the configuration, **When** renaming files, **Then** the system applies the configured naming patterns
 4. **Given** the CTPH hashing algorithm is enabled, **When** comparing files, **Then** the system uses fuzzy hashing instead of exact hash matching
 5. **Given** invalid configuration values, **When** loading the config file, **Then** the system reports clear validation errors and uses safe defaults
+6. **Given** a single video file as input, **When** processing the file, **Then** the system identifies and processes that individual file
+7. **Given** a directory containing multiple video files as input, **When** processing the directory, **Then** the system recursively discovers and processes all video files in the directory
+8. **Given** a directory with mixed file types, **When** processing the directory, **Then** the system only processes video files and skips non-video files
+9. **Given** a large directory with many files, **When** processing in bulk, **Then** the system provides progress feedback and handles processing errors gracefully
+10. **Given** nested directories with video files, **When** processing a parent directory, **Then** the system processes all video files in subdirectories recursively
 
 ### Quality Gates & Build Requirements
 
@@ -66,6 +73,12 @@ As a system administrator or power user, I need to configure the episode identif
 - How does the system handle invalid threshold values (negative, > 100%, non-numeric)?
 - What occurs when filename templates contain invalid characters or patterns?
 - How does fuzzy hashing perform with very small or very large files?
+- What happens when a specified directory doesn't exist or is inaccessible?
+- How does the system handle directories with no video files?
+- What occurs when processing a directory with thousands of files?
+- How does the system handle file permission errors during bulk processing?
+- What happens when disk space is insufficient during bulk processing?
+- How does the system respond to interruption during bulk processing (Ctrl+C)?
 
 ### Build Process & Quality Assurance
 
@@ -91,6 +104,15 @@ The feature implementation must adhere to strict quality standards:
 - **FR-008**: System MUST reload configuration once per file processing to adapt to config changes as quickly as possible without requiring restart
 - **FR-009**: System MUST log configuration loading success and any validation errors
 - **FR-010**: System MUST maintain backward compatibility with existing file identification workflows
+- **FR-011**: System MUST accept a single video file as input and process it individually
+- **FR-012**: System MUST accept a directory path as input and discover all video files within that directory recursively
+- **FR-013**: System MUST filter input to only process recognized video file extensions (e.g., .mkv, .mp4, .avi, .m4v, .mov)
+- **FR-014**: System MUST provide progress feedback during bulk processing operations, showing current file and overall progress
+- **FR-015**: System MUST handle processing errors gracefully during bulk operations, logging errors and continuing with remaining files
+- **FR-016**: System MUST support recursive directory traversal to process video files in subdirectories
+- **FR-017**: System MUST validate input paths and provide clear error messages for invalid or inaccessible paths
+- **FR-018**: System MUST allow interruption of bulk processing operations with graceful cleanup
+- **FR-019**: System MUST generate summary reports after bulk processing showing successful and failed operations
 
 ### Quality & Build Requirements
 
@@ -107,6 +129,8 @@ The feature implementation must adhere to strict quality standards:
 - **HashingAlgorithm**: CTPH-based fuzzy hashing implementation that produces similarity scores rather than exact hash matches
 - **MatchingThreshold**: Configurable numeric values (0-100%) that determine when file similarities qualify as matches
 - **FilenameTemplate**: Configurable string patterns that define how identified episodes should be named/organized
+- **InputProcessor**: Component that handles both single file and directory input, discovering video files and managing bulk processing workflows
+- **ProcessingResult**: Data structure containing identification results, processing status, and error information for each processed file
 
 ### Configuration Structure Details
 
@@ -132,6 +156,14 @@ The system uses a JSON configuration file (`episodeidentifier.config.json`) with
 
 - `fuzzyHashThreshold` (0-100): Minimum similarity percentage for fuzzy hash matches
 - `hashingAlgorithm`: Algorithm selection (CTPH for Context-triggered piecewise hashing)
+
+**Bulk Processing Settings**:
+
+- `supportedVideoExtensions`: Array of video file extensions to process (e.g., [".mkv", ".mp4", ".avi", ".m4v", ".mov"])
+- `recursiveDirectoryProcessing`: Boolean flag to enable/disable subdirectory traversal
+- `maxConcurrentFiles`: Maximum number of files to process simultaneously (default: 1)
+- `progressReporting`: Boolean flag to enable/disable progress feedback during bulk operations
+- `continueOnError`: Boolean flag to determine if processing continues when individual files fail
 
 ---
 
@@ -162,11 +194,11 @@ The system uses a JSON configuration file (`episodeidentifier.config.json`) with
 *Updated by main() during processing*
 
 - [x] User description parsed
-- [x] Key concepts extracted
+- [x] Key concepts extracted (configuration, fuzzy hashing, bulk processing)
 - [x] Ambiguities marked (now resolved)
-- [x] User scenarios defined
-- [x] Requirements generated
-- [x] Entities identified
+- [x] User scenarios defined (including bulk processing scenarios)
+- [x] Requirements generated (including bulk processing requirements)
+- [x] Entities identified (including InputProcessor and ProcessingResult)
 - [x] Review checklist passed
 
 ---

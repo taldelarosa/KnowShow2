@@ -1,6 +1,6 @@
 # Implementation Plan: Fuzzy Hashing Plus Configuration System
 
-**Branch**: `008-fuzzy-hashing-plus` | **Date**: September 12, 2025 | **Spec**: [spec.md](./spec.md)
+**Branch**: `008-fuzzy-hashing-plus` | **Date**: September 13, 2025 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/mnt/c/Users/Ragma/KnowShow_Specd/specs/008-fuzzy-hashing-plus/spec.md`
 
 ## Execution Flow (/plan command scope)
@@ -32,19 +32,19 @@
 
 ## Summary
 
-Primary requirement: Implement configurable fuzzy hashing system using Context-triggered piecewise hashing (CTPH) instead of SHA1/MD5, with JSON configuration support for match thresholds, name confidence thresholds, and filename templates that reload per file processing.
+The feature implements a comprehensive configuration system for episode identification with fuzzy hashing capabilities and bulk processing. The system will read JSON configuration files for match thresholds, name confidence thresholds, and filename templates while replacing SHA1/MD5 hashing with Context-triggered piecewise hashing (CTPH). Additionally, it will support both individual video file processing and bulk directory processing with recursive discovery.
 
 ## Technical Context
 
 **Language/Version**: C# .NET 8.0  
-**Primary Dependencies**: FuzzySharp 2.0.2, System.CommandLine 2.0.0-beta4, Microsoft.Extensions.Logging 8.0.0, CTPH library (TBD)  
-**Storage**: SQLite (existing), JSON configuration files  
-**Testing**: NUnit (from existing test structure)  
+**Primary Dependencies**: Microsoft.Data.Sqlite, System.CommandLine, FuzzySharp, ssdeep.NET, FluentValidation, System.IO.Abstractions  
+**Storage**: SQLite database (bones.db, production_hashes.db)  
+**Testing**: xUnit (standard .NET testing framework)  
 **Target Platform**: Cross-platform (.NET 8.0)
-**Project Type**: single - console application with library structure  
-**Performance Goals**: Per-file config reload (<10ms), fuzzy hash comparison <100ms per file pair  
-**Constraints**: Maintain backward compatibility with existing workflows, config reload on every file processing  
-**Scale/Scope**: Episode identification for media libraries (hundreds to thousands of files)
+**Project Type**: single - console application with CLI interface  
+**Performance Goals**: Process large directories efficiently, handle thousands of video files  
+**Constraints**: CTPH algorithm requirement, JSON configuration validation, recursive directory traversal  
+**Scale/Scope**: Support for large media libraries, bulk processing operations
 
 ## Constitution Check
 
@@ -52,47 +52,49 @@ Primary requirement: Implement configurable fuzzy hashing system using Context-t
 
 **Simplicity**:
 
-- Projects: 1 (single console application with library structure)
-- Using framework directly? Yes (System.CommandLine, FuzzySharp, direct .NET APIs)
-- Single data model? Yes (Configuration model with threshold and template entities)
-- Avoiding patterns? Yes (no Repository/UoW - direct service layer)
+- Projects: 1 (EpisodeIdentifier.Core - CLI application)
+- Using framework directly? Yes (direct .NET libraries, System.CommandLine for CLI)
+- Single data model? Yes (Configuration, Episode, ProcessingResult models)
+- Avoiding patterns? Yes (direct service usage, no unnecessary abstractions)
 
 **Architecture**:
 
-- EVERY feature as library? Yes (Configuration library, CTPH hashing library)
+- EVERY feature as library? Yes - Configuration, Hashing, Processing as separate service libraries
 - Libraries listed:
-  - EpisodeIdentifier.Configuration: Config loading, validation, hot-reload
-  - EpisodeIdentifier.Hashing: CTPH implementation and fuzzy matching
-- CLI per library: Yes (--config-validate, --hash-test, --help, --version, --format)
-- Library docs: Yes, llms.txt format planned
+  - ConfigurationService (JSON config management)
+  - HashingService (CTPH fuzzy hashing)
+  - InputProcessorService (bulk file/directory processing)
+  - FileIdentificationService (episode identification logic)
+- CLI per library: Single CLI with subcommands (process-file, process-directory, configure)
+- Library docs: llms.txt format planned - Yes
 
 **Testing (NON-NEGOTIABLE)**:
 
-- RED-GREEN-Refactor cycle enforced? Yes (contract tests first, then integration, then unit)
-- Git commits show tests before implementation? Yes (will ensure in tasks)
+- RED-GREEN-Refactor cycle enforced? Yes (tests written first, must fail, then implement)
+- Git commits show tests before implementation? Yes (contract tests → implementation)
 - Order: Contract→Integration→E2E→Unit strictly followed? Yes
-- Real dependencies used? Yes (actual JSON files, real CTPH libraries)
-- Integration tests for: Yes (new config library, CTPH hashing library, schema changes)
-- FORBIDDEN: Implementation before test, skipping RED phase
+- Real dependencies used? Yes (actual file system, real SQLite database)
+- Integration tests for: Yes - new services, contract changes, configuration schemas
+- FORBIDDEN: Implementation before test, skipping RED phase - Strictly enforced
 
 **Observability**:
 
-- Structured logging included? Yes (Microsoft.Extensions.Logging with JSON output)
-- Frontend logs → backend? N/A (console application)
-- Error context sufficient? Yes (config validation errors, hash comparison failures)
+- Structured logging included? Yes (Microsoft.Extensions.Logging with JSON formatting)
+- Frontend logs → backend? N/A (single console application)
+- Error context sufficient? Yes (detailed error reporting with context)
 
 **Versioning**:
 
-- Version number assigned? 0.8.0 (feature 008)
+- Version number assigned? 0.9.0 (MAJOR.MINOR.BUILD)
 - BUILD increments on every change? Yes
-- Breaking changes handled? Yes (parallel config structure, backward compatibility tests)
+- Breaking changes handled? Yes (configuration migration, backward compatibility)
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```
-specs/[###-feature]/
+specs/008-fuzzy-hashing-plus/
 ├── plan.md              # This file (/plan command output)
 ├── research.md          # Phase 0 output (/plan command)
 ├── data-model.md        # Phase 1 output (/plan command)
@@ -104,42 +106,28 @@ specs/[###-feature]/
 ### Source Code (repository root)
 
 ```
-# Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+# Single project structure (current architecture)
+src/EpisodeIdentifier.Core/
+├── Models/
+│   ├── Configuration/
+│   ├── Identification/
+│   └── Processing/
+├── Services/
+│   ├── Configuration/
+│   ├── Hashing/
+│   ├── Processing/
+│   └── Identification/
+├── Interfaces/
+├── Commands/
+└── Program.cs
 
 tests/
 ├── contract/
 ├── integration/
 └── unit/
-
-# Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure]
 ```
 
-**Structure Decision**: [DEFAULT to Option 1 unless Technical Context indicates web/mobile app]
+**Structure Decision**: Option 1 (Single project) - matches existing EpisodeIdentifier.Core structure
 
 ## Phase 0: Outline & Research
 
@@ -203,48 +191,28 @@ ios/ or android/
 
 **Task Generation Strategy**:
 
-- Load `/templates/tasks-template.md` as base
-- Generate tasks from Phase 1 design docs (contracts, data model, quickstart)
-- Configuration Service contract → contract test task [P]
-- CTPH Hashing Service contract → contract test task [P]  
-- Configuration entity → model creation task [P]
-- FilenamePatterns entity → model creation task [P]
-- FuzzyHashResult entity → model creation task [P]
-- Each quickstart step → integration test task
-- Implementation tasks to make contract tests pass
+Based on the completed Phase 1 design, the /tasks command will generate tasks from:
 
-**Specific Task Categories**:
-
-1. **Contract Tests** (5 tasks):
-   - ConfigurationService contract test
-   - CTPhHashingService contract test  
-   - Configuration validation test
-   - File reload detection test
-   - Backward compatibility test
-
-2. **Model Implementation** (3 tasks):
-   - Configuration entity with validation
-   - FilenamePatterns entity
-   - FuzzyHashResult entity with performance timing
-
-3. **Service Implementation** (4 tasks):
-   - ConfigurationService with hot-reload
-   - CTPhHashingService with ssdeep integration
-   - Configuration validation service
-   - File system watcher service
-
-4. **Integration Tests** (3 tasks):
-   - End-to-end config loading and validation
-   - Fuzzy hash comparison workflow
-   - Hot-reload during file processing
+- Configuration service contract → configuration loading and validation tasks
+- CTPH hashing service contract → fuzzy hashing implementation tasks  
+- Data model entities → model classes and validation tasks
+- Bulk processing requirements → input processor and file discovery tasks
+- CLI command structure → command handler implementation tasks
 
 **Ordering Strategy**:
 
-- TDD order: Contract tests → Models → Services → Integration tests
-- Dependency order: Configuration entities → Hashing services → Integration
-- Mark [P] for parallel execution (independent libraries)
+Following TDD principles and dependency order:
 
-**Estimated Output**: 15-18 numbered, ordered tasks in tasks.md
+1. Contract tests for all services (parallel execution [P])
+2. Model classes (Configuration, ProcessingResult, ValidationResult) [P]
+3. Service interfaces and validation logic [P]  
+4. Core service implementations (ConfigurationService, HashingService)
+5. Input processing and bulk operations (InputProcessor, file discovery)
+6. CLI command integration and progress reporting
+7. Integration tests for end-to-end workflows
+8. Performance and error handling tests
+
+**Estimated Output**: 28-32 numbered, ordered tasks in tasks.md
 
 **IMPORTANT**: This phase is executed by the /tasks command, NOT by /plan
 
@@ -265,6 +233,18 @@ ios/ or android/
 | [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
 | [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
 
+## Complexity Tracking
+
+*Fill ONLY if Constitution Check has violations that must be justified*
+
+No constitutional violations identified. The design follows all principles:
+
+- Single project structure (simplicity)
+- Library-based architecture with clear separation of concerns
+- Direct framework usage without unnecessary abstractions
+- Test-first development approach
+- Proper observability and versioning
+
 ## Progress Tracking
 
 *This checklist is updated during execution flow*
@@ -274,7 +254,7 @@ ios/ or android/
 - [x] Phase 0: Research complete (/plan command)
 - [x] Phase 1: Design complete (/plan command)
 - [x] Phase 2: Task planning complete (/plan command - describe approach only)
-- [x] Phase 3: Tasks generated (/tasks command)
+- [ ] Phase 3: Tasks generated (/tasks command)
 - [ ] Phase 4: Implementation complete
 - [ ] Phase 5: Validation passed
 
@@ -283,7 +263,7 @@ ios/ or android/
 - [x] Initial Constitution Check: PASS
 - [x] Post-Design Constitution Check: PASS
 - [x] All NEEDS CLARIFICATION resolved
-- [ ] Complexity deviations documented
+- [x] Complexity deviations documented (none required)
 
 ---
 *Based on Constitution v2.1.1 - See `/memory/constitution.md`*
