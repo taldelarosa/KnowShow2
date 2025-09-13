@@ -1,6 +1,6 @@
 {
-  "matchConfidenceThreshold": 0.8,
-  "renameConfidenceThreshold": 0.85,
+  "matchConfidenceThreshold": 0.6,
+  "renameConfidenceThreshold": 0.7,
   "filenamePatterns": {
     "primaryPattern": "^(.+?)\\s+S(\\d+)E(\\d+)(?:[\\s\\.\\-]+(.+?))?$",
     "secondaryPattern": "^(.+?)\\s+(\\d+)x(\\d+)(?:[\\s\\.\\-]+(.+?))?$",

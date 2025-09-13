@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Services;
 using EpisodeIdentifier.Core.Interfaces;
 
 namespace EpisodeIdentifier.Core.Services;
@@ -8,9 +9,9 @@ public class SubtitleMatcher : ISubtitleMatcher
 {
     private readonly FuzzyHashService _hashService;
     private readonly ILogger<SubtitleMatcher> _logger;
-    private readonly IConfigurationService _configService;
+    private readonly IAppConfigService _configService;
 
-    public SubtitleMatcher(FuzzyHashService hashService, ILogger<SubtitleMatcher> logger, IConfigurationService configService)
+    public SubtitleMatcher(FuzzyHashService hashService, ILogger<SubtitleMatcher> logger, IAppConfigService configService)
     {
         _hashService = hashService;
         _logger = logger;
@@ -21,7 +22,7 @@ public class SubtitleMatcher : ISubtitleMatcher
     {
         // Use provided confidence or fall back to configuration
         var threshold = minConfidence ?? _configService.Config.MatchConfidenceThreshold;
-        
+
         _logger.LogInformation("Attempting to identify episode using subtitle text (threshold: {Threshold:P1})", threshold);
 
         try

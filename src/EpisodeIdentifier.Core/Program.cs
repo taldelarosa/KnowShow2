@@ -9,6 +9,31 @@ namespace EpisodeIdentifier.Core;
 
 public class Program
 {
+    // Static properties to make configuration services available throughout the application
+    public static IConfigurationService? FuzzyHashConfigurationService { get; private set; }
+    public static IAppConfigService? LegacyConfigurationService { get; private set; }
+
+    /// <summary>
+    /// Gets the fuzzy hash configuration if available and valid, otherwise returns null.
+    /// Services can use this to check if fuzzy hashing is enabled and get configuration values.
+    /// </summary>
+    public static async Task<Models.Configuration.Configuration?> GetFuzzyHashConfigurationAsync()
+    {
+        if (FuzzyHashConfigurationService == null) return null;
+
+        var result = await FuzzyHashConfigurationService.LoadConfiguration();
+        return result.IsValid ? result.Configuration : null;
+    }
+
+    /// <summary>
+    /// Checks if fuzzy hashing is available and properly configured.
+    /// </summary>
+    public static async Task<bool> IsFuzzyHashingEnabledAsync()
+    {
+        var config = await GetFuzzyHashConfigurationAsync();
+        return config?.HashingAlgorithm == Models.Configuration.HashingAlgorithm.CTPH;
+    }
+
     public static async Task<int> Main(string[] args)
     {
         var rootCommand = new RootCommand("Identify Season and Episode from AV1 video via PGS subtitle comparison. Optionally rename files with standardized naming.");
@@ -66,6 +91,9 @@ public class Program
         { IsRequired = false };
         rootCommand.Add(renameOption);
 
+        // Add configuration management commands
+        rootCommand.AddCommand(EpisodeIdentifier.Core.Commands.ConfigurationCommands.CreateConfigCommands());
+
         rootCommand.SetHandler(async (context) =>
         {
             var input = context.ParseResult.GetValueForOption(inputOption);
@@ -122,9 +150,26 @@ public class Program
             builder.AddConsole();
         });
 
-        // Load configuration
-        var configService = new ConfigurationService(loggerFactory.CreateLogger<ConfigurationService>());
-        await configService.LoadConfigurationAsync();
+        // Load legacy configuration (backward compatibility)
+        var legacyConfigService = new AppConfigService(loggerFactory.CreateLogger<AppConfigService>());
+        await legacyConfigService.LoadConfigurationAsync();
+        LegacyConfigurationService = legacyConfigService; // Make available to other services
+
+        // Load new fuzzy hashing configuration
+        var fuzzyHashConfigService = new ConfigurationService(loggerFactory.CreateLogger<ConfigurationService>());
+        var fuzzyConfigResult = await fuzzyHashConfigService.LoadConfiguration();
+        FuzzyHashConfigurationService = fuzzyHashConfigService; // Make available to other services
+
+        // Log configuration loading results
+        if (fuzzyConfigResult.IsValid)
+        {
+            loggerFactory.CreateLogger<Program>().LogInformation("Fuzzy hashing configuration loaded successfully");
+        }
+        else
+        {
+            loggerFactory.CreateLogger<Program>().LogWarning("Fuzzy hashing configuration failed to load: {Errors}. Falling back to legacy configuration.",
+                string.Join(", ", fuzzyConfigResult.Errors));
+        }
 
         var validator = new VideoFormatValidator(loggerFactory.CreateLogger<VideoFormatValidator>());
         var extractor = new SubtitleExtractor(loggerFactory.CreateLogger<SubtitleExtractor>(), validator);
@@ -133,11 +178,16 @@ public class Program
         var pgsConverter = new EnhancedPgsToTextConverter(loggerFactory.CreateLogger<EnhancedPgsToTextConverter>(), pgsRipService, fallbackConverter);
         var normalizationService = new SubtitleNormalizationService(loggerFactory.CreateLogger<SubtitleNormalizationService>());
         var hashService = new FuzzyHashService(hashDb.FullName, loggerFactory.CreateLogger<FuzzyHashService>(), normalizationService);
-        var matcher = new SubtitleMatcher(hashService, loggerFactory.CreateLogger<SubtitleMatcher>(), configService);
-        var filenameParser = new SubtitleFilenameParser(loggerFactory.CreateLogger<SubtitleFilenameParser>(), configService);
+        var matcher = new SubtitleMatcher(hashService, loggerFactory.CreateLogger<SubtitleMatcher>(), legacyConfigService);
+        var filenameParser = new SubtitleFilenameParser(loggerFactory.CreateLogger<SubtitleFilenameParser>(), legacyConfigService);
         var textExtractor = new VideoTextSubtitleExtractor(loggerFactory.CreateLogger<VideoTextSubtitleExtractor>());
         var filenameService = new FilenameService();
         var fileRenameService = new FileRenameService();
+
+        // Create new episode identification service that supports both legacy and CTPH fuzzy hashing
+        var episodeIdentificationService = new EpisodeIdentificationService(
+            loggerFactory.CreateLogger<EpisodeIdentificationService>(),
+            matcher);
 
         try
         {
@@ -294,14 +344,14 @@ public class Program
                 }
 
                 // Check if there are any actual PGS tracks first
-                var pgsTracks = subtitleTracks.Where(t => 
-                    t.CodecName == "hdmv_pgs_subtitle" || 
+                var pgsTracks = subtitleTracks.Where(t =>
+                    t.CodecName == "hdmv_pgs_subtitle" ||
                     t.CodecName == "dvd_subtitle").ToList();
 
                 if (!pgsTracks.Any())
                 {
                     // No PGS tracks found, try text subtitle processing
-                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, matcher, rename, filenameService, fileRenameService, configService);
+                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, episodeIdentificationService, rename, filenameService, fileRenameService, legacyConfigService);
                     if (textSubtitleResult != null)
                     {
                         Console.WriteLine(JsonSerializer.Serialize(textSubtitleResult, jsonSerializationOptions));
@@ -321,7 +371,7 @@ public class Program
                 if (string.IsNullOrWhiteSpace(subtitleText))
                 {
                     // PGS extraction failed, try text subtitle fallback
-                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, matcher, rename, filenameService, fileRenameService, configService);
+                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, episodeIdentificationService, rename, filenameService, fileRenameService, legacyConfigService);
                     if (textSubtitleResult != null)
                     {
                         Console.WriteLine(JsonSerializer.Serialize(textSubtitleResult, jsonSerializationOptions));
@@ -339,10 +389,11 @@ public class Program
                     return 1;
                 }
 
-                var result = await matcher.IdentifyEpisode(subtitleText);
+                // Use the episode identification service that supports both legacy and CTPH fuzzy hashing
+                var result = await episodeIdentificationService.IdentifyEpisodeAsync(subtitleText, input.FullName);
 
                 // Handle file renaming if --rename flag is specified
-                if (rename && !result.HasError && result.MatchConfidence >= configService.Config.RenameConfidenceThreshold)
+                if (rename && !result.HasError && result.MatchConfidence >= legacyConfigService.Config.RenameConfidenceThreshold)
                 {
                     try
                     {
@@ -484,11 +535,11 @@ public class Program
         string? language,
         VideoFormatValidator validator,
         VideoTextSubtitleExtractor textExtractor,
-        SubtitleMatcher matcher,
+        EpisodeIdentificationService episodeIdentificationService,
         bool rename,
         FilenameService filenameService,
         FileRenameService fileRenameService,
-        IConfigurationService configService)
+        IAppConfigService legacyConfigService)
     {
         try
         {
@@ -519,11 +570,11 @@ public class Program
                 return null; // Failed to extract text content
             }
 
-            // Match against database
-            var result = await matcher.IdentifyEpisode(subtitleText);
+            // Match against database using the episode identification service
+            var result = await episodeIdentificationService.IdentifyEpisodeAsync(subtitleText, videoFilePath);
 
             // Handle file renaming if --rename flag is specified
-            if (rename && !result.HasError && result.MatchConfidence >= configService.Config.RenameConfidenceThreshold)
+            if (rename && !result.HasError && result.MatchConfidence >= legacyConfigService.Config.RenameConfidenceThreshold)
             {
                 // Generate filename using FilenameService
                 var filenameRequest = new FilenameGenerationRequest

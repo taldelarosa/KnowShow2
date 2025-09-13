@@ -1,10 +1,13 @@
 {
-  "matchConfidenceThreshold": 0.8,
-  "renameConfidenceThreshold": 0.85,
+  "version": "2.0",
+  "matchConfidenceThreshold": 0.6,
+  "renameConfidenceThreshold": 0.1,
+  "fuzzyHashThreshold": 75,
+  "hashingAlgorithm": "CTPH",
   "filenamePatterns": {
-    "primaryPattern": "^(.\u002B?)\\s\u002BS(\\d\u002B)E(\\d\u002B)(?:[\\s\\.\\-]\u002B(.\u002B?))?$",
-    "secondaryPattern": "^(.\u002B?)\\s\u002B(\\d\u002B)x(\\d\u002B)(?:[\\s\\.\\-]\u002B(.\u002B?))?$",
-    "tertiaryPattern": "^(.\u002B?)\\.S(\\d\u002B)\\.E(\\d\u002B)(?:\\.(.\u002B?))?$"
+    "primaryPattern": "^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
+    "secondaryPattern": "^(?<SeriesName>.+?)\\s(?<Season>\\d+)x(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$", 
+    "tertiaryPattern": "^(?<SeriesName>.+?)\\.S(?<Season>\\d+)\\.E(?<Episode>\\d+)(?:\\.(?<EpisodeName>.+?))?$"
   },
   "filenameTemplate": "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}"
 }

@@ -69,8 +69,8 @@ As a system administrator or power user, I need to configure the episode identif
 - **FR-004**: System MUST apply configurable match threshold values when determining episode identification accuracy
 - **FR-005**: System MUST apply configurable name confidence threshold values when evaluating filename matches
 - **FR-006**: System MUST use configurable filename templates when renaming or organizing identified episodes
-- **FR-007**: System MUST provide default configuration values when config file is missing or invalid [NEEDS CLARIFICATION: what should the default threshold values be?]
-- **FR-008**: System MUST support hot-reloading of configuration changes [NEEDS CLARIFICATION: should config changes apply immediately or require restart?]
+- **FR-007**: System MUST provide default configuration values when config file is missing or invalid, using the values from the current config as defaults
+- **FR-008**: System MUST reload configuration once per file processing to adapt to config changes as quickly as possible without requiring restart
 - **FR-009**: System MUST log configuration loading success and any validation errors
 - **FR-010**: System MUST maintain backward compatibility with existing file identification workflows
 
@@ -96,7 +96,7 @@ As a system administrator or power user, I need to configure the episode identif
 
 ### Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain (2 items need clarification)
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous  
 - [x] Success criteria are measurable
 - [x] Scope is clearly bounded
@@ -110,10 +110,10 @@ As a system administrator or power user, I need to configure the episode identif
 
 - [x] User description parsed
 - [x] Key concepts extracted
-- [x] Ambiguities marked (default thresholds, hot-reload behavior)
+- [x] Ambiguities marked (now resolved)
 - [x] User scenarios defined
 - [x] Requirements generated
 - [x] Entities identified
-- [ ] Review checklist passed (pending clarifications)
+- [x] Review checklist passed
 
 ---

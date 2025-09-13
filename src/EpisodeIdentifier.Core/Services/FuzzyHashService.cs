@@ -43,7 +43,7 @@ public class FuzzyHashService : IDisposable
     private void InitializeDatabaseWithConnection(SqliteConnection connection)
     {
         using var command = connection.CreateCommand();
-        
+
         // New optimized schema using actual fuzzy hashes
         command.CommandText = @"
             CREATE TABLE IF NOT EXISTS SubtitleHashes (
@@ -171,9 +171,9 @@ public class FuzzyHashService : IDisposable
         checkCommand.CommandText = @"
             SELECT COUNT(*) FROM SubtitleHashes 
             WHERE (OriginalHash IS NULL OR OriginalHash = '') AND OriginalText != '';";
-        
+
         var recordsToMigrate = (long)checkCommand.ExecuteScalar()!;
-        
+
         if (recordsToMigrate > 0)
         {
             _logger.LogInformation("Migrating {Count} existing text records to fuzzy hashes", recordsToMigrate);
@@ -395,12 +395,12 @@ public class FuzzyHashService : IDisposable
 
             // Fast hash-based comparison - try the most important combinations first
             var confidence = 0.0;
-            
+
             // Primary comparison: clean vs clean (most accurate for subtitle matching)
             if (!string.IsNullOrEmpty(storedHashes.CleanHash))
             {
                 confidence = Math.Max(confidence, CompareFuzzyHashes(inputHashes.CleanHash, storedHashes.CleanHash));
-                
+
                 // Debug output for specific episode we're looking for
                 if (subtitle.Series == "Bones" && subtitle.Season == "12" && subtitle.Episode == "1")
                 {
@@ -408,14 +408,14 @@ public class FuzzyHashService : IDisposable
                     _logger.LogInformation("DEBUG: Input hash sample: {InputHash}", inputHashes.CleanHash.Substring(0, Math.Min(100, inputHashes.CleanHash.Length)));
                     _logger.LogInformation("DEBUG: Stored hash sample: {StoredHash}", storedHashes.CleanHash.Substring(0, Math.Min(100, storedHashes.CleanHash.Length)));
                 }
-                
+
                 // Early check: if clean comparison is already above threshold, we have a good match
                 if (confidence >= threshold)
                 {
                     results.Add((subtitle, confidence));
                     _logger.LogDebug("Fast match found: {Series} S{Season}E{Episode} with confidence {Confidence:P2} (clean hash)",
                         subtitle.Series, subtitle.Season, subtitle.Episode, confidence);
-                    
+
                     // Early termination for excellent matches
                     if (confidence >= 0.95)
                     {
@@ -527,26 +527,26 @@ public class FuzzyHashService : IDisposable
 
             // Try all hash combinations and find the best
             var confidence = 0.0;
-            
+
             if (!string.IsNullOrEmpty(storedHashes.CleanHash))
                 confidence = Math.Max(confidence, CompareFuzzyHashes(inputHashes.CleanHash, storedHashes.CleanHash));
-            
+
             if (!string.IsNullOrEmpty(storedHashes.NoTimecodesHash))
             {
                 confidence = Math.Max(confidence, CompareFuzzyHashes(inputHashes.NoTimecodesHash, storedHashes.NoTimecodesHash));
                 confidence = Math.Max(confidence, CompareFuzzyHashes(inputHashes.CleanHash, storedHashes.NoTimecodesHash));
             }
-            
+
             if (!string.IsNullOrEmpty(storedHashes.NoHtmlHash))
                 confidence = Math.Max(confidence, CompareFuzzyHashes(inputHashes.NoHtmlHash, storedHashes.NoHtmlHash));
-            
+
             if (!string.IsNullOrEmpty(storedHashes.OriginalHash))
                 confidence = Math.Max(confidence, CompareFuzzyHashes(inputHashes.OriginalHash, storedHashes.OriginalHash));
 
             // Debug output for top matches
             if (confidence > 0.05) // Only log matches above 5%
             {
-                _logger.LogInformation("DEBUG: {Series} S{Season}E{Episode} confidence: {Confidence:P2}", 
+                _logger.LogInformation("DEBUG: {Series} S{Season}E{Episode} confidence: {Confidence:P2}",
                     subtitle.Series, subtitle.Season, subtitle.Episode, confidence);
             }
 
@@ -586,24 +586,24 @@ public class FuzzyHashService : IDisposable
             return "";
 
         var normalizedInput = input.ToLowerInvariant();
-        
+
         // Instead of cryptographic hashes, use word-based and n-gram approaches for fuzzy matching
         var hashes = new List<string>();
-        
+
         // Approach 1: Word-based hash (most important for subtitle content)
-        var words = normalizedInput.Split(new char[] { ' ', '\n', '\r', '\t', '.', ',', ':', ';', '!', '?' }, 
+        var words = normalizedInput.Split(new char[] { ' ', '\n', '\r', '\t', '.', ',', ':', ';', '!', '?' },
             StringSplitOptions.RemoveEmptyEntries);
         var wordHash = GenerateWordBasedHash(words);
         hashes.Add($"words:{wordHash}");
-        
+
         // Approach 2: Character n-gram hash (handles minor variations)
         var trigramHash = GenerateNGramHash(normalizedInput, 3);
         hashes.Add($"trigrams:{trigramHash}");
-        
+
         // Approach 3: Shingle hash (overlapping chunks for similarity)
         var shingleHash = GenerateShingleHash(words, 5); // 5-word shingles
         hashes.Add($"shingles:{shingleHash}");
-        
+
         return string.Join(",", hashes);
     }
 
@@ -611,7 +611,7 @@ public class FuzzyHashService : IDisposable
     {
         // Create a hash based on word frequency and presence
         var wordCounts = new Dictionary<string, int>();
-        
+
         foreach (var word in words.Take(200)) // Limit to first 200 words for performance
         {
             if (word.Length > 2) // Skip very short words
@@ -619,7 +619,7 @@ public class FuzzyHashService : IDisposable
                 wordCounts[word] = wordCounts.GetValueOrDefault(word, 0) + 1;
             }
         }
-        
+
         // Sort by frequency and create signature
         var topWords = wordCounts
             .OrderByDescending(kvp => kvp.Value)
@@ -627,14 +627,14 @@ public class FuzzyHashService : IDisposable
             .Take(50) // Top 50 most frequent words
             .Select(kvp => $"{kvp.Key}:{kvp.Value}")
             .ToArray();
-            
+
         return string.Join("|", topWords);
     }
 
     private string GenerateNGramHash(string input, int n)
     {
         var ngrams = new HashSet<string>();
-        
+
         // Create overlapping n-grams
         for (int i = 0; i <= input.Length - n; i++)
         {
@@ -643,28 +643,28 @@ public class FuzzyHashService : IDisposable
             {
                 ngrams.Add(ngram);
             }
-            
+
             if (ngrams.Count >= 100) // Limit for performance
                 break;
         }
-        
+
         return string.Join("|", ngrams.OrderBy(x => x).Take(50));
     }
 
     private string GenerateShingleHash(string[] words, int shingleSize)
     {
         var shingles = new HashSet<string>();
-        
+
         // Create overlapping word shingles
         for (int i = 0; i <= words.Length - shingleSize; i++)
         {
             var shingle = string.Join(" ", words.Skip(i).Take(shingleSize));
             shingles.Add(shingle);
-            
+
             if (shingles.Count >= 50) // Limit for performance
                 break;
         }
-        
+
         return string.Join("|", shingles.OrderBy(x => x));
     }
 
@@ -675,7 +675,7 @@ public class FuzzyHashService : IDisposable
     {
         if (string.IsNullOrWhiteSpace(hash1) || string.IsNullOrWhiteSpace(hash2))
             return 0.0;
-        
+
         if (hash1 == hash2)
             return 1.0;
 
@@ -684,30 +684,30 @@ public class FuzzyHashService : IDisposable
             // Parse both hashes
             var parts1 = ParseNewFuzzyHash(hash1);
             var parts2 = ParseNewFuzzyHash(hash2);
-            
+
             double maxSimilarity = 0.0;
-            
+
             // Compare words (most important for subtitle matching)
             if (parts1.ContainsKey("words") && parts2.ContainsKey("words"))
             {
                 var wordSimilarity = CompareWordHashes(parts1["words"], parts2["words"]);
                 maxSimilarity = Math.Max(maxSimilarity, wordSimilarity * 1.0); // Full weight
             }
-            
+
             // Compare trigrams (handles minor variations)
             if (parts1.ContainsKey("trigrams") && parts2.ContainsKey("trigrams"))
             {
                 var trigramSimilarity = CompareSetHashes(parts1["trigrams"], parts2["trigrams"]);
                 maxSimilarity = Math.Max(maxSimilarity, trigramSimilarity * 0.8); // Lower weight
             }
-            
+
             // Compare shingles (handles order and context)
             if (parts1.ContainsKey("shingles") && parts2.ContainsKey("shingles"))
             {
                 var shingleSimilarity = CompareSetHashes(parts1["shingles"], parts2["shingles"]);
                 maxSimilarity = Math.Max(maxSimilarity, shingleSimilarity * 0.9); // High weight
             }
-            
+
             return maxSimilarity;
         }
         catch (Exception ex)
@@ -721,7 +721,7 @@ public class FuzzyHashService : IDisposable
     {
         var result = new Dictionary<string, string>();
         var parts = hash.Split(',');
-        
+
         foreach (var part in parts)
         {
             var colonIndex = part.IndexOf(':');
@@ -732,29 +732,29 @@ public class FuzzyHashService : IDisposable
                 result[key] = value;
             }
         }
-        
+
         return result;
     }
 
     private double CompareWordHashes(string wordHash1, string wordHash2)
     {
         if (wordHash1 == wordHash2) return 1.0;
-        
+
         var words1 = ParseWordHash(wordHash1);
         var words2 = ParseWordHash(wordHash2);
-        
+
         if (words1.Count == 0 || words2.Count == 0) return 0.0;
-        
+
         // Calculate weighted Jaccard similarity based on word frequencies
         var commonWords = words1.Keys.Intersect(words2.Keys).ToList();
         var allWords = words1.Keys.Union(words2.Keys).ToList();
-        
+
         if (allWords.Count == 0) return 0.0;
-        
+
         // Weight by frequency - common high-frequency words count more
         double intersection = commonWords.Sum(word => Math.Min(words1[word], words2[word]));
         double union = allWords.Sum(word => Math.Max(words1.GetValueOrDefault(word, 0), words2.GetValueOrDefault(word, 0)));
-        
+
         return union > 0 ? intersection / union : 0.0;
     }
 
@@ -762,7 +762,7 @@ public class FuzzyHashService : IDisposable
     {
         var result = new Dictionary<string, int>();
         var parts = wordHash.Split('|', StringSplitOptions.RemoveEmptyEntries);
-        
+
         foreach (var part in parts)
         {
             var colonIndex = part.LastIndexOf(':');
@@ -775,23 +775,23 @@ public class FuzzyHashService : IDisposable
                 }
             }
         }
-        
+
         return result;
     }
 
     private double CompareSetHashes(string setHash1, string setHash2)
     {
         if (setHash1 == setHash2) return 1.0;
-        
+
         var set1 = new HashSet<string>(setHash1.Split('|', StringSplitOptions.RemoveEmptyEntries));
         var set2 = new HashSet<string>(setHash2.Split('|', StringSplitOptions.RemoveEmptyEntries));
-        
+
         if (set1.Count == 0 || set2.Count == 0) return 0.0;
-        
+
         // Jaccard similarity
         var intersection = set1.Intersect(set2).Count();
         var union = set1.Union(set2).Count();
-        
+
         return union > 0 ? (double)intersection / union : 0.0;
     }
 

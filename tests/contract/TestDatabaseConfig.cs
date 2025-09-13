@@ -24,7 +24,7 @@ public static class TestDatabaseConfig
         {
             return envPath;
         }
-        
+
         // Default fallback path
         return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "test_constraint.db");
     }
@@ -80,7 +80,7 @@ public static class TestDatabaseConfig
         var logger = CreateTestLogger<FuzzyHashService>();
         var normalizationLogger = CreateTestLogger<SubtitleNormalizationService>();
         var normalizationService = new SubtitleNormalizationService(normalizationLogger);
-        
+
         return new FuzzyHashService(dbPath, logger, normalizationService);
     }
 

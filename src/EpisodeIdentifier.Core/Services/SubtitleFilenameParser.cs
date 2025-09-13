@@ -1,16 +1,16 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Core.Models;
-using EpisodeIdentifier.Core.Interfaces;
+using EpisodeIdentifier.Core.Services;
 
 namespace EpisodeIdentifier.Core.Services;
 
 public class SubtitleFilenameParser
 {
     private readonly ILogger<SubtitleFilenameParser> _logger;
-    private readonly IConfigurationService _configService;
+    private readonly IAppConfigService _configService;
 
-    public SubtitleFilenameParser(ILogger<SubtitleFilenameParser> logger, IConfigurationService configService)
+    public SubtitleFilenameParser(ILogger<SubtitleFilenameParser> logger, IAppConfigService configService)
     {
         _logger = logger;
         _configService = configService;
@@ -82,7 +82,7 @@ public class SubtitleFilenameParser
             };
         }
 
-        _logger.LogWarning("Could not parse filename: {FileName}. Current patterns: Primary='{Primary}', Secondary='{Secondary}', Tertiary='{Tertiary}'", 
+        _logger.LogWarning("Could not parse filename: {FileName}. Current patterns: Primary='{Primary}', Secondary='{Secondary}', Tertiary='{Tertiary}'",
             fileName, patterns.PrimaryPattern, patterns.SecondaryPattern, patterns.TertiaryPattern);
         return null;
     }

@@ -4,8 +4,9 @@ namespace EpisodeIdentifier.Core.Interfaces;
 
 /// <summary>
 /// Interface for configuration management with hot-reload support.
+/// This is the new configuration interface for the fuzzy hashing plus system.
 /// </summary>
-public interface IConfigurationService
+public interface IFuzzyConfigurationService
 {
     /// <summary>
     /// Loads configuration from the default config file.
