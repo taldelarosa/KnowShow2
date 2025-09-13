@@ -21,23 +21,23 @@ public class SrtWorkflowTests
     {
         // Create required dependencies manually (following the pattern from other working tests)
         var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-        
+
         // Create format handlers
         var formatHandlers = new List<ISubtitleFormatHandler>
         {
             new SrtFormatHandler(),
-            new AssFormatHandler(), 
+            new AssFormatHandler(),
             new VttFormatHandler()
         };
-        
+
         // Create text extractor
         _textExtractor = new TextSubtitleExtractor(formatHandlers);
-        
+
         // Create matching services
         var fuzzyLogger = loggerFactory.CreateLogger<FuzzyHashService>();
         var normalizationLogger = loggerFactory.CreateLogger<SubtitleNormalizationService>();
         var matcherLogger = loggerFactory.CreateLogger<SubtitleMatcher>();
-        
+
         var normalizationService = new SubtitleNormalizationService(normalizationLogger);
         var testDbPath = TestDatabaseConfig.GetTestDatabasePath();
         var hashService = new FuzzyHashService(testDbPath, fuzzyLogger, normalizationService);
@@ -91,10 +91,10 @@ This is the third subtitle.
     {
         // Arrange  
         var testContent = "This is a test subtitle that should not match anything in the database.";
-        
+
         // Act
         var result = await _matcher.IdentifyEpisode(testContent);
-        
+
         // Assert
         result.Should().NotBeNull();
         result.HasError.Should().BeFalse();
@@ -117,7 +117,7 @@ Another line of subtitle text.";
 
         // Act
         var canHandle = srtHandler.SupportedFormat == SubtitleFormat.SRT;
-        
+
         // Create a test stream for parsing
         using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(testSrtContent));
         var parseResult = await srtHandler.ParseSubtitleTextAsync(stream, null);

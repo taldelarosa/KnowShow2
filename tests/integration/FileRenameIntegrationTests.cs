@@ -24,17 +24,17 @@ public class FileRenameIntegrationTests : IDisposable
     {
         var services = new ServiceCollection();
         services.AddLogging(builder => builder.AddConsole());
-        
+
         // Register services
         services.AddScoped<IFilenameService, FilenameService>();
         services.AddScoped<IFileRenameService, FileRenameService>();
         services.AddScoped<SubtitleNormalizationService>();
-        services.AddScoped<FuzzyHashService>(provider => 
+        services.AddScoped<FuzzyHashService>(provider =>
             new FuzzyHashService(
                 ":memory:", // Use in-memory SQLite database for tests
                 provider.GetRequiredService<ILogger<FuzzyHashService>>(),
                 provider.GetRequiredService<SubtitleNormalizationService>()));
-        
+
         _serviceProvider = services.BuildServiceProvider();
         _logger = _serviceProvider.GetRequiredService<ILogger<FileRenameIntegrationTests>>();
     }
@@ -77,7 +77,7 @@ public class FileRenameIntegrationTests : IDisposable
         };
 
         var filenameResult = filenameService.GenerateFilename(filenameRequest);
-        
+
         // Perform rename operation (--rename flag behavior)
         if (filenameResult.IsValid)
         {
@@ -89,7 +89,7 @@ public class FileRenameIntegrationTests : IDisposable
             };
 
             var renameResult = await fileRenameService.RenameFileAsync(renameRequest);
-            
+
             if (renameResult.Success)
             {
                 identificationResult.SuggestedFilename = filenameResult.SuggestedFilename;
@@ -106,12 +106,12 @@ public class FileRenameIntegrationTests : IDisposable
 
         // Verify file was actually renamed
         File.Exists(originalFile).Should().BeFalse();
-        
+
         var expectedNewPath = Path.Combine(Path.GetDirectoryName(originalFile)!, "The Office - S01E01 - Pilot.mkv");
         File.Exists(expectedNewPath).Should().BeTrue();
         _testFilesToCleanup.Add(expectedNewPath);
 
-        _logger.LogInformation("File successfully renamed from {Original} to {New}", 
+        _logger.LogInformation("File successfully renamed from {Original} to {New}",
             Path.GetFileName(originalFile), "The Office - S01E01 - Pilot.mkv");
     }
 
@@ -153,7 +153,7 @@ public class FileRenameIntegrationTests : IDisposable
         };
 
         var filenameResult = filenameService.GenerateFilename(filenameRequest);
-        
+
         // Should not attempt rename due to validation failure
         if (filenameResult.IsValid)
         {
@@ -165,7 +165,7 @@ public class FileRenameIntegrationTests : IDisposable
             };
 
             var renameResult = await fileRenameService.RenameFileAsync(renameRequest);
-            
+
             if (renameResult.Success)
             {
                 identificationResult.SuggestedFilename = filenameResult.SuggestedFilename;
@@ -242,7 +242,7 @@ public class FileRenameIntegrationTests : IDisposable
             };
 
             renameResult = await fileRenameService.RenameFileAsync(renameRequest);
-            
+
             identificationResult.SuggestedFilename = filenameResult.SuggestedFilename;
             identificationResult.FileRenamed = renameResult.Success;
             identificationResult.OriginalFilename = Path.GetFileName(originalFile);
@@ -307,7 +307,7 @@ public class FileRenameIntegrationTests : IDisposable
         };
 
         var filenameResult = filenameService.GenerateFilename(filenameRequest);
-        
+
         if (filenameResult.IsValid)
         {
             var renameRequest = new FileRenameRequest
@@ -318,7 +318,7 @@ public class FileRenameIntegrationTests : IDisposable
             };
 
             var renameResult = await fileRenameService.RenameFileAsync(renameRequest);
-            
+
             if (renameResult.Success)
             {
                 identificationResult.SuggestedFilename = filenameResult.SuggestedFilename;
@@ -336,7 +336,7 @@ public class FileRenameIntegrationTests : IDisposable
         // Verify original file was renamed/moved and content is preserved
         File.Exists(originalFile).Should().BeFalse();
         File.Exists(existingTarget).Should().BeTrue();
-        
+
         var content = File.ReadAllText(existingTarget);
         content.Should().Be("original content"); // Should contain original file content
         _testFilesToCleanup.Add(existingTarget);
@@ -355,8 +355,8 @@ public class FileRenameIntegrationTests : IDisposable
         var identificationResult = await SimulateCompleteWorkflow(originalFile, renameFile: true);
 
         // Act - Serialize to JSON (CLI output)
-        var jsonOptions = new JsonSerializerOptions 
-        { 
+        var jsonOptions = new JsonSerializerOptions
+        {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = true
         };
@@ -379,7 +379,7 @@ public class FileRenameIntegrationTests : IDisposable
     {
         // Arrange - Simulate CLI command without --rename flag
         var originalFile = CreateTestVideoFile("episode_no_rename.mkv");
-        
+
         // This simulates the main Program.cs HandleCommand method without rename flag
         var identificationResult = await SimulateCompleteWorkflow(originalFile, renameFile: false);
 
@@ -425,7 +425,7 @@ public class FileRenameIntegrationTests : IDisposable
             };
 
             var filenameResult = filenameService.GenerateFilename(filenameRequest);
-            
+
             if (filenameResult.IsValid)
             {
                 identificationResult.SuggestedFilename = filenameResult.SuggestedFilename;
@@ -441,7 +441,7 @@ public class FileRenameIntegrationTests : IDisposable
                     };
 
                     var renameResult = await fileRenameService.RenameFileAsync(renameRequest);
-                    
+
                     identificationResult.FileRenamed = renameResult.Success;
                     identificationResult.OriginalFilename = Path.GetFileName(videoFile);
 

@@ -11,7 +11,7 @@ public interface ISubtitleMatcher
     /// Identifies an episode using subtitle text content.
     /// </summary>
     /// <param name="subtitleText">The subtitle text content to match.</param>
-    /// <param name="minConfidence">The minimum confidence threshold for matches (default: 0.8).</param>
+    /// <param name="minConfidence">The minimum confidence threshold for matches. If null, uses configuration default.</param>
     /// <returns>The identification result containing match information.</returns>
-    Task<IdentificationResult> IdentifyEpisode(string subtitleText, double minConfidence = 0.8);
+    Task<IdentificationResult> IdentifyEpisode(string subtitleText, double? minConfidence = null);
 }
