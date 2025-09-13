@@ -9,6 +9,7 @@
 **Returns**: CTPH hash string (e.g., "3:AXGBicFlgVNhBGcL6wCrFQEv:AXGHsNhxLsr2C")
 
 **Error Cases**:
+
 - `FileNotFoundException`: File does not exist
 - `UnauthorizedAccessException`: Cannot read file
 - `HashingException`: CTPH computation failed
@@ -18,11 +19,13 @@
 **Signature**: `int CompareFuzzyHashes(string hash1, string hash2)`
 
 **Returns**: Similarity score (0-100)
+
 - 0: Completely different
 - 100: Identical files
 - 75+: High similarity (typical match threshold)
 
 **Error Cases**:
+
 - `ArgumentException`: Invalid hash format
 - `HashingException`: Comparison failed
 
@@ -31,6 +34,7 @@
 **Signature**: `Task<FuzzyHashResult> CompareFiles(string file1Path, string file2Path)`
 
 **Returns**:
+
 ```json
 {
   "hash1": "3:AXGBicFlgVNhBGcL6wCrFQEv:AXGHsNhxLsr2C",

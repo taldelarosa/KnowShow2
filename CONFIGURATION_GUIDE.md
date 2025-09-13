@@ -5,6 +5,7 @@ EpisodeIdentifier.Core supports JSON-based configuration for maximum flexibility
 ## Configuration File Location
 
 The configuration file should be placed in the same directory as the executable:
+
 - `episodeidentifier.config.json`
 
 ## Configuration Options
@@ -46,7 +47,7 @@ These regex patterns control how series information is extracted from subtitle f
   - Matches: "Bones S12E01 The Final Chapter"
   - Groups: (1) Series, (2) Season, (3) Episode, (4) Episode Name
 
-- **secondaryPattern**: Alternative format "Series ##x## Episode Name" 
+- **secondaryPattern**: Alternative format "Series ##x## Episode Name"
   - Matches: "Bones 12x01 The Final Chapter"
   - Groups: (1) Series, (2) Season, (3) Episode, (4) Episode Name
 
@@ -63,6 +64,7 @@ These regex patterns control how series information is extracted from subtitle f
 ```
 
 Controls the format of renamed files. Available placeholders:
+
 - `{SeriesName}`: The identified series name
 - `{Season}`: Season number (can use format specifiers like `:D2` for zero-padding)
 - `{Episode}`: Episode number (can use format specifiers like `:D2` for zero-padding)
@@ -74,6 +76,7 @@ Controls the format of renamed files. Available placeholders:
 ## Example Configurations
 
 ### Conservative (High Accuracy)
+
 ```json
 {
   "matchConfidenceThreshold": 0.9,
@@ -82,6 +85,7 @@ Controls the format of renamed files. Available placeholders:
 ```
 
 ### Permissive (More Matches)
+
 ```json
 {
   "matchConfidenceThreshold": 0.7,
@@ -90,6 +94,7 @@ Controls the format of renamed files. Available placeholders:
 ```
 
 ### Custom Patterns for Different Naming Conventions
+
 ```json
 {
   "filenamePatterns": {
@@ -103,6 +108,7 @@ Controls the format of renamed files. Available placeholders:
 ## Configuration Validation
 
 The application will log warnings if:
+
 - Configuration file cannot be parsed
 - Invalid confidence values (outside 0.0-1.0 range)
 - Invalid regex patterns that cannot compile
@@ -112,6 +118,7 @@ In case of errors, the application falls back to default values and continues op
 ## Runtime Configuration Loading
 
 Configuration is loaded once at application startup. To apply changes:
+
 1. Modify the `episodeidentifier.config.json` file
 2. Restart the application
 

@@ -6,7 +6,8 @@
 
 **Signature**: `Task<ConfigurationResult> LoadConfiguration()`
 
-**Returns**: 
+**Returns**:
+
 ```json
 {
   "isValid": true,
@@ -28,6 +29,7 @@
 ```
 
 **Error Cases**:
+
 ```json
 {
   "isValid": false,
@@ -45,7 +47,8 @@
 
 **Returns**: Boolean indicating if configuration was reloaded
 
-**Behavior**: 
+**Behavior**:
+
 - Check file modification time
 - Return `false` if no changes detected
 - Return `true` if successfully reloaded
@@ -56,6 +59,7 @@
 **Signature**: `ValidationResult ValidateConfiguration(Configuration config)`
 
 **Returns**:
+
 ```json
 {
   "isValid": true,
@@ -64,6 +68,7 @@
 ```
 
 **Validation Errors**:
+
 ```json
 {
   "isValid": false,
