@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Core.Models;
 using EpisodeIdentifier.Core.Services;
+using EpisodeIdentifier.Core.Interfaces;
 
 namespace EpisodeIdentifier.Core;
 
@@ -121,6 +122,10 @@ public class Program
             builder.AddConsole();
         });
 
+        // Load configuration
+        var configService = new ConfigurationService(loggerFactory.CreateLogger<ConfigurationService>());
+        await configService.LoadConfigurationAsync();
+
         var validator = new VideoFormatValidator(loggerFactory.CreateLogger<VideoFormatValidator>());
         var extractor = new SubtitleExtractor(loggerFactory.CreateLogger<SubtitleExtractor>(), validator);
         var pgsRipService = new PgsRipService(loggerFactory.CreateLogger<PgsRipService>());
@@ -128,8 +133,8 @@ public class Program
         var pgsConverter = new EnhancedPgsToTextConverter(loggerFactory.CreateLogger<EnhancedPgsToTextConverter>(), pgsRipService, fallbackConverter);
         var normalizationService = new SubtitleNormalizationService(loggerFactory.CreateLogger<SubtitleNormalizationService>());
         var hashService = new FuzzyHashService(hashDb.FullName, loggerFactory.CreateLogger<FuzzyHashService>(), normalizationService);
-        var matcher = new SubtitleMatcher(hashService, loggerFactory.CreateLogger<SubtitleMatcher>());
-        var filenameParser = new SubtitleFilenameParser(loggerFactory.CreateLogger<SubtitleFilenameParser>());
+        var matcher = new SubtitleMatcher(hashService, loggerFactory.CreateLogger<SubtitleMatcher>(), configService);
+        var filenameParser = new SubtitleFilenameParser(loggerFactory.CreateLogger<SubtitleFilenameParser>(), configService);
         var textExtractor = new VideoTextSubtitleExtractor(loggerFactory.CreateLogger<VideoTextSubtitleExtractor>());
         var filenameService = new FilenameService();
         var fileRenameService = new FileRenameService();
@@ -209,6 +214,7 @@ public class Program
                             Series = subtitleFile.Series,
                             Season = subtitleFile.Season,
                             Episode = subtitleFile.Episode,
+                            EpisodeName = subtitleFile.EpisodeName,
                             SubtitleText = subtitleText
                         };
 
@@ -283,19 +289,30 @@ public class Program
 
                 if (!subtitleTracks.Any())
                 {
-                    // Try text subtitle fallback
-                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, matcher, rename, filenameService, fileRenameService);
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLES_FOUND", message = "No PGS or text subtitles could be found in the video file" } }, jsonSerializationOptions));
+                    return 1;
+                }
+
+                // Check if there are any actual PGS tracks first
+                var pgsTracks = subtitleTracks.Where(t => 
+                    t.CodecName == "hdmv_pgs_subtitle" || 
+                    t.CodecName == "dvd_subtitle").ToList();
+
+                if (!pgsTracks.Any())
+                {
+                    // No PGS tracks found, try text subtitle processing
+                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, matcher, rename, filenameService, fileRenameService, configService);
                     if (textSubtitleResult != null)
                     {
                         Console.WriteLine(JsonSerializer.Serialize(textSubtitleResult, jsonSerializationOptions));
                         return textSubtitleResult.HasError ? 1 : 0;
                     }
 
-                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLES_FOUND", message = "No PGS or text subtitles could be found in the video file" } }, jsonSerializationOptions));
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_PGS_TRACKS_FOUND", message = "No PGS subtitle tracks found. Only text subtitle tracks are available." } }, jsonSerializationOptions));
                     return 1;
                 }
 
-                var pgsTrack = PgsTrackSelector.SelectBestTrack(subtitleTracks, language);
+                var pgsTrack = PgsTrackSelector.SelectBestTrack(pgsTracks, language);
 
                 // Extract and OCR subtitle images directly from video file
                 var ocrLanguage = GetOcrLanguageCode(language);
@@ -303,12 +320,20 @@ public class Program
 
                 if (string.IsNullOrWhiteSpace(subtitleText))
                 {
+                    // PGS extraction failed, try text subtitle fallback
+                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, matcher, rename, filenameService, fileRenameService, configService);
+                    if (textSubtitleResult != null)
+                    {
+                        Console.WriteLine(JsonSerializer.Serialize(textSubtitleResult, jsonSerializationOptions));
+                        return textSubtitleResult.HasError ? 1 : 0;
+                    }
+
                     Console.WriteLine(JsonSerializer.Serialize(new
                     {
                         error = new
                         {
                             code = "OCR_FAILED",
-                            message = "Failed to extract readable text from PGS subtitles using OCR"
+                            message = "Failed to extract readable text from PGS subtitles using OCR and no text subtitle fallback available"
                         }
                     }));
                     return 1;
@@ -317,7 +342,7 @@ public class Program
                 var result = await matcher.IdentifyEpisode(subtitleText);
 
                 // Handle file renaming if --rename flag is specified
-                if (rename && !result.HasError && result.MatchConfidence >= 0.9)
+                if (rename && !result.HasError && result.MatchConfidence >= configService.Config.RenameConfidenceThreshold)
                 {
                     try
                     {
@@ -462,7 +487,8 @@ public class Program
         SubtitleMatcher matcher,
         bool rename,
         FilenameService filenameService,
-        FileRenameService fileRenameService)
+        FileRenameService fileRenameService,
+        IConfigurationService configService)
     {
         try
         {
@@ -497,7 +523,7 @@ public class Program
             var result = await matcher.IdentifyEpisode(subtitleText);
 
             // Handle file renaming if --rename flag is specified
-            if (rename && !result.HasError && result.MatchConfidence >= 0.9)
+            if (rename && !result.HasError && result.MatchConfidence >= configService.Config.RenameConfidenceThreshold)
             {
                 // Generate filename using FilenameService
                 var filenameRequest = new FilenameGenerationRequest

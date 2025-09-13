@@ -1,0 +1,10 @@
+{
+  "matchConfidenceThreshold": 0.8,
+  "renameConfidenceThreshold": 0.85,
+  "filenamePatterns": {
+    "primaryPattern": "^(.\u002B?)\\s\u002BS(\\d\u002B)E(\\d\u002B)(?:[\\s\\.\\-]\u002B(.\u002B?))?$",
+    "secondaryPattern": "^(.\u002B?)\\s\u002B(\\d\u002B)x(\\d\u002B)(?:[\\s\\.\\-]\u002B(.\u002B?))?$",
+    "tertiaryPattern": "^(.\u002B?)\\.S(\\d\u002B)\\.E(\\d\u002B)(?:\\.(.\u002B?))?$"
+  },
+  "filenameTemplate": "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}"
+}

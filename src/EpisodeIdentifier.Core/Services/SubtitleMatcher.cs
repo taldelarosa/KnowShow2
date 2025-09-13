@@ -8,24 +8,29 @@ public class SubtitleMatcher : ISubtitleMatcher
 {
     private readonly FuzzyHashService _hashService;
     private readonly ILogger<SubtitleMatcher> _logger;
+    private readonly IConfigurationService _configService;
 
-    public SubtitleMatcher(FuzzyHashService hashService, ILogger<SubtitleMatcher> logger)
+    public SubtitleMatcher(FuzzyHashService hashService, ILogger<SubtitleMatcher> logger, IConfigurationService configService)
     {
         _hashService = hashService;
         _logger = logger;
+        _configService = configService;
     }
 
-    public async Task<IdentificationResult> IdentifyEpisode(string subtitleText, double minConfidence = 0.8)
+    public async Task<IdentificationResult> IdentifyEpisode(string subtitleText, double? minConfidence = null)
     {
-        _logger.LogInformation("Attempting to identify episode using subtitle text");
+        // Use provided confidence or fall back to configuration
+        var threshold = minConfidence ?? _configService.Config.MatchConfidenceThreshold;
+        
+        _logger.LogInformation("Attempting to identify episode using subtitle text (threshold: {Threshold:P1})", threshold);
 
         try
         {
-            var matches = await _hashService.FindMatches(subtitleText, minConfidence);
+            var matches = await _hashService.FindMatches(subtitleText, threshold);
 
             if (!matches.Any())
             {
-                _logger.LogInformation("No matches found above confidence threshold {Threshold}", minConfidence);
+                _logger.LogInformation("No matches found above confidence threshold {Threshold}", threshold);
 
                 // Try to get the best match regardless of threshold for error reporting
                 try
@@ -38,7 +43,7 @@ public class SubtitleMatcher : ISubtitleMatcher
 
                         // For tests, we don't want to return this as an error, just log it
                         _logger.LogInformation("Best match found but below threshold: {Series} S{Season}E{Episode} ({Confidence:P1} confidence, below {MinConfidence:P0} threshold)",
-                            subtitle.Series, subtitle.Season, subtitle.Episode, confidence, minConfidence);
+                            subtitle.Series, subtitle.Season, subtitle.Episode, confidence, threshold);
 
                         // Return no match without error for tests
                         return new IdentificationResult
@@ -71,13 +76,14 @@ public class SubtitleMatcher : ISubtitleMatcher
                 Series = bestMatch.Subtitle.Series,
                 Season = bestMatch.Subtitle.Season,
                 Episode = bestMatch.Subtitle.Episode,
+                EpisodeName = bestMatch.Subtitle.EpisodeName,
                 MatchConfidence = bestMatch.Confidence
             };
 
             // Check for ambiguous results
-            if (matches.Count > 1 && matches.Skip(1).Any(m => m.Confidence > minConfidence))
+            if (matches.Count > 1 && matches.Skip(1).Any(m => m.Confidence > threshold))
             {
-                result.AmbiguityNotes = $"Multiple episodes matched with confidence > {minConfidence}";
+                result.AmbiguityNotes = $"Multiple episodes matched with confidence > {threshold}";
                 _logger.LogWarning("Ambiguous match found: {Notes}", result.AmbiguityNotes);
 
                 // Log all close matches for debugging

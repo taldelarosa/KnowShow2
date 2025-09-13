@@ -32,10 +32,10 @@ public class FilenameService : IFilenameService
         }
 
         // Check confidence threshold
-        if (request.MatchConfidence < 0.9)
+        if (request.MatchConfidence < 0.85)
         {
             result.IsValid = false;
-            result.ValidationError = $"Match confidence {request.MatchConfidence:F2} is below required threshold of 0.9";
+            result.ValidationError = $"Match confidence {request.MatchConfidence:F2} is below required threshold of 0.85";
             return result;
         }
 

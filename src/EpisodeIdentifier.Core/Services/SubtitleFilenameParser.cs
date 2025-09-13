@@ -1,16 +1,19 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Interfaces;
 
 namespace EpisodeIdentifier.Core.Services;
 
 public class SubtitleFilenameParser
 {
     private readonly ILogger<SubtitleFilenameParser> _logger;
+    private readonly IConfigurationService _configService;
 
-    public SubtitleFilenameParser(ILogger<SubtitleFilenameParser> logger)
+    public SubtitleFilenameParser(ILogger<SubtitleFilenameParser> logger, IConfigurationService configService)
     {
         _logger = logger;
+        _configService = configService;
     }
 
     /// <summary>
@@ -34,49 +37,53 @@ public class SubtitleFilenameParser
             return null;
         }
 
-        // Pattern 1: "SeriesName - 1x1 - NameOfEpisode" (season x episode format)
-        var pattern1 = @"^(.+?)\s*-\s*(\d+)x(\d+)(?:\s*-\s*.+)?$";
-        var match1 = Regex.Match(fileName, pattern1, RegexOptions.IgnoreCase);
-        if (match1.Success)
+        // Use configurable patterns
+        var patterns = _configService.Config.FilenamePatterns;
+
+        // Pattern 1: Primary pattern (default: SeriesName S##E## EpisodeName)
+        var match1 = Regex.Match(fileName, patterns.PrimaryPattern, RegexOptions.IgnoreCase);
+        if (match1.Success && match1.Groups.Count >= 4)
         {
             return new SubtitleFileInfo
             {
                 FilePath = filePath,
                 Series = CleanSeriesName(match1.Groups[1].Value),
                 Season = match1.Groups[2].Value.TrimStart('0') ?? "0", // Remove leading zeros
-                Episode = match1.Groups[3].Value.TrimStart('0') ?? "0"
+                Episode = match1.Groups[3].Value.TrimStart('0') ?? "0",
+                EpisodeName = CleanEpisodeName(match1.Groups.Count > 4 ? match1.Groups[4].Value : null)
             };
         }
 
-        // Pattern 2: "SeriesName - S01E01" or "SeriesName.S01E01" or "SeriesName S01E01"
-        var pattern2 = @"^(.+?)[\s\.\-]+S(\d+)E(\d+).*?$";
-        var match2 = Regex.Match(fileName, pattern2, RegexOptions.IgnoreCase);
-        if (match2.Success)
+        // Pattern 2: Secondary pattern (default: SeriesName ##x## EpisodeName)
+        var match2 = Regex.Match(fileName, patterns.SecondaryPattern, RegexOptions.IgnoreCase);
+        if (match2.Success && match2.Groups.Count >= 4)
         {
             return new SubtitleFileInfo
             {
                 FilePath = filePath,
                 Series = CleanSeriesName(match2.Groups[1].Value),
                 Season = match2.Groups[2].Value.TrimStart('0') ?? "0",
-                Episode = match2.Groups[3].Value.TrimStart('0') ?? "0"
+                Episode = match2.Groups[3].Value.TrimStart('0') ?? "0",
+                EpisodeName = CleanEpisodeName(match2.Groups.Count > 4 ? match2.Groups[4].Value : null)
             };
         }
 
-        // Pattern 3: "SeriesName S1E1" (without leading zeros)
-        var pattern3 = @"^(.+?)\s+S(\d+)E(\d+).*?$";
-        var match3 = Regex.Match(fileName, pattern3, RegexOptions.IgnoreCase);
-        if (match3.Success)
+        // Pattern 3: Tertiary pattern (default: SeriesName.S##.E##.EpisodeName)
+        var match3 = Regex.Match(fileName, patterns.TertiaryPattern, RegexOptions.IgnoreCase);
+        if (match3.Success && match3.Groups.Count >= 4)
         {
             return new SubtitleFileInfo
             {
                 FilePath = filePath,
                 Series = CleanSeriesName(match3.Groups[1].Value),
                 Season = match3.Groups[2].Value,
-                Episode = match3.Groups[3].Value
+                Episode = match3.Groups[3].Value,
+                EpisodeName = CleanEpisodeName(match3.Groups.Count > 4 ? match3.Groups[4].Value : null)
             };
         }
 
-        _logger.LogWarning("Could not parse filename: {FileName}. Supported formats: 'Series - 1x1 - Title', 'Series - S01E01', 'Series.S01E01', 'Series S1E1'", fileName);
+        _logger.LogWarning("Could not parse filename: {FileName}. Current patterns: Primary='{Primary}', Secondary='{Secondary}', Tertiary='{Tertiary}'", 
+            fileName, patterns.PrimaryPattern, patterns.SecondaryPattern, patterns.TertiaryPattern);
         return null;
     }
 
@@ -89,6 +96,34 @@ public class SubtitleFilenameParser
         var cleaned = seriesName.Trim();
 
         // Remove patterns like [1080p], (2020), etc.
+        cleaned = Regex.Replace(cleaned, @"\[.*?\]", "", RegexOptions.IgnoreCase);
+        cleaned = Regex.Replace(cleaned, @"\(.*?\)", "", RegexOptions.IgnoreCase);
+
+        // Remove common resolution/quality tags
+        var qualityPatterns = new[] { "1080p", "720p", "480p", "4K", "HDR", "x264", "x265", "HEVC", "BluRay", "WEB-DL", "WEBRip" };
+        foreach (var pattern in qualityPatterns)
+        {
+            cleaned = Regex.Replace(cleaned, @"\b" + Regex.Escape(pattern) + @"\b", "", RegexOptions.IgnoreCase);
+        }
+
+        // Clean up extra spaces and punctuation
+        cleaned = Regex.Replace(cleaned, @"\s+", " ");
+        cleaned = cleaned.Trim(' ', '.', '-', '_');
+
+        return cleaned;
+    }
+
+    /// <summary>
+    /// Cleans up episode name by removing common artifacts and formatting
+    /// </summary>
+    private string CleanEpisodeName(string? episodeName)
+    {
+        if (string.IsNullOrWhiteSpace(episodeName))
+            return string.Empty;
+
+        var cleaned = episodeName.Trim();
+
+        // Remove common quality indicators and release group tags
         cleaned = Regex.Replace(cleaned, @"\[.*?\]", "", RegexOptions.IgnoreCase);
         cleaned = Regex.Replace(cleaned, @"\(.*?\)", "", RegexOptions.IgnoreCase);
 
@@ -151,9 +186,10 @@ public class SubtitleFileInfo
     public string Series { get; set; } = string.Empty;
     public string Season { get; set; } = string.Empty;
     public string Episode { get; set; } = string.Empty;
+    public string EpisodeName { get; set; } = string.Empty;
 
     public override string ToString()
     {
-        return $"{Series} S{Season}E{Episode} ({Path.GetFileName(FilePath)})";
+        return $"{Series} S{Season}E{Episode} - {EpisodeName} ({Path.GetFileName(FilePath)})";
     }
 }
