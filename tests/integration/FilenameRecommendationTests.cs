@@ -22,16 +22,16 @@ public class FilenameRecommendationTests : IDisposable
     {
         var services = new ServiceCollection();
         services.AddLogging(builder => builder.AddConsole());
-        
+
         // Register services
         services.AddScoped<IFilenameService, FilenameService>();
         services.AddScoped<SubtitleNormalizationService>();
-        services.AddScoped<FuzzyHashService>(provider => 
+        services.AddScoped<FuzzyHashService>(provider =>
             new FuzzyHashService(
                 ":memory:", // Use in-memory SQLite database for tests
                 provider.GetRequiredService<ILogger<FuzzyHashService>>(),
                 provider.GetRequiredService<SubtitleNormalizationService>()));
-        
+
         _serviceProvider = services.BuildServiceProvider();
         _logger = _serviceProvider.GetRequiredService<ILogger<FilenameRecommendationTests>>();
     }
@@ -150,7 +150,7 @@ public class FilenameRecommendationTests : IDisposable
         filenameResult.SuggestedFilename.Should().EndWith(".mkv");
         filenameResult.SuggestedFilename.Should().Contain("S01E01");
 
-        _logger.LogInformation("Long names truncated to: {Filename} (length: {Length})", 
+        _logger.LogInformation("Long names truncated to: {Filename} (length: {Length})",
             filenameResult.SuggestedFilename, filenameResult.TotalLength);
     }
 
@@ -233,7 +233,7 @@ public class FilenameRecommendationTests : IDisposable
             };
 
             var filenameResult = filenameService.GenerateFilename(filenameRequest);
-            
+
             if (filenameResult.IsValid)
             {
                 identificationResult.SuggestedFilename = filenameResult.SuggestedFilename;
@@ -245,7 +245,7 @@ public class FilenameRecommendationTests : IDisposable
         identificationResult.MatchConfidence.Should().Be(0.97);
         identificationResult.SuggestedFilename.Should().Be("Game of Thrones - S01E01 - Winter Is Coming.mkv");
 
-        _logger.LogInformation("End-to-end workflow result: {Result}", 
+        _logger.LogInformation("End-to-end workflow result: {Result}",
             System.Text.Json.JsonSerializer.Serialize(identificationResult));
     }
 
@@ -283,7 +283,7 @@ public class FilenameRecommendationTests : IDisposable
             result.IsValid.Should().BeTrue();
             result.SuggestedFilename.Should().Be(testCase.Expected);
 
-            _logger.LogInformation("Extension {Extension} generated: {Filename}", 
+            _logger.LogInformation("Extension {Extension} generated: {Filename}",
                 testCase.Extension, result.SuggestedFilename);
         }
     }
@@ -305,7 +305,7 @@ public class FilenameRecommendationTests : IDisposable
 
         // Act - This tests the database integration for episode names
         // The FuzzyHashService should now support storing episode names
-        var labelledSubtitle = new LabelledSubtitle 
+        var labelledSubtitle = new LabelledSubtitle
         {
             Series = episodeData.Series,
             Season = episodeData.Season,
@@ -323,7 +323,7 @@ public class FilenameRecommendationTests : IDisposable
         retrievedMatch.Value.Subtitle.Season.Should().Be(episodeData.Season);
         retrievedMatch.Value.Subtitle.Episode.Should().Be(episodeData.Episode);
 
-        _logger.LogInformation("Database integration test - stored and retrieved episode data for series: {Series}", 
+        _logger.LogInformation("Database integration test - stored and retrieved episode data for series: {Series}",
             retrievedMatch.Value.Subtitle.Series);
     }
 
@@ -335,20 +335,20 @@ public class FilenameRecommendationTests : IDisposable
 
         var testCases = new[]
         {
-            new 
-            { 
+            new
+            {
                 Series = "Show: The Best Series",
                 EpisodeName = "Episode \"Title\" with <Brackets>",
                 Expected = "Show  The Best Series - S01E01 - Episode  Title  with  Brackets .mkv"
             },
-            new 
-            { 
+            new
+            {
                 Series = "Series|Name",
                 EpisodeName = "Episode?Title*Name",
                 Expected = "Series Name - S01E01 - Episode Title Name.mkv"
             },
-            new 
-            { 
+            new
+            {
                 Series = "Path\\Series\\Name",
                 EpisodeName = "Episode/Title",
                 Expected = "Path Series Name - S01E01 - Episode Title.mkv"
@@ -385,7 +385,7 @@ public class FilenameRecommendationTests : IDisposable
 
             result.SanitizedCharacters.Should().NotBeEmpty();
 
-            _logger.LogInformation("Windows sanitization test - Input: '{Input}' -> Output: '{Output}'", 
+            _logger.LogInformation("Windows sanitization test - Input: '{Input}' -> Output: '{Output}'",
                 $"{testCase.Series} - {testCase.EpisodeName}", result.SuggestedFilename);
         }
     }
@@ -398,20 +398,20 @@ public class FilenameRecommendationTests : IDisposable
 
         var testCases = new[]
         {
-            new 
-            { 
+            new
+            {
                 Series = "The Extremely Long Series Name That Goes On And On And Contains Many Words And Characters That Could Potentially Cause Issues With Windows File System Limitations And Path Length Restrictions",
                 EpisodeName = "This Is An Extremely Long Episode Name That Contains Many Words And Characters And Details About The Plot And Characters And Everything Else That Could Make The Filename Very Long",
                 MaxLength = 260
             },
-            new 
-            { 
+            new
+            {
                 Series = "Short Series",
                 EpisodeName = new string('A', 300), // 300 character episode name
                 MaxLength = 200
             },
-            new 
-            { 
+            new
+            {
                 Series = new string('B', 150), // 150 character series name
                 EpisodeName = new string('C', 150), // 150 character episode name
                 MaxLength = 100
@@ -439,13 +439,13 @@ public class FilenameRecommendationTests : IDisposable
             result.IsValid.Should().BeTrue();
             result.TotalLength.Should().BeLessOrEqualTo(testCase.MaxLength);
             result.WasTruncated.Should().BeTrue();
-            
+
             // Must preserve essential elements
             result.SuggestedFilename.Should().EndWith(".mkv");
             result.SuggestedFilename.Should().Contain("S01E01");
             result.SuggestedFilename.Should().Contain(" - ");
 
-            _logger.LogInformation("Length truncation test - Original lengths: Series={SeriesLength}, Episode={EpisodeLength} -> Final length: {FinalLength}", 
+            _logger.LogInformation("Length truncation test - Original lengths: Series={SeriesLength}, Episode={EpisodeLength} -> Final length: {FinalLength}",
                 testCase.Series.Length, testCase.EpisodeName.Length, result.TotalLength);
         }
     }
@@ -458,7 +458,7 @@ public class FilenameRecommendationTests : IDisposable
 
         // Test various Windows-specific constraints
         var reservedNames = new[] { "CON", "PRN", "AUX", "NUL", "COM1", "LPT1" };
-        
+
         foreach (var reservedName in reservedNames)
         {
             // Act
@@ -477,12 +477,12 @@ public class FilenameRecommendationTests : IDisposable
             // Assert
             result.Should().NotBeNull();
             result.IsValid.Should().BeTrue();
-            
+
             // Reserved names should be handled appropriately
             result.SuggestedFilename.Should().NotStartWith(reservedName + ".");
             result.SuggestedFilename.Should().NotBe(reservedName + ".mkv");
 
-            _logger.LogInformation("Reserved name test - '{ReservedName}' -> '{Filename}'", 
+            _logger.LogInformation("Reserved name test - '{ReservedName}' -> '{Filename}'",
                 reservedName, result.SuggestedFilename);
         }
 
@@ -530,7 +530,7 @@ public class FilenameRecommendationTests : IDisposable
             result.IsValid.Should().BeTrue();
             result.SuggestedFilename.Should().Be("Test Series - S01E01 - Test Episode" + Path.GetExtension(path));
 
-            _logger.LogInformation("Cross-platform test - Path: '{Path}' -> Extension: '{Extension}'", 
+            _logger.LogInformation("Cross-platform test - Path: '{Path}' -> Extension: '{Extension}'",
                 path, Path.GetExtension(path));
         }
     }

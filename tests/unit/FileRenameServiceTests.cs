@@ -51,7 +51,7 @@ public class FileRenameServiceTests : IDisposable
         // Arrange
         var originalFile = Path.Combine(_testDirectory, "original.mkv");
         var targetFile = Path.Combine(_testDirectory, "Test Series - S01E01 - Episode.mkv");
-        
+
         await File.WriteAllTextAsync(originalFile, "test content");
         await File.WriteAllTextAsync(targetFile, "existing content");
 
@@ -233,7 +233,7 @@ public class FileRenameServiceTests : IDisposable
         // Arrange
         var originalFile = Path.Combine(_testDirectory, "original.mkv");
         var targetFile = Path.Combine(_testDirectory, "Test Series - S01E01 - Episode.mkv");
-        
+
         await File.WriteAllTextAsync(originalFile, "original content");
         await File.WriteAllTextAsync(targetFile, "existing content");
 
@@ -251,7 +251,7 @@ public class FileRenameServiceTests : IDisposable
         Assert.True(result.Success);
         Assert.True(File.Exists(result.NewPath));
         Assert.False(File.Exists(originalFile));
-        
+
         var newContent = await File.ReadAllTextAsync(result.NewPath);
         Assert.Equal("original content", newContent);
     }
@@ -262,7 +262,7 @@ public class FileRenameServiceTests : IDisposable
         // Arrange
         var subDirectory = Path.Combine(_testDirectory, "subdirectory");
         Directory.CreateDirectory(subDirectory);
-        
+
         var originalFile = Path.Combine(_testDirectory, "original.mkv");
         await File.WriteAllTextAsync(originalFile, "test content");
 

@@ -20,42 +20,42 @@ public class EndToEndIdentificationTests : IDisposable
     {
         // Create required dependencies manually (like AssWorkflowTests pattern)
         var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-        
+
         // Create core services
         var validatorLogger = loggerFactory.CreateLogger<VideoFormatValidator>();
         var pgsExtractorLogger = loggerFactory.CreateLogger<SubtitleExtractor>();
         var pgsRipLogger = loggerFactory.CreateLogger<PgsRipService>();
         var pgsConverterLogger = loggerFactory.CreateLogger<PgsToTextConverter>();
         var enhancedConverterLogger = loggerFactory.CreateLogger<EnhancedPgsToTextConverter>();
-        
+
         var validator = new VideoFormatValidator(validatorLogger);
         var pgsExtractor = new SubtitleExtractor(pgsExtractorLogger, validator);
-        
+
         // Create text extractor with format handlers
         var formatHandlers = new List<ISubtitleFormatHandler>
         {
             new SrtFormatHandler(),
-            new AssFormatHandler(), 
+            new AssFormatHandler(),
             new VttFormatHandler()
         };
         var textExtractor = new TextSubtitleExtractor(formatHandlers);
-        
+
         // Create converter services
         var pgsRipService = new PgsRipService(pgsRipLogger);
         var pgsConverter = new PgsToTextConverter(pgsConverterLogger);
         var enhancedConverter = new EnhancedPgsToTextConverter(enhancedConverterLogger, pgsRipService, pgsConverter);
-        
+
         // Create matching services
         var fuzzyLogger = loggerFactory.CreateLogger<FuzzyHashService>();
         var normalizationLogger = loggerFactory.CreateLogger<SubtitleNormalizationService>();
         var matcherLogger = loggerFactory.CreateLogger<SubtitleMatcher>();
         var coordinatorLogger = loggerFactory.CreateLogger<SubtitleWorkflowCoordinator>();
-        
+
         var normalizationService = new SubtitleNormalizationService(normalizationLogger);
         var testDbPath = TestDatabaseConfig.GetTestDatabasePath();
         var hashService = new FuzzyHashService(testDbPath, fuzzyLogger, normalizationService);
         var matcher = new SubtitleMatcher(hashService, matcherLogger);
-        
+
         // Create coordinator
         _coordinator = new SubtitleWorkflowCoordinator(
             coordinatorLogger,
@@ -64,7 +64,7 @@ public class EndToEndIdentificationTests : IDisposable
             textExtractor,
             enhancedConverter,
             matcher);
-        
+
         // Setup test data path
         _testDataPath = Path.Combine(Path.GetTempPath(), "EpisodeIdentifierTests");
         Directory.CreateDirectory(_testDataPath);
@@ -75,7 +75,7 @@ public class EndToEndIdentificationTests : IDisposable
     {
         // Arrange
         var testVideoPath = "/mnt/c/src/KnowShow/TestData/media/Episode S02E01.mkv";
-        
+
         // Skip test if file doesn't exist
         if (!File.Exists(testVideoPath))
         {
@@ -91,7 +91,7 @@ public class EndToEndIdentificationTests : IDisposable
 
         // Assert
         identificationResult.Should().NotBeNull();
-        
+
         if (!identificationResult.HasError)
         {
             identificationResult.Series.Should().NotBeNullOrEmpty();
@@ -136,7 +136,7 @@ public class EndToEndIdentificationTests : IDisposable
         // Arrange
         var testVideoPath = "/mnt/c/src/KnowShow/TestData/media/Episode S02E01.mkv";
         var preferredLanguage = "eng";
-        
+
         // Skip test if file doesn't exist
         if (!File.Exists(testVideoPath))
         {
