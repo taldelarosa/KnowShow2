@@ -17,7 +17,7 @@ public class BulkProcessorServiceTests : IDisposable
     private readonly ILogger<BulkProcessorService> _logger;
     private readonly IFileDiscoveryService _fileDiscoveryService;
     private readonly IProgressTracker _progressTracker;
-    private readonly VideoFileProcessingService _videoFileProcessingService;
+    private readonly IVideoFileProcessingService _videoFileProcessingService;
     private readonly BulkProcessorService _bulkProcessorService;
 
     public BulkProcessorServiceTests()
@@ -27,7 +27,7 @@ public class BulkProcessorServiceTests : IDisposable
         
         _fileDiscoveryService = Substitute.For<IFileDiscoveryService>();
         _progressTracker = Substitute.For<IProgressTracker>();
-        _videoFileProcessingService = Substitute.For<VideoFileProcessingService>();
+        _videoFileProcessingService = Substitute.For<IVideoFileProcessingService>();
 
         _bulkProcessorService = new BulkProcessorService(
             _logger, _fileDiscoveryService, _progressTracker, _videoFileProcessingService);

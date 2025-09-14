@@ -14,7 +14,7 @@ public class BulkProcessorService : IBulkProcessor
     private readonly ILogger<BulkProcessorService> _logger;
     private readonly IFileDiscoveryService _fileDiscoveryService;
     private readonly IProgressTracker _progressTracker;
-    private readonly VideoFileProcessingService _videoFileProcessingService;
+    private readonly IVideoFileProcessingService _videoFileProcessingService;
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _activeCancellationTokens = new();
 
     /// <summary>
@@ -28,7 +28,7 @@ public class BulkProcessorService : IBulkProcessor
         ILogger<BulkProcessorService> logger,
         IFileDiscoveryService fileDiscoveryService,
         IProgressTracker progressTracker,
-        VideoFileProcessingService videoFileProcessingService)
+        IVideoFileProcessingService videoFileProcessingService)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _fileDiscoveryService = fileDiscoveryService ?? throw new ArgumentNullException(nameof(fileDiscoveryService));

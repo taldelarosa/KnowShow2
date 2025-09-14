@@ -14,7 +14,11 @@ public class FilenameServiceTests
     public FilenameServiceTests()
     {
         _mockConfigService = Substitute.For<IAppConfigService>();
-        _mockConfigService.Config.RenameConfidenceThreshold.Returns(0.1);
+        var mockConfig = new AppConfig
+        {
+            RenameConfidenceThreshold = 0.1
+        };
+        _mockConfigService.Config.Returns(mockConfig);
         _filenameService = new FilenameService(_mockConfigService);
     }
 
