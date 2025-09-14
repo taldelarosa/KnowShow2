@@ -7,6 +7,7 @@ The Bulk Processing Extension provides enterprise-grade batch processing capabil
 ## Features
 
 ### Core Capabilities
+
 - **Batch Processing**: Efficient processing of files in configurable batches
 - **Concurrent Processing**: Multi-threaded execution with configurable concurrency limits
 - **Progress Reporting**: Real-time progress updates with detailed statistics
@@ -15,6 +16,7 @@ The Bulk Processing Extension provides enterprise-grade batch processing capabil
 - **Configuration Integration**: Hot-reloadable configuration with validation
 
 ### Performance Characteristics
+
 - **Throughput**: 5-15 files/second depending on file size and system resources
 - **Memory Usage**: < 200MB memory growth for 1000+ files
 - **Scalability**: Linear performance scaling with increased concurrency
@@ -360,18 +362,21 @@ The system uses structured logging with Microsoft.Extensions.Logging:
 ## Testing
 
 ### Unit Tests
+
 - Model validation and property behavior
 - Service method functionality
 - Error handling scenarios
 - Configuration validation
 
 ### Integration Tests  
+
 - End-to-end processing workflows
 - Configuration loading and validation
 - Progress reporting integration
 - Error handling with real file operations
 
 ### Performance Tests
+
 - Throughput measurement across batch sizes
 - Memory usage monitoring
 - Concurrency scaling validation
@@ -380,6 +385,7 @@ The system uses structured logging with Microsoft.Extensions.Logging:
 ## Best Practices
 
 ### File Organization
+
 ```csharp
 // Organize input by size for better batching
 var smallFiles = files.Where(f => GetFileSize(f) < 1GB);
@@ -389,6 +395,7 @@ var largeFiles = files.Where(f => GetFileSize(f) >= 1GB);
 ```
 
 ### Error Handling Strategy
+
 ```csharp
 // Use appropriate error handling for scenario
 var interactiveOptions = new BulkProcessingOptions
@@ -406,6 +413,7 @@ var automatedOptions = new BulkProcessingOptions
 ```
 
 ### Resource Management
+
 ```csharp
 // For long-running operations
 var options = new BulkProcessingOptions
@@ -417,6 +425,7 @@ var options = new BulkProcessingOptions
 ```
 
 ### Configuration Management
+
 ```csharp
 // Load configuration once and reuse
 var configService = new ConfigurationService(logger);
@@ -435,24 +444,28 @@ if (reloaded)
 ### Common Issues
 
 **High Memory Usage**
+
 - Reduce batch size
 - Enable garbage collection
 - Reduce concurrency
 - Check for file handle leaks
 
 **Poor Performance**  
+
 - Adjust batch size for file size distribution
 - Optimize concurrency for storage type
 - Check network bandwidth for remote files
 - Monitor CPU utilization
 
 **Frequent Errors**
+
 - Check file permissions
 - Verify file extensions configuration
 - Review timeout settings
 - Check available disk space
 
 **Configuration Issues**
+
 - Validate JSON syntax
 - Check property names and types
 - Verify constraint satisfaction
@@ -485,6 +498,7 @@ var progress = new Progress<BulkProcessingProgress>(p =>
 ## Version History
 
 ### v1.0.0 (2025-09-13)
+
 - Initial implementation of bulk processing extension
 - Core batch processing with concurrency support
 - Progress reporting and error handling
@@ -495,6 +509,7 @@ var progress = new Progress<BulkProcessingProgress>(p =>
 ## Support
 
 For questions, issues, or contributions:
+
 - Review unit and integration tests for usage examples
 - Check performance tests for scalability guidance
 - Refer to configuration validation for setup issues

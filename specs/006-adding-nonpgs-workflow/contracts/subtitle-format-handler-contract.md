@@ -1,29 +1,8 @@
 # SubtitleFormatHandler Contract
 
-
-
-
-
-
-
-
 ## Interface: ISubtitleFormatHandler
 
-
-
-
-
-
-
-
 ### SupportedFormat
-
-
-
-
-
-
-
 
 **Purpose**: Identify which subtitle format this handler supports.
 
@@ -32,13 +11,6 @@
 ```csharp
 SubtitleFormat SupportedFormat { get; }
 ```
-
-
-
-
-
-
-
 
 **Output**:
 
@@ -49,13 +21,6 @@ SubtitleFormat SupportedFormat { get; }
 
 ### CanHandle
 
-
-
-
-
-
-
-
 **Purpose**: Determine if this handler can process the given track format.
 
 **Signature**:
@@ -63,13 +28,6 @@ SubtitleFormat SupportedFormat { get; }
 ```csharp
 bool CanHandle(SubtitleFormat format)
 ```
-
-
-
-
-
-
-
 
 **Input**:
 
@@ -90,13 +48,6 @@ bool CanHandle(SubtitleFormat format)
 
 ### ParseSubtitleText
 
-
-
-
-
-
-
-
 **Purpose**: Parse raw subtitle file content into clean dialogue text.
 
 **Signature**:
@@ -106,13 +57,6 @@ Task&lt;string&gt; ParseSubtitleTextAsync(
     Stream subtitleData,
     string encoding = "UTF-8")
 ```
-
-
-
-
-
-
-
 
 **Input**:
 
@@ -142,21 +86,7 @@ Task&lt;string&gt; ParseSubtitleTextAsync(
 
 ## Specific Format Handler Contracts
 
-
-
-
-
-
-
-
 ### SrtFormatHandler
-
-
-
-
-
-
-
 
 **Pattern Recognition**:
 
@@ -174,13 +104,6 @@ Task&lt;string&gt; ParseSubtitleTextAsync(
 
 ### AssFormatHandler
 
-
-
-
-
-
-
-
 **Pattern Recognition**:
 
 - [Script Info] section
@@ -195,13 +118,6 @@ Task&lt;string&gt; ParseSubtitleTextAsync(
 - Handle both ASS and SSA variants
 
 ### VttFormatHandler
-
-
-
-
-
-
-
 
 **Pattern Recognition**:
 

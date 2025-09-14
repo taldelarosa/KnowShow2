@@ -1,29 +1,8 @@
 # CTPH Hashing Service Contract
 
-
-
-
-
-
-
-
 ## Interface: ICTPhHashingService
 
-
-
-
-
-
-
-
 ### ComputeFuzzyHash()
-
-
-
-
-
-
-
 
 **Signature**: `Task<string> ComputeFuzzyHash(string filePath)`
 
@@ -36,13 +15,6 @@
 - `HashingException`: CTPH computation failed
 
 ### CompareFuzzyHashes()
-
-
-
-
-
-
-
 
 **Signature**: `int CompareFuzzyHashes(string hash1, string hash2)`
 
@@ -59,13 +31,6 @@
 
 ### CompareFiles()
 
-
-
-
-
-
-
-
 **Signature**: `Task<FuzzyHashResult> CompareFiles(string file1Path, string file2Path)`
 
 **Returns**:
@@ -80,21 +45,7 @@
 }
 ```
 
-
-
-
-
-
-
-
 ### GetSimilarityThreshold()
-
-
-
-
-
-
-
 
 **Signature**: `int GetSimilarityThreshold()`
 

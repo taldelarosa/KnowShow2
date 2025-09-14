@@ -60,13 +60,13 @@ The feature extends the existing episode identification system with comprehensiv
 **Architecture**:
 
 - EVERY feature as library? ✅ YES (IBulkProcessor, IFileDiscoveryService, IProgressTracker services in EpisodeIdentifier.Core)
-- Libraries listed: 
-  - BulkProcessorService: orchestrates bulk file processing workflows
-  - FileDiscoveryService: handles file enumeration and filtering
-  - ProgressTracker: manages progress reporting and statistics
-- CLI per library: ✅ YES 
-  - `process-file --help` (single file processing)
-  - `process-directory --help --recursive --max-errors` (bulk directory processing)
+- Libraries listed:
+    - BulkProcessorService: orchestrates bulk file processing workflows
+    - FileDiscoveryService: handles file enumeration and filtering
+    - ProgressTracker: manages progress reporting and statistics
+- CLI per library: ✅ YES
+    - `process-file --help` (single file processing)
+    - `process-directory --help --recursive --max-errors` (bulk directory processing)
 - Library docs: ✅ YES (comprehensive XML documentation for all public APIs, examples in quickstart.md)
 
 **Testing (NON-NEGOTIABLE)**:

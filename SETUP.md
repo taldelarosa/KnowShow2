@@ -1,22 +1,8 @@
 # KnowShow2 - Complete Setup Guide
 
-
-
-
-
-
-
-
 This guide will help you set up KnowShow2 (Episode Identifier) on a fresh Linux system.
 
 ## Quick Start (Recommended)
-
-
-
-
-
-
-
 
 For most users, the automated setup script is the easiest way to get started:
 
@@ -85,32 +71,11 @@ dotnet test
 dotnet run -- --help
 ```
 
-
-
-
-
-
-
-
 ## What Gets Installed
-
-
-
-
-
-
-
 
 The setup script will install and configure:
 
 ### System Packages
-
-
-
-
-
-
-
 
 - **ffmpeg** - Video processing and format validation
 - **mkvtoolnix** - MKV container manipulation (mkvextract)
@@ -123,48 +88,20 @@ The setup script will install and configure:
 
 ### Programming Environments
 
-
-
-
-
-
-
-
 - **.NET 8.0 SDK** - Required for building and running the application
 - **Python 3** - Required for pgsrip and advanced processing
 - **uv** - Fast Python package manager (alternative to pip)
 
 ### Specialized Tools
 
-
-
-
-
-
-
-
 - **pgsrip** - Advanced PGS subtitle processor (provides 90%+ OCR accuracy)
 - **Enhanced Tesseract training data** - Improved OCR models for better text recognition
 
 ## Manual Installation (Advanced Users)
 
-
-
-
-
-
-
-
 If you prefer to install dependencies manually or need to troubleshoot:
 
 ### 1. Install System Dependencies
-
-
-
-
-
-
-
 
 **Ubuntu/Debian:**
 
@@ -211,13 +148,6 @@ sudo apt-get install -y ffmpeg mkvtoolnix
 sudo apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-spa tesseract-ocr-deu tesseract-ocr-fra sqlite3
 ```
 
-
-
-
-
-
-
-
 **Other Linux distributions:**
 
 - **RHEL/CentOS/Fedora:** Use `dnf install` or `yum install`
@@ -225,13 +155,6 @@ sudo apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-spa tesser
 - **openSUSE:** Use `zypper install`
 
 ### 2. Install .NET 8.0 SDK
-
-
-
-
-
-
-
 
 ```bash
 
@@ -269,21 +192,7 @@ sudo apt-get install -y dotnet-sdk-8.0
 dotnet --version
 ```
 
-
-
-
-
-
-
-
 ### 3. Install Python and uv
-
-
-
-
-
-
-
 
 ```bash
 
@@ -320,21 +229,7 @@ python3 --version
 uv --version
 ```
 
-
-
-
-
-
-
-
 ### 4. Install pgsrip
-
-
-
-
-
-
-
 
 ```bash
 
@@ -369,21 +264,7 @@ pip3 install pgsrip
 pgsrip --version
 ```
 
-
-
-
-
-
-
-
 ### 5. Install Enhanced Tesseract Data (Optional but Recommended)
-
-
-
-
-
-
-
 
 ```bash
 
@@ -420,21 +301,7 @@ echo 'export TESSDATA_PREFIX=/usr/share/tessdata_best' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-
-
-
-
-
-
-
 ## Verification
-
-
-
-
-
-
-
 
 After installation, verify everything is working:
 
@@ -483,43 +350,15 @@ dotnet test tests/integration/
 dotnet test tests/contract/
 ```
 
-
-
-
-
-
-
-
 ## Troubleshooting
 
-
-
-
-
-
-
-
 ### Setup Script Issues
-
-
-
-
-
-
-
 
 **Script not executable:**
 
 ```bash
 chmod +x scripts/setup-prerequisites.sh
 ```
-
-
-
-
-
-
-
 
 **Permission denied during installation:**
 
@@ -546,21 +385,7 @@ sudo whoami
 ./scripts/setup-prerequisites.sh --install --verbose
 ```
 
-
-
-
-
-
-
-
 ### Common Dependency Issues
-
-
-
-
-
-
-
 
 **FFmpeg not found:**
 
@@ -588,13 +413,6 @@ ffmpeg -version
 sudo apt-get install ffmpeg
 ```
 
-
-
-
-
-
-
-
 **pgsrip installation fails:**
 
 ```bash
@@ -619,13 +437,6 @@ pip3 install pgsrip
 
 python3 --version
 ```
-
-
-
-
-
-
-
 
 **.NET build fails:**
 
@@ -659,13 +470,6 @@ dotnet --version
 
 
 ```
-
-
-
-
-
-
-
 
 **Tesseract OCR issues:**
 
@@ -702,21 +506,7 @@ tesseract --list-langs
 sudo apt-get install tesseract-ocr-eng
 ```
 
-
-
-
-
-
-
-
 ### Environment Variables
-
-
-
-
-
-
-
 
 Make sure these are set correctly:
 
@@ -770,21 +560,7 @@ echo $PATH
 
 ```
 
-
-
-
-
-
-
-
 ### Test Installation
-
-
-
-
-
-
-
 
 Run this simple test to verify everything works:
 
@@ -841,21 +617,7 @@ pgsrip --help
 rm test.mp4
 ```
 
-
-
-
-
-
-
-
 ## Next Steps
-
-
-
-
-
-
-
 
 Once setup is complete:
 
@@ -866,26 +628,12 @@ Once setup is complete:
 
 ## Getting Help
 
-
-
-
-
-
-
-
 - **Setup issues:** Run `./scripts/setup-prerequisites.sh --check-only --verbose`
 - **Build issues:** Check the project documentation in `specs/`
 - **Runtime issues:** See troubleshooting section in main README.md
 - **Missing features:** Check the project roadmap and specifications
 
 ## Supported Platforms
-
-
-
-
-
-
-
 
 This application is primarily designed for Linux systems:
 

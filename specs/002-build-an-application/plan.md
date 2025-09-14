@@ -1,24 +1,10 @@
 
 # Implementation Plan: Identify Season and Episode from AV1 Video via PGS Subtitle Comparison (CLI, JSON Output)
 
-
-
-
-
-
-
-
 **Branch**: `002-build-an-application` | **Date**: September 7, 2025 | **Spec**: [/mnt/c/Users/Ragma/KnowShow_Specd/specs/002-build-an-application/spec.md]
 **Input**: Feature specification from `/specs/002-build-an-application/spec.md`
 
 ## Execution Flow (/plan command scope)
-
-
-
-
-
-
-
 
 ```
 
@@ -81,13 +67,6 @@
 8. STOP - Ready for /tasks command
 ```
 
-
-
-
-
-
-
-
 **IMPORTANT Git Workflow**:
 
 - All changes MUST be made in feature branches (format: `###-feature-name`)
@@ -102,23 +81,9 @@
 
 ## Summary
 
-
-
-
-
-
-
-
 This feature provides a CLI-only tool to identify the Season and Episode of an AV1 video file by extracting PGS subtitles and comparing them to known, labelled subtitles stored as text files in a Subtitles=>Series=>Season folder structure. The tool uses standalone utilities for video/subtitle extraction, fuzzy hashing for comparison, and a local SQLite database for hash storage. All output is in JSON format for automation.
 
 ## Technical Context
-
-
-
-
-
-
-
 
 **Language/Version**: C# (latest stable)
 **Primary Dependencies**: ffmpeg, mkvextract, sqlite3, fuzzy hash tool (e.g., ssdeep), .NET CLI
@@ -132,21 +97,14 @@ This feature provides a CLI-only tool to identify the Season and Episode of an A
 
 ## Git Workflow Requirements
 
-
-
-
-
-
-
-
 **Feature Branch Model**: All development MUST follow feature branch workflow
 
 - **Main branch**: Protected, no direct pushes allowed
 - **Feature branches**: Named `###-feature-description` (e.g., `005-add-ocr-optimization`)
 - **Pull Requests**: Required for all merges to main with:
-  - Code review (minimum 1 approval)
-  - All checks passing (tests, linting, build)
-  - Branch up-to-date with main
+    - Code review (minimum 1 approval)
+    - All checks passing (tests, linting, build)
+    - Branch up-to-date with main
 - **Branch protection**: Enforced via GitHub rules (see `.github/` configuration)
 - **Infrastructure as Code**: Repository settings defined in `.github/repository-config.yml`
 - **Automated deployment**: Use `./scripts/setup-branch-protection.sh` to apply settings
@@ -161,13 +119,6 @@ This feature provides a CLI-only tool to identify the Season and Episode of an A
 6. Delete feature branch after successful merge
 
 ## Constitution Check
-
-
-
-
-
-
-
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
@@ -208,21 +159,7 @@ This feature provides a CLI-only tool to identify the Season and Episode of an A
 
 ## Project Structure
 
-
-
-
-
-
-
-
 ### Documentation (this feature)
-
-
-
-
-
-
-
 
 ```
 specs/[###-feature]/
@@ -234,21 +171,7 @@ specs/[###-feature]/
 └── tasks.md             # Phase 2 output (/tasks command - NOT created by /plan)
 ```
 
-
-
-
-
-
-
-
 ### Source Code (repository root)
-
-
-
-
-
-
-
 
 ```
 
@@ -308,56 +231,21 @@ ios/ or android/
 └── [platform-specific structure]
 ```
 
-
-
-
-
-
-
-
 **Structure Decision**: [DEFAULT to Option 1 unless Technical Context indicates web/mobile app]
 
 ## Phase 0: Outline & Research
-
-
-
-
-
-
-
 
 See research.md for open questions, technology choices, best practices, and decisions. All clarifications and research tasks are tracked there.
 
 ## Phase 1: Design & Contracts
 
-
-
-
-
-
-
-
 See data-model.md for entities, contracts/ for CLI and DB contracts, quickstart.md for usage and test scenarios. Contract tests are defined for CLI and fuzzy hash DB. All outputs are in the specs/002-build-an-application directory.
 
 ## Phase 2: Task Planning Approach
 
-
-
-
-
-
-
-
 The /tasks command will generate tasks based on contracts, data model, and quickstart. Tasks will include contract tests, model creation, integration tests, and implementation steps, ordered for TDD and parallelizable where possible. See tasks-template.md for base structure. Estimated 25-30 tasks.
 
 ## Phase 3+: Future Implementation
-
-
-
-
-
-
-
 
 *These phases are beyond the scope of the /plan command*
 
@@ -367,13 +255,6 @@ The /tasks command will generate tasks based on contracts, data model, and quick
 
 ## Complexity Tracking
 
-
-
-
-
-
-
-
 *Fill ONLY if Constitution Check has violations that must be justified*
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
@@ -382,13 +263,6 @@ The /tasks command will generate tasks based on contracts, data model, and quick
 | [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
 
 ## Progress Tracking
-
-
-
-
-
-
-
 
 *This checklist is updated during execution flow*
 

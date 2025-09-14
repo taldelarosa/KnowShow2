@@ -1,23 +1,9 @@
 # Tasks: Add File Renaming Recommendations
 
-
-
-
-
-
-
-
 **Input**: Design documents from `/specs/007-add-file-renaming/`
 **Prerequisites**: plan.md (required), research.md, data-model.md, contracts/
 
 ## Execution Flow (main)
-
-
-
-
-
-
-
 
 ```
 
@@ -88,45 +74,17 @@
 9. Return: SUCCESS (tasks ready for execution)
 ```
 
-
-
-
-
-
-
-
 ## Format: `[ID] [P?] Description`
-
-
-
-
-
-
-
 
 - **[P]**: Can run in parallel (different files, no dependencies)
 - Include exact file paths in descriptions
 
 ## Path Conventions
 
-
-
-
-
-
-
-
 - **Single project**: `src/`, `tests/` at repository root
 - Paths shown below assume single project structure per plan.md
 
 ## Phase 3.1: Setup
-
-
-
-
-
-
-
 
 - [x] T001 Add --rename flag to CLI in src/EpisodeIdentifier.Core/Program.cs
 - [x] T002 [P] Create FilenameGenerationRequest model in src/EpisodeIdentifier.Core/Models/FilenameGenerationRequest.cs
@@ -136,13 +94,6 @@
 - [x] T006 [P] Create FileRenameError enum in src/EpisodeIdentifier.Core/Models/FileRenameError.cs
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
-
-
-
-
-
-
-
 
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
@@ -159,13 +110,6 @@
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
-
-
-
-
-
-
-
 - [x] T017 Add SuggestedFilename property to IdentificationResult in src/EpisodeIdentifier.Core/Models/IdentificationResult.cs
 - [x] T018 Add FileRenamed and OriginalFilename properties to IdentificationResult in src/EpisodeIdentifier.Core/Models/IdentificationResult.cs
 - [x] T019 [P] Create IFilenameService interface in src/EpisodeIdentifier.Core/Interfaces/IFilenameService.cs
@@ -177,13 +121,6 @@
 
 ## Phase 3.4: Integration
 
-
-
-
-
-
-
-
 - [x] T025 Integrate FilenameService into episode identification workflow in src/EpisodeIdentifier.Core/Program.cs
 - [x] T026 Integrate FileRenameService for --rename flag handling in src/EpisodeIdentifier.Core/Program.cs
 - [x] T027 Update JSON serialization to include new IdentificationResult fields in src/EpisodeIdentifier.Core/Program.cs
@@ -191,13 +128,6 @@
 - [x] T029 Update CLI help text to document --rename flag in src/EpisodeIdentifier.Core/Program.cs
 
 ## Phase 3.5: Polish
-
-
-
-
-
-
-
 
 - [x] T030 [P] Unit tests for filename sanitization edge cases in tests/unit/FilenameServiceTests.cs
 - [x] T031 [P] Unit tests for file rename error scenarios in tests/unit/FileRenameServiceTests.cs
@@ -209,13 +139,6 @@
 
 ## Dependencies
 
-
-
-
-
-
-
-
 - Models (T002-T006) can run in parallel (different files)
 - Contract tests (T007-T011) before implementations (T017-T024)
 - Interface creation (T019-T020) before service implementations (T021-T022)
@@ -224,13 +147,6 @@
 - Integration complete before polish (T030-T036)
 
 ## Parallel Example
-
-
-
-
-
-
-
 
 ```bash
 
@@ -284,42 +200,14 @@ Task: "Unit tests for file rename errors in tests/unit/FileRenameServiceTests.cs
 Task: "Performance test for filename generation in tests/performance/FilenamePerformanceTests.cs"
 ```
 
-
-
-
-
-
-
-
 ## Notes
 
-
-
-
-
-
-
-
 ### TDD Enforcement
-
-
-
-
-
-
-
 
 - All contract and integration tests (T007-T016) MUST be completed and failing before ANY implementation tasks (T017-T024)
 - This ensures proper red-green-refactor cycle
 
 ### Database Migration Strategy
-
-
-
-
-
-
-
 
 - T023 adds EpisodeName column with backward compatibility (nullable)
 - T024 updates existing service to use new column
@@ -327,25 +215,11 @@ Task: "Performance test for filename generation in tests/performance/FilenamePer
 
 ### Error Handling Integration
 
-
-
-
-
-
-
-
 - T028 integrates with existing error patterns in Program.cs
 - File rename errors included in JSON response with proper error codes
 - Maintains backward compatibility for existing error scenarios
 
 ### Performance Requirements
-
-
-
-
-
-
-
 
 - T021 must implement filename generation in <10ms (per plan.md)
 - T033 validates performance requirement
@@ -353,25 +227,11 @@ Task: "Performance test for filename generation in tests/performance/FilenamePer
 
 ### Windows Compatibility
 
-
-
-
-
-
-
-
 - T021 implements character sanitization per contracts/filename-service-contract.md
 - T015 validates actual Windows compatibility with test scenarios
 - T032 ensures path length compliance
 
 ## Task Generation Rules Applied
-
-
-
-
-
-
-
 
 ✅ Each contract file → contract test task marked [P]
 ✅ Each entity in data-model → model creation task marked [P]
@@ -385,13 +245,6 @@ Task: "Performance test for filename generation in tests/performance/FilenamePer
 ✅ Everything before polish
 
 ## Validation Checklist
-
-
-
-
-
-
-
 
 ✅ All contracts have tests (FilenameService, FileRenameService, CLI)
 ✅ All entities have models (FilenameGeneration*, FileRename*, Enhanced IdentificationResult)

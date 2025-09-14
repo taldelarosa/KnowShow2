@@ -117,27 +117,25 @@ git push origin main  # This will fail!
 **Automated Formatting & Linting:**
 
 ```bash
-
 # C# code formatting
-
-
-
-
-
-
-
 dotnet format EpisodeIdentifier.sln
 
-# Markdown documentation linting
-
-
-
-
-
-
-
-npx markdownlint-cli2 "**/*.md" --fix
+# Markdown documentation linting (manual check)
+./scripts/lint-markdown.sh --fix
+# or directly: markdownlint --config .markdownlint.json '**/*.md' --fix
 ```
+
+**Configuration Files:**
+
+- `.markdownlint.json` - Markdown linting rules optimized for technical documentation
+- Solution-wide formatting enforced via `dotnet format`
+
+**Automatic CI Enforcement:**
+
+- Markdown linting runs on every build with auto-fix enabled
+- If auto-fixes are needed, the CI will fail and show required changes
+- All fixable markdown issues are resolved automatically during CI
+- Contributors should run `markdownlint --fix` locally before committing
 
 **Configuration Files:**
 

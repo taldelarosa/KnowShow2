@@ -1,40 +1,12 @@
 # Installing and Using pgsrip for Better PGS Subtitle Extraction
 
-
-
-
-
-
-
-
 ## Overview
-
-
-
-
-
-
-
 
 Your current PGS subtitle extraction implementation has several limitations compared to the mature pgsrip library. This document shows you how to integrate pgsrip for significantly better results.
 
 ## Why pgsrip is Superior
 
-
-
-
-
-
-
-
 ### Your Current Implementation Issues
-
-
-
-
-
-
-
 
 1. **Poor timing accuracy**: Fixed 3-second intervals instead of actual subtitle timings
 2. **Crude image extraction**: FFmpeg burn-in method is unreliable
@@ -43,13 +15,6 @@ Your current PGS subtitle extraction implementation has several limitations comp
 
 ### pgsrip's Advanced Features
 
-
-
-
-
-
-
-
 1. **Native PGS parsing**: Direct parsing of PGS segments (PCS, WDS, PDS, ODS)
 2. **Accurate timing**: Preserves original subtitle timestamps
 3. **Optimized OCR**: Intelligent image composition, confidence handling, adaptive parameters
@@ -57,21 +22,7 @@ Your current PGS subtitle extraction implementation has several limitations comp
 
 ## Installation Steps
 
-
-
-
-
-
-
-
 ### 1. Install pgsrip
-
-
-
-
-
-
-
 
 ```bash
 
@@ -96,21 +47,7 @@ uv pip install --system pgsrip
 pip install pgsrip
 ```
 
-
-
-
-
-
-
-
 ### 2. Install Dependencies
-
-
-
-
-
-
-
 
 ```bash
 
@@ -148,50 +85,15 @@ export TESSDATA_PREFIX=/usr/share/tessdata_best
 echo 'export TESSDATA_PREFIX=/usr/share/tessdata_best' >> ~/.bashrc
 ```
 
-
-
-
-
-
-
-
 ### 3. Test Installation
-
-
-
-
-
-
-
 
 ```bash
 pgsrip --version
 ```
 
-
-
-
-
-
-
-
 ## Integration Options
 
-
-
-
-
-
-
-
 ### Option 1: Command Line Integration (Recommended)
-
-
-
-
-
-
-
 
 Replace your current implementation with calls to pgsrip:
 
@@ -248,21 +150,7 @@ private async Task<string> RunPgsRip(string supFile, string language)
 }
 ```
 
-
-
-
-
-
-
-
 ### Option 2: Docker Integration
-
-
-
-
-
-
-
 
 Use pgsrip via Docker for consistent environment:
 
@@ -270,21 +158,7 @@ Use pgsrip via Docker for consistent environment:
 docker run -it --rm -v /path/to/subtitles:/data ratoaq2/pgsrip -l eng /data/subtitle.sup
 ```
 
-
-
-
-
-
-
-
 ### Option 3: Python Integration
-
-
-
-
-
-
-
 
 Create a Python wrapper service:
 
@@ -324,13 +198,6 @@ if __name__ == "__main__":
     sys.exit(0 if success else 1)
 ```
 
-
-
-
-
-
-
-
 Then call from C#:
 
 ```csharp
@@ -355,21 +222,7 @@ private async Task<bool> RunPgsRipPython(string supFile, string language)
 }
 ```
 
-
-
-
-
-
-
-
 ## Expected Improvements
-
-
-
-
-
-
-
 
 With pgsrip integration, you should see:
 
@@ -380,13 +233,6 @@ With pgsrip integration, you should see:
 5. **Language support** (optimized for different languages)
 
 ## Testing
-
-
-
-
-
-
-
 
 Compare results using your current method vs pgsrip:
 
@@ -412,21 +258,7 @@ pgsrip --language eng --debug your_video.mkv
 
 ```
 
-
-
-
-
-
-
-
 ## Fallback Strategy
-
-
-
-
-
-
-
 
 Keep your current implementation as fallback:
 
@@ -450,12 +282,5 @@ public async Task<string> ConvertPgsToText(byte[] pgsData, string language = "en
     return await ConvertWithOriginalMethod(pgsData, language);
 }
 ```
-
-
-
-
-
-
-
 
 This approach gives you the best of both worlds: superior pgsrip quality when available, with your current method as backup.

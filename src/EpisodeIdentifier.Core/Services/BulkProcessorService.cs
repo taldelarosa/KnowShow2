@@ -398,7 +398,7 @@ public class BulkProcessorService : IBulkProcessor
     }
 
     /// <inheritdoc />
-    public async Task<bool> CancelProcessingAsync(string requestId)
+    public Task<bool> CancelProcessingAsync(string requestId)
     {
         if (string.IsNullOrEmpty(requestId)) throw new ArgumentException("Request ID cannot be null or empty", nameof(requestId));
 
@@ -408,11 +408,11 @@ public class BulkProcessorService : IBulkProcessor
         {
             cts.Cancel();
             _logger.LogInformation("Cancellation requested for request {RequestId}", requestId);
-            return true;
+            return Task.FromResult(true);
         }
 
         _logger.LogWarning("No active processing found for request {RequestId}", requestId);
-        return false;
+        return Task.FromResult(false);
     }
 
     /// <inheritdoc />

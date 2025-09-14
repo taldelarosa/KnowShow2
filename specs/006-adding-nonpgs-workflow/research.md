@@ -1,29 +1,8 @@
 # Research: NonPGS Subtitle Workflow
 
-
-
-
-
-
-
-
 ## Text Subtitle Format Analysis
 
-
-
-
-
-
-
-
 ### Decision: Support .srt, .ass, and .vtt formats initially
-
-
-
-
-
-
-
 
 **Rationale**: These are the most common text-based subtitle formats found in video files:
 
@@ -38,13 +17,6 @@
 - .ttml (TTML) - XML-based, very rare in video files
 
 ### Decision: Use FFmpeg for subtitle track detection and extraction
-
-
-
-
-
-
-
 
 **Rationale**:
 
@@ -61,13 +33,6 @@
 
 ### Decision: Sequential processing with early exit on match
 
-
-
-
-
-
-
-
 **Rationale**:
 
 - Minimizes processing time when early tracks succeed
@@ -82,21 +47,7 @@
 
 ## Format-Specific Extraction Patterns
 
-
-
-
-
-
-
-
 ### SRT Format Processing
-
-
-
-
-
-
-
 
 **Pattern**: Time codes + line numbers + text content
 
@@ -105,13 +56,6 @@
 - Strip HTML-like tags if present
 
 ### ASS Format Processing
-
-
-
-
-
-
-
 
 **Pattern**: Complex script format with events section
 
@@ -122,13 +66,6 @@
 
 ### VTT Format Processing
 
-
-
-
-
-
-
-
 **Pattern**: WebVTT header + cue blocks
 
 - Skip WEBVTT header and NOTE blocks
@@ -138,21 +75,7 @@
 
 ## Integration with Existing Workflow
 
-
-
-
-
-
-
-
 ### Decision: Extend SubtitleExtractor service class
-
-
-
-
-
-
-
 
 **Rationale**:
 
@@ -168,13 +91,6 @@
 
 ### Decision: Minimal changes to fuzzy hash workflow
 
-
-
-
-
-
-
-
 **Rationale**:
 
 - Text content can use same hashing algorithm
@@ -189,21 +105,7 @@
 
 ## Performance Considerations
 
-
-
-
-
-
-
-
 ### Text Processing Optimization
-
-
-
-
-
-
-
 
 - **Chunked reading**: Process large subtitle files in chunks to manage memory
 - **Early validation**: Quick format detection before full parsing
@@ -211,47 +113,19 @@
 
 ### Error Handling Strategy
 
-
-
-
-
-
-
-
 - **Format corruption**: Skip to next track rather than failing completely
 - **Encoding issues**: Try multiple encoding options before giving up
 - **Missing files**: Handle embedded vs external subtitle scenarios
 
 ## Technical Dependencies
 
-
-
-
-
-
-
-
 ### Required Tools (Already Available)
-
-
-
-
-
-
-
 
 - FFmpeg: Subtitle track detection and extraction
 - System.Text.Json: Configuration and result serialization
 - System.Text.Encoding: Handle subtitle file encodings
 
 ### New Dependencies (None Required)
-
-
-
-
-
-
-
 
 All subtitle parsing can be implemented with .NET standard libraries:
 
