@@ -1,9 +1,15 @@
 using EpisodeIdentifier.Core.Interfaces;
 using EpisodeIdentifier.Core.Models.Hashing;
+using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Services;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Abstractions;
+using System.Linq;
+using System.Threading.Tasks;
 using SSDEEP.NET;
 
 namespace EpisodeIdentifier.Core.Services.Hashing
@@ -308,6 +314,178 @@ namespace EpisodeIdentifier.Core.Services.Hashing
         public int GetSimilarityThreshold()
         {
             return _similarityThreshold;
+        }
+
+        /// <summary>
+        /// Compares a file against database with text fallback when CTPH similarity is below threshold
+        /// </summary>
+        /// <param name="filePath">Path to the file to compare</param>
+        /// <param name="enableTextFallback">Whether to enable text search fallback</param>
+        /// <returns>Detailed comparison result with potential text fallback information</returns>
+        public async Task<FileComparisonResult> CompareFileWithFallback(string filePath, bool enableTextFallback = true)
+        {
+            var operationId = Guid.NewGuid();
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+            using var scope = _logger.BeginScope(new Dictionary<string, object>
+            {
+                ["Operation"] = "CTPhCompareWithFallback",
+                ["OperationId"] = operationId,
+                ["FilePath"] = filePath,
+                ["TextFallbackEnabled"] = enableTextFallback
+            });
+
+            try
+            {
+                _logger.LogInformation("Starting CTPH comparison with fallback - Operation: {OperationId}, File: {FilePath}, FallbackEnabled: {FallbackEnabled}",
+                    operationId, filePath, enableTextFallback);
+
+                if (!_fileSystem.File.Exists(filePath))
+                {
+                    throw new FileNotFoundException($"File not found: {filePath}");
+                }
+
+                // Step 1: Compute CTPH hash for the file
+                var hash = await ComputeFuzzyHash(filePath);
+                if (string.IsNullOrEmpty(hash))
+                {
+                    return FileComparisonResult.Failure("HASH_COMPUTATION_FAILED");
+                }
+
+                // Step 2: Find best CTPH match in database (this is a placeholder - would need database connection)
+                // For now, we'll simulate a low similarity score to trigger text fallback
+                var hashSimilarity = 0; // This would come from database comparison
+                var isHashMatch = hashSimilarity >= _similarityThreshold;
+                
+                _logger.LogDebug("CTPH hash comparison result - Operation: {OperationId}, Similarity: {Similarity}%, Threshold: {Threshold}%, IsMatch: {IsMatch}",
+                    operationId, hashSimilarity, _similarityThreshold, isHashMatch);
+
+                // Step 3: If hash match is below threshold and text fallback is enabled, try text comparison
+                if (!isHashMatch && enableTextFallback)
+                {
+                    _logger.LogInformation("CTPH similarity below threshold, attempting text fallback - Operation: {OperationId}",
+                        operationId);
+
+                    var textFallbackStopwatch = System.Diagnostics.Stopwatch.StartNew();
+                    
+                    try
+                    {
+                        // Read file content for text comparison
+                        var fileContent = await _fileSystem.File.ReadAllTextAsync(filePath);
+                        
+                        // Parse filename to extract series info for targeted search
+                        var filename = _fileSystem.Path.GetFileNameWithoutExtension(filePath);
+                        var parsedInfo = ParseFilenameForSeriesInfo(filename);
+                        
+                        if (!string.IsNullOrEmpty(parsedInfo.series))
+                        {
+                            // Perform text comparison using FuzzySharp directly
+                            var textMatch = await PerformTextFallback(fileContent, parsedInfo.series, parsedInfo.season, parsedInfo.episode);
+                            textFallbackStopwatch.Stop();
+
+                            if (textMatch != null)
+                            {
+                                var match = textMatch.Value;
+                                _logger.LogInformation("Text fallback found match - Operation: {OperationId}, Series: {Series}, Season: {Season}, Episode: {Episode}, TextScore: {TextScore}%",
+                                    operationId, match.series, match.season, match.episode, match.score);
+
+                                return FileComparisonResult.SuccessWithTextFallback(
+                                    hash, "DATABASE_MATCH", hashSimilarity, match.score,
+                                    match.score >= GetTextFallbackThreshold(), stopwatch.Elapsed, textFallbackStopwatch.Elapsed,
+                                    match.series, match.season, match.episode);
+                            }
+                        }
+
+                        textFallbackStopwatch.Stop();
+                        _logger.LogInformation("Text fallback completed but no matches found - Operation: {OperationId}, Duration: {Duration}ms",
+                            operationId, textFallbackStopwatch.ElapsedMilliseconds);
+                    }
+                    catch (Exception ex)
+                    {
+                        textFallbackStopwatch.Stop();
+                        _logger.LogWarning(ex, "Text fallback failed - Operation: {OperationId}, Duration: {Duration}ms",
+                            operationId, textFallbackStopwatch.ElapsedMilliseconds);
+                    }
+                }
+
+                stopwatch.Stop();
+                
+                // Return standard result if no text fallback or no match found
+                return FileComparisonResult.Success(hash, "NO_DATABASE_MATCH", hashSimilarity, isHashMatch, stopwatch.Elapsed);
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                _logger.LogError(ex, "Error in CTPH comparison with fallback - Operation: {OperationId}, Duration: {Duration}ms",
+                    operationId, stopwatch.ElapsedMilliseconds);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Parses filename to extract series information for targeted database search
+        /// </summary>
+        private (string series, string? season, string? episode) ParseFilenameForSeriesInfo(string filename)
+        {
+            // Simple regex-based parsing - this could be enhanced
+            var patterns = new[]
+            {
+                @"^(.+?)[\.\s]+S(\d+)E(\d+)", // Series.Name.S01E01
+                @"^(.+?)[\.\s]+(\d+)x(\d+)",  // Series.Name.1x01  
+                @"^(.+?)[\.\s]+Season[\.\s]*(\d+)[\.\s]+Episode[\.\s]*(\d+)" // Series Name Season 1 Episode 1
+            };
+
+            foreach (var pattern in patterns)
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(filename, pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                if (match.Success)
+                {
+                    var series = match.Groups[1].Value.Replace(".", " ").Trim();
+                    var season = match.Groups[2].Value;
+                    var episode = match.Groups[3].Value;
+                    return (series, season, episode);
+                }
+            }
+
+            // If no pattern matches, try to extract just series name (everything before first dot or space followed by numbers)
+            var seriesMatch = System.Text.RegularExpressions.Regex.Match(filename, @"^(.+?)(?:[\.\s]+(?:S?\d+|Season))", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (seriesMatch.Success)
+            {
+                var series = seriesMatch.Groups[1].Value.Replace(".", " ").Trim();
+                return (series, null, null);
+            }
+
+            return (filename, null, null);
+        }
+
+        /// <summary>
+        /// Performs text-based fallback comparison using FuzzySharp
+        /// This is a placeholder implementation - in a real system this would connect to the database
+        /// </summary>
+        private async Task<(string series, string season, string episode, int score)?> PerformTextFallback(
+            string inputText, string series, string? season, string? episode)
+        {
+            // This is a placeholder implementation
+            // In the real implementation, this would:
+            // 1. Query the database for matching series/season/episode
+            // 2. Compare inputText against stored subtitle texts using FuzzySharp
+            // 3. Return the best match above threshold
+
+            _logger.LogDebug("Text fallback placeholder called for series: {Series}, season: {Season}, episode: {Episode}",
+                series, season, episode);
+
+            await Task.Delay(1); // Simulate async operation
+
+            // Return null to indicate no match found (placeholder)
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the threshold for text fallback matching
+        /// </summary>
+        private int GetTextFallbackThreshold()
+        {
+            return 75; // 75% similarity threshold for text matching
         }
     }
 }
