@@ -25,7 +25,7 @@ public class FilenameServiceContractTests
     {
         public AppConfig Config => new AppConfig
         {
-            RenameConfidenceThreshold = 0.1
+            RenameConfidenceThreshold = 0.9
         };
 
         public Task LoadConfigurationAsync(string? configPath = null) => Task.CompletedTask;
