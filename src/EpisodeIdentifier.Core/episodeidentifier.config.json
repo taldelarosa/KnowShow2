@@ -1,7 +1,7 @@
 {
   "version": "2.0",
   "matchConfidenceThreshold": 0.6,
-  "renameConfidenceThreshold": 0.1,
+  "renameConfidenceThreshold": 0.6,
   "fuzzyHashThreshold": 75,
   "hashingAlgorithm": "CTPH",
   "filenamePatterns": {
