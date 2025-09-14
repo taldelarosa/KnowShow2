@@ -141,7 +141,7 @@
 
 
 
-As a system administrator or power user, I need to configure the episode identification system with custom matching thresholds and filename templates so that the system can be tuned for different content libraries and identification accuracy requirements. The system should use more sophisticated fuzzy hashing to improve matching accuracy while allowing fine-tuned control over matching behavior.
+As a system administrator or power user, I need to configure the episode identification system with custom matching thresholds and filename templates. This allows the system to be tuned for different content libraries and identification accuracy requirements. The system should use more sophisticated fuzzy hashing to improve matching accuracy. It should also allow fine-tuned control over matching behavior.
 
 Additionally, I need to process either individual video files or entire directories containing multiple video files to efficiently identify and organize large collections of content.
 
