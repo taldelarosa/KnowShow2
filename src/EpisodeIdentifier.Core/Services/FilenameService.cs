@@ -38,11 +38,18 @@ public class FilenameService : IFilenameService
         }
 
         // Check confidence threshold
+<<<<<<< HEAD
         var thresholdFromConfig = _configService.Config.RenameConfidenceThreshold;
         if (request.MatchConfidence < thresholdFromConfig)
         {
             result.IsValid = false;
             result.ValidationError = $"Match confidence {request.MatchConfidence:F2} is below required threshold of {thresholdFromConfig:F2}";
+=======
+        if (request.MatchConfidence < 0.85)
+        {
+            result.IsValid = false;
+            result.ValidationError = $"Match confidence {request.MatchConfidence:F2} is below required threshold of 0.85";
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
             return result;
         }
 

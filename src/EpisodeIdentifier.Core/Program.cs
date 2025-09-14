@@ -4,7 +4,10 @@ using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Core.Models;
 using EpisodeIdentifier.Core.Services;
 using EpisodeIdentifier.Core.Interfaces;
+<<<<<<< HEAD
 using System.IO.Abstractions;
+=======
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 
 namespace EpisodeIdentifier.Core;
 
@@ -100,7 +103,11 @@ public class Program
         rootCommand.Add(renameOption);
 
         // Add configuration management commands
+<<<<<<< HEAD
         //         rootCommand.AddCommand(EpisodeIdentifier.Core.Commands.ConfigurationCommands.CreateConfigCommands());
+=======
+        rootCommand.AddCommand(EpisodeIdentifier.Core.Commands.ConfigurationCommands.CreateConfigCommands());
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 
         rootCommand.SetHandler(async (context) =>
         {

@@ -1,5 +1,6 @@
 # Configuration Guide
 
+<<<<<<< HEAD
 
 
 
@@ -7,10 +8,13 @@
 
 
 
+=======
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 EpisodeIdentifier.Core supports JSON-based configuration for maximum flexibility. The configuration file `episodeidentifier.config.json` is automatically created with default values if not present.
 
 ## Configuration File Location
 
+<<<<<<< HEAD
 
 
 
@@ -18,12 +22,15 @@ EpisodeIdentifier.Core supports JSON-based configuration for maximum flexibility
 
 
 
+=======
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 The configuration file should be placed in the same directory as the executable:
 
 - `episodeidentifier.config.json`
 
 ## Configuration Options
 
+<<<<<<< HEAD
 
 
 
@@ -40,6 +47,10 @@ The configuration file should be placed in the same directory as the executable:
 
 
 
+=======
+### Match Confidence Thresholds
+
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 ```json
 {
   "matchConfidenceThreshold": 0.8,
@@ -47,6 +58,7 @@ The configuration file should be placed in the same directory as the executable:
 }
 ```
 
+<<<<<<< HEAD
 
 
 
@@ -54,6 +66,8 @@ The configuration file should be placed in the same directory as the executable:
 
 
 
+=======
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 - **matchConfidenceThreshold**: Minimum confidence (0.0-1.0) required for episode identification
   - Default: `0.8` (80%)
   - Lower values allow more fuzzy matches but may increase false positives
@@ -66,6 +80,7 @@ The configuration file should be placed in the same directory as the executable:
 
 ### Filename Parsing Patterns
 
+<<<<<<< HEAD
 
 
 
@@ -73,16 +88,23 @@ The configuration file should be placed in the same directory as the executable:
 
 
 
+=======
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 ```json
 {
   "filenamePatterns": {
     "primaryPattern": "^(.+?)\\s+S(\\d+)E(\\d+)(?:[\\s\\.\\-]+(.+?))?$",
+<<<<<<< HEAD
     "secondaryPattern": "^(.+?)\\s+(\\d+)x(\\d+)(?:[\\s\\.\\-]+(.+?))?$",
+=======
+    "secondaryPattern": "^(.+?)\\s+(\\d+)x(\\d+)(?:[\\s\\.\\-]+(.+?))?$", 
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
     "tertiaryPattern": "^(.+?)\\.S(\\d+)\\.E(\\d+)(?:\\.(.+?))?$"
   }
 }
 ```
 
+<<<<<<< HEAD
 
 
 
@@ -90,6 +112,8 @@ The configuration file should be placed in the same directory as the executable:
 
 
 
+=======
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 These regex patterns control how series information is extracted from subtitle filenames:
 
 - **primaryPattern**: Default format "Series S##E## Episode Name"
@@ -106,6 +130,7 @@ These regex patterns control how series information is extracted from subtitle f
 
 ### Filename Template
 
+<<<<<<< HEAD
 
 
 
@@ -113,12 +138,15 @@ These regex patterns control how series information is extracted from subtitle f
 
 
 
+=======
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 ```json
 {
   "filenameTemplate": "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}"
 }
 ```
 
+<<<<<<< HEAD
 
 
 
@@ -126,6 +154,8 @@ These regex patterns control how series information is extracted from subtitle f
 
 
 
+=======
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 Controls the format of renamed files. Available placeholders:
 
 - `{SeriesName}`: The identified series name
@@ -138,6 +168,7 @@ Controls the format of renamed files. Available placeholders:
 
 ## Example Configurations
 
+<<<<<<< HEAD
 
 
 
@@ -154,6 +185,10 @@ Controls the format of renamed files. Available placeholders:
 
 
 
+=======
+### Conservative (High Accuracy)
+
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 ```json
 {
   "matchConfidenceThreshold": 0.9,
@@ -161,6 +196,7 @@ Controls the format of renamed files. Available placeholders:
 }
 ```
 
+<<<<<<< HEAD
 
 
 
@@ -177,6 +213,10 @@ Controls the format of renamed files. Available placeholders:
 
 
 
+=======
+### Permissive (More Matches)
+
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 ```json
 {
   "matchConfidenceThreshold": 0.7,
@@ -184,6 +224,7 @@ Controls the format of renamed files. Available placeholders:
 }
 ```
 
+<<<<<<< HEAD
 
 
 
@@ -200,6 +241,10 @@ Controls the format of renamed files. Available placeholders:
 
 
 
+=======
+### Custom Patterns for Different Naming Conventions
+
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 ```json
 {
   "filenamePatterns": {
@@ -210,6 +255,7 @@ Controls the format of renamed files. Available placeholders:
 }
 ```
 
+<<<<<<< HEAD
 
 
 
@@ -226,6 +272,10 @@ Controls the format of renamed files. Available placeholders:
 
 
 
+=======
+## Configuration Validation
+
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 The application will log warnings if:
 
 - Configuration file cannot be parsed
@@ -236,6 +286,7 @@ In case of errors, the application falls back to default values and continues op
 
 ## Runtime Configuration Loading
 
+<<<<<<< HEAD
 
 
 
@@ -243,6 +294,8 @@ In case of errors, the application falls back to default values and continues op
 
 
 
+=======
+>>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 Configuration is loaded once at application startup. To apply changes:
 
 1. Modify the `episodeidentifier.config.json` file
