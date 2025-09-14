@@ -1,0 +1,10 @@
+# Ignore auto-generated files and directories
+node_modules/
+bin/
+obj/
+.git/
+.vs/
+.vscode/
+
+# Ignore specific files that might have formatting issues that can't be auto-fixed
+CHANGELOG.md
