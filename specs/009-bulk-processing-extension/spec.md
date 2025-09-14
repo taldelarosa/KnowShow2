@@ -1,4 +1,4 @@
-# Feature Specification: Bulk Processing Extension for Episode Identification
+# Feature Specification: Bulk Processing Extension with Fuzzy Hashing Plus
 
 **Feature Branch**: `009-bulk-processing-extension`
 **Created**: September 13, 2025
