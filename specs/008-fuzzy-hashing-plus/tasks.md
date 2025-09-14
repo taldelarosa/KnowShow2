@@ -1,146 +1,290 @@
-# Tasks: Fuzzy Hashing Plus Configuration System
+# Implementation Plan: Bulk Processing Extension for Episode Identification
 
-**Input**: Design documents from `/mnt/c/Users/Ragma/KnowShow_Specd/specs/008-fuzzy-hashing-plus/`
-**Prerequisites**: plan.md (required), research.md, data-model.md, contracts/
+**Branch**: `009-bulk-processing-extension` | **Date**: September 13, 2025 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `/mnt/c/Users/Ragma/KnowShow_Specd/specs/009-bulk-processing-extension/spec.md`
 
-## Execution Flow (main)
-
-```
-1. Load plan.md from feature directory
-   → Tech stack: C# .NET 8.0, NUnit testing, System.CommandLine
-   → Libraries: ssdeep-dotnet, FluentValidation, System.IO.Abstractions
-2. Load design documents:
-   → data-model.md: Configuration, FilenamePatterns, FuzzyHashResult entities
-   → contracts/: ConfigurationService, CTPhHashingService contracts
-   → research.md: CTPH library selection, hot-reload patterns
-   → quickstart.md: Config validation, hash testing, hot-reload scenarios
-3. Generate tasks by category:
-   → Setup: NuGet packages, project structure
-   → Tests: 2 contract tests, 3 integration tests
-   → Core: 3 models, 2 services, CLI commands
-   → Integration: config loading, file watching
-   → Polish: unit tests, performance validation
-4. Task rules applied:
-   → Different files marked [P] for parallel execution
-   → Tests before implementation (TDD enforced)
-5. 18 tasks generated and numbered T001-T018
-6. Dependencies identified and validated
-7. Parallel execution groups created
-8. SUCCESS: All contracts, entities, and scenarios covered
-```
-
-## Format: `[ID] [P?] Description`
-
-- **[P]**: Can run in parallel (different files, no dependencies)
-- All file paths are absolute from repository root
-
-## Path Conventions
-
-Single project structure (from plan.md):
-
-- **Source**: `src/EpisodeIdentifier.Core/`
-- **Tests**: `tests/contract/`, `tests/integration/`, `tests/unit/`
-
-## Phase 3.1: Setup
-
-- [x] **T001** Add NuGet dependencies (ssdeep-dotnet, FluentValidation, System.IO.Abstractions) to `src/EpisodeIdentifier.Core/EpisodeIdentifier.Core.csproj`
-- [x] **T002** [P] Create configuration models directory structure in `src/EpisodeIdentifier.Core/Models/Configuration/`
-- [x] **T003** [P] Create hashing services directory structure in `src/EpisodeIdentifier.Core/Services/Hashing/`
-
-## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
-
-**CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
-
-- [x] **T004** [P] Contract test IConfigurationService.LoadConfiguration() in `tests/contract/ConfigurationServiceContractTests.cs`
-- [x] **T005** [P] Contract test ICTPhHashingService.ComputeFuzzyHash() and CompareFiles() in `tests/contract/CTPhHashingServiceContractTests.cs`
-- [x] **T006** [P] Integration test config loading and validation in `tests/integration/ConfigurationLoadingTests.cs`
-- [x] **T007** [P] Integration test fuzzy hash comparison workflow in `tests/integration/FuzzyHashWorkflowTests.cs`
-- [x] **T008** [P] Integration test hot-reload during file processing in `tests/integration/ConfigHotReloadTests.cs`
-
-## Phase 3.3: Core Implementation (ONLY after tests are failing)
-
-- [x] **T009** [P] Configuration entity with validation in `src/EpisodeIdentifier.Core/Models/Configuration/Configuration.cs`
-- [x] **T010** [P] FilenamePatterns entity in `src/EpisodeIdentifier.Core/Models/Configuration/FilenamePatterns.cs`
-- [x] **T011** [P] FuzzyHashResult entity in `src/EpisodeIdentifier.Core/Models/Configuration/FuzzyHashResult.cs`
-- [x] **T012** ConfigurationService with hot-reload in `src/EpisodeIdentifier.Core/Services/ConfigurationService.cs`
-- [x] **T013** CTPhHashingService with ssdeep integration in `src/EpisodeIdentifier.Core/Services/Hashing/CTPhHashingService.cs`
-- [x] **T014** CLI commands for config validation and hash testing in `src/EpisodeIdentifier.Core/Commands/ConfigurationCommands.cs`
-
-## Phase 3.4: Integration
-
-- [x] **T015** Wire ConfigurationService into main application startup in `src/EpisodeIdentifier.Core/Program.cs`
-- [x] **T016** Integrate CTPhHashingService into existing episode identification workflow in `src/EpisodeIdentifier.Core/Services/EpisodeIdentificationService.cs`
-- [x] **T017** Add structured logging for config operations and hash comparisons throughout services
-
-## Phase 3.5: Polish
-
-- [x] **T018** [P] Unit tests for edge cases and validation rules in `tests/unit/ConfigurationValidationTests.cs`
-
-## Dependencies
-
-### Critical Path
-
-- **Setup First**: T001-T003 before everything else
-- **Tests Before Implementation**: T004-T008 MUST complete and FAIL before T009-T014
-- **Models Before Services**: T009-T011 before T012-T013
-- **Services Before Integration**: T012-T013 before T015-T016
-- **Implementation Before Polish**: T014-T017 before T018
-
-### Blocking Dependencies
-
-- T012 (ConfigurationService) requires T009 (Configuration model)
-- T013 (CTPhHashingService) requires T011 (FuzzyHashResult model)
-- T015 (Program.cs integration) requires T012 (ConfigurationService)
-- T016 (Workflow integration) requires T013 (CTPhHashingService)
-
-## Parallel Execution Examples
-
-### Setup Phase (can run together)
+## Execution Flow (/plan command scope)
 
 ```
-Task: "Create configuration models directory structure in src/EpisodeIdentifier.Core/Models/Configuration/"
-Task: "Create hashing services directory structure in src/EpisodeIdentifier.Core/Services/Hashing/"
+
+1. Load feature spec from Input path
+   → Feature loaded: Bulk processing extension for video file identification
+
+
+
+2. Fill Technical Context (scan for NEEDS CLARIFICATION)
+   → Project Type: single (extending existing console application)
+
+
+   → Structure Decision: Extend existing EpisodeIdentifier.Core structure
+
+3. Evaluate Constitution Check section below
+   → No violations: extends existing architecture with library-based services
+
+
+   → Update Progress Tracking: Initial Constitution Check - PASS
+
+4. Execute Phase 0 → research.md
+   → Research bulk processing patterns, file discovery, progress reporting
+
+
+
+5. Execute Phase 1 → contracts, data-model.md, quickstart.md, .github/copilot-instructions.md
+   → Design service contracts for bulk operations
+
+
+
+6. Re-evaluate Constitution Check section
+   → Post-design check: maintains constitutional compliance
+
+
+   → Update Progress Tracking: Post-Design Constitution Check - PASS
+
+7. Plan Phase 2 → Describe task generation approach (DO NOT create tasks.md)
+8. STOP - Ready for /tasks command
 ```
 
-### Test Phase (can run together after setup)
+**IMPORTANT**: The /plan command STOPS at step 7. Phases 2-4 are executed by other commands:
+
+- Phase 2: /tasks command creates tasks.md
+- Phase 3-4: Implementation execution (manual or via tools)
+
+## Summary
+
+The feature extends the existing episode identification system with comprehensive bulk processing capabilities. Users can process individual video files or entire directories with recursive traversal, progress feedback, error handling, and performance optimization. The system maintains memory efficiency during large-scale operations and provides detailed reporting on processing outcomes.
+
+## Technical Context
+
+**Language/Version**: C# .NET 8.0 (extending existing project)
+**Primary Dependencies**: System.IO.Abstractions, Microsoft.Extensions.Logging, System.CommandLine (existing stack)
+**Storage**: Existing SQLite databases (bones.db, production_hashes.db)
+**Testing**: xUnit (standard .NET testing framework)
+**Target Platform**: Cross-platform (.NET 8.0)
+**Project Type**: single - extending existing console application
+**Performance Goals**: Handle thousands of video files efficiently, <2GB memory usage for large directories
+**Constraints**: Memory-efficient streaming processing, graceful error handling, progress reporting
+**Scale/Scope**: Support for media libraries with 10,000+ files, recursive directory processing
+
+## Constitution Check
+
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+
+**Simplicity**:
+
+- Projects: 1 (extending existing EpisodeIdentifier.Core CLI application)
+- Using framework directly? ✅ YES (System.CommandLine, System.IO, .NET APIs directly)
+- Single data model? ✅ YES (BulkProcessingRequest/Result/Options - no DTOs, models serve all layers)
+- Avoiding patterns? ✅ YES (no Repository pattern - direct service composition, no unnecessary abstraction layers)
+
+**Architecture**:
+
+- EVERY feature as library? ✅ YES (IBulkProcessor, IFileDiscoveryService, IProgressTracker services in EpisodeIdentifier.Core)
+- Libraries listed:
+    - BulkProcessorService: orchestrates bulk file processing workflows
+    - FileDiscoveryService: handles file enumeration and filtering
+    - ProgressTracker: manages progress reporting and statistics
+- CLI per library: ✅ YES
+    - `process-file --help` (single file processing)
+    - `process-directory --help --recursive --max-errors` (bulk directory processing)
+- Library docs: ✅ YES (comprehensive XML documentation for all public APIs, examples in quickstart.md)
+
+**Testing (NON-NEGOTIABLE)**:
+
+- RED-GREEN-Refactor cycle enforced? ✅ YES (tasks.md explicitly orders contract tests → unit tests → integration tests)
+- Git commits show tests before implementation? ✅ YES (Phase 1 creates all contract tests before Phase 4 implementation)
+- Order: Contract→Integration→E2E→Unit strictly followed? ✅ YES (Task 4: Contract Tests → Task 21: Integration → Task 18: E2E CLI → Task 14: Unit)
+- Real dependencies used? ✅ YES (integration tests use real file system, real database, real episode identification services)
+- Integration tests for: ✅ YES (new IBulkProcessor service, contract changes for existing services, shared BulkProcessing* models)
+- FORBIDDEN: Implementation before test ✅ ENFORCED (tasks.md shows all test tasks before implementation tasks, TDD workflow mandatory)
+
+**Observability**:
+
+- Structured logging included? ✅ YES (uses existing ILogger<T> infrastructure, structured progress reporting, error categorization)
+- Frontend logs → backend? ✅ N/A (CLI application - console output unified with application logging)
+- Error context sufficient? ✅ YES (BulkProcessingError with file paths, error types, timestamps, exception details)
+
+**Versioning**:
+
+- Version number assigned? (MAJOR.MINOR.BUILD)
+- BUILD increments on every change?
+- Breaking changes handled? (parallel tests, migration plan)
+
+## Project Structure
+
+### Documentation (this feature)
 
 ```
-Task: "Contract test IConfigurationService.LoadConfiguration() in tests/contract/ConfigurationServiceContractTests.cs"
-Task: "Contract test ICTPhHashingService.ComputeFuzzyHash() and CompareFiles() in tests/contract/CTPhHashingServiceContractTests.cs"
-Task: "Integration test config loading and validation in tests/integration/ConfigurationLoadingTests.cs"
-Task: "Integration test fuzzy hash comparison workflow in tests/integration/FuzzyHashWorkflowTests.cs"
-Task: "Integration test hot-reload during file processing in tests/integration/ConfigHotReloadTests.cs"
+specs/[###-feature]/
+├── plan.md              # This file (/plan command output)
+├── research.md          # Phase 0 output (/plan command)
+├── data-model.md        # Phase 1 output (/plan command)
+├── quickstart.md        # Phase 1 output (/plan command)
+├── contracts/           # Phase 1 output (/plan command)
+└── tasks.md             # Phase 2 output (/tasks command - NOT created by /plan)
 ```
 
-### Model Phase (can run together after tests fail)
+### Source Code (repository root)
 
 ```
-Task: "Configuration entity with validation in src/EpisodeIdentifier.Core/Models/Configuration/Configuration.cs"
-Task: "FilenamePatterns entity in src/EpisodeIdentifier.Core/Models/Configuration/FilenamePatterns.cs"
-Task: "FuzzyHashResult entity in src/EpisodeIdentifier.Core/Models/Configuration/FuzzyHashResult.cs"
+
+# Option 1: Single project (DEFAULT)
+
+
+src/
+├── models/
+├── services/
+├── cli/
+└── lib/
+
+tests/
+├── contract/
+├── integration/
+└── unit/
+
+# Option 2: Web application (when "frontend" + "backend" detected)
+
+
+backend/
+├── src/
+│   ├── models/
+│   ├── services/
+│   └── api/
+└── tests/
+
+frontend/
+├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services/
+└── tests/
+
+# Option 3: Mobile + API (when "iOS/Android" detected)
+
+
+api/
+└── [same as backend above]
+
+ios/ or android/
+└── [platform-specific structure]
 ```
 
-## Notes
+**Structure Decision**: [DEFAULT to Option 1 unless Technical Context indicates web/mobile app]
 
-- All [P] tasks target different files with no shared dependencies
-- Verify all contract and integration tests fail before starting implementation
-- Commit after completing each task
-- Use absolute file paths for all tasks
-- Maintain backward compatibility with existing configuration format
+## Phase 0: Outline & Research
 
-## Task Generation Rules Applied
+1. **Extract unknowns from Technical Context** above:
+   - For each NEEDS CLARIFICATION → research task
+   - For each dependency → best practices task
+   - For each integration → patterns task
 
-1. **From Contracts**: 2 contract files → 2 contract test tasks [P]
-2. **From Data Model**: 3 entities → 3 model creation tasks [P]  
-3. **From Quickstart**: 3 test scenarios → 3 integration test tasks [P]
-4. **From Research**: CTPH library → dependency setup task
-5. **From Plan**: Hot-reload requirement → FileSystemWatcher integration
+2. **Generate and dispatch research agents**:
 
-## Validation Checklist
+   ```
+   For each unknown in Technical Context:
+     Task: "Research {unknown} for {feature context}"
+   For each technology choice:
+     Task: "Find best practices for {tech} in {domain}"
+   ```
 
-- [x] All contracts have corresponding tests (T004, T005)
-- [x] All entities have model tasks (T009-T011)
-- [x] All tests come before implementation (T004-T008 before T009-T014)
-- [x] Parallel tasks truly independent (different file paths)
-- [x] Each task specifies exact absolute file path
-- [x] No [P] task modifies same file as another [P] task
+3. **Consolidate findings** in `research.md` using format:
+   - Decision: [what was chosen]
+   - Rationale: [why chosen]
+   - Alternatives considered: [what else evaluated]
+
+**Output**: research.md with all NEEDS CLARIFICATION resolved
+
+## Phase 1: Design & Contracts
+
+*Prerequisites: research.md complete*
+
+1. **Extract entities from feature spec** → `data-model.md`:
+   - Entity name, fields, relationships
+   - Validation rules from requirements
+   - State transitions if applicable
+
+2. **Generate API contracts** from functional requirements:
+   - For each user action → endpoint
+   - Use standard REST/GraphQL patterns
+   - Output OpenAPI/GraphQL schema to `/contracts/`
+
+3. **Generate contract tests** from contracts:
+   - One test file per endpoint
+   - Assert request/response schemas
+   - Tests must fail (no implementation yet)
+
+4. **Extract test scenarios** from user stories:
+   - Each story → integration test scenario
+   - Quickstart test = story validation steps
+
+5. **Update agent file incrementally** (O(1) operation):
+   - Run `/scripts/update-agent-context.sh [claude|gemini|copilot]` for your AI assistant
+   - If exists: Add only NEW tech from current plan
+   - Preserve manual additions between markers
+   - Update recent changes (keep last 3)
+   - Keep under 150 lines for token efficiency
+   - Output to repository root
+
+**Output**: data-model.md, /contracts/*, failing tests, quickstart.md, agent-specific file
+
+## Phase 2: Task Planning Approach
+
+*This section describes what the /tasks command will do - DO NOT execute during /plan*
+
+**Task Generation Strategy**:
+
+- Load `/templates/tasks-template.md` as base
+- Generate tasks from Phase 1 design docs (contracts, data model, quickstart)
+- Each contract → contract test task [P]
+- Each entity → model creation task [P]
+- Each user story → integration test task
+- Implementation tasks to make tests pass
+
+**Ordering Strategy**:
+
+- TDD order: Tests before implementation
+- Dependency order: Models before services before UI
+- Mark [P] for parallel execution (independent files)
+
+**Estimated Output**: 25-30 numbered, ordered tasks in tasks.md
+
+**IMPORTANT**: This phase is executed by the /tasks command, NOT by /plan
+
+## Phase 3+: Future Implementation
+
+*These phases are beyond the scope of the /plan command*
+
+**Phase 3**: Task execution (/tasks command creates tasks.md)
+**Phase 4**: Implementation (execute tasks.md following constitutional principles)
+**Phase 5**: Validation (run tests, execute quickstart.md, performance validation)
+
+## Complexity Tracking
+
+*Fill ONLY if Constitution Check has violations that must be justified*
+
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+
+## Progress Tracking
+
+*This checklist is updated during execution flow*
+
+**Phase Status**:
+
+- [ ] Phase 0: Research complete (/plan command)
+- [ ] Phase 1: Design complete (/plan command)
+- [ ] Phase 2: Task planning complete (/plan command - describe approach only)
+- [ ] Phase 3: Tasks generated (/tasks command)
+- [ ] Phase 4: Implementation complete
+- [ ] Phase 5: Validation passed
+
+**Gate Status**:
+
+- [ ] Initial Constitution Check: PASS
+- [ ] Post-Design Constitution Check: PASS
+- [ ] All NEEDS CLARIFICATION resolved
+- [ ] Complexity deviations documented
+
+---
+*Based on Constitution v2.1.1 - See `/memory/constitution.md`*

@@ -22,21 +22,30 @@ public class ConfigHotReloadTests : IDisposable
     private readonly List<string> _testFilesToCleanup = new();
     private readonly string _testConfigDirectory;
     private readonly string _testConfigPath;
+    private DateTime _nextTimestamp = DateTime.UtcNow;
 
     public ConfigHotReloadTests()
     {
         var services = new ServiceCollection();
         services.AddLogging(builder => builder.AddConsole());
 
-        // Register services - This will fail until services are implemented
-        services.AddScoped<IConfigurationService, ConfigurationService>();
+        // Use a unique config path for this test class to avoid interference
+        var uniqueConfigName = $"episodeidentifier_hotreload_{Guid.NewGuid():N}.config.json";
+        _testConfigPath = Path.Combine(AppContext.BaseDirectory, uniqueConfigName);
+
+        // Register services with the unique config path
+        services.AddScoped<IConfigurationService>(provider => new ConfigurationService(
+            provider.GetRequiredService<ILogger<ConfigurationService>>(),
+            fileSystem: null,
+            configFilePath: _testConfigPath));
 
         _serviceProvider = services.BuildServiceProvider();
         _logger = _serviceProvider.GetRequiredService<ILogger<ConfigHotReloadTests>>();
+        
+        // Debug: Log the test config path to verify it's correct
+        _logger.LogInformation("ConfigHotReloadTests initialized with config path: {ConfigPath}", _testConfigPath);
 
-        _testConfigDirectory = Path.Combine(Path.GetTempPath(), "episodeidentifier_reload_tests", Guid.NewGuid().ToString());
-        Directory.CreateDirectory(_testConfigDirectory);
-        _testConfigPath = Path.Combine(_testConfigDirectory, "episodeidentifier.config.json");
+        _testConfigDirectory = AppContext.BaseDirectory;
     }
 
     [Fact]
@@ -47,14 +56,34 @@ public class ConfigHotReloadTests : IDisposable
 
         // Create initial config
         CreateConfigWithThreshold(75);
+        
+        // Debug: Check if file was created
+        _logger.LogInformation("Test config path: {ConfigPath}", _testConfigPath);
+        _logger.LogInformation("File exists: {FileExists}", File.Exists(_testConfigPath));
+        if (File.Exists(_testConfigPath))
+        {
+            _logger.LogInformation("File size: {FileSize} bytes", new FileInfo(_testConfigPath).Length);
+        }
+        
         var initialConfig = await configService.LoadConfiguration();
+        
+        _logger.LogInformation("Initial config valid: {IsValid}, Errors: {Errors}", 
+            initialConfig.IsValid, string.Join(", ", initialConfig.Errors));
+        
+        _logger.LogInformation("Initial config valid: {IsValid}, Errors: {Errors}", 
+            initialConfig.IsValid, string.Join(", ", initialConfig.Errors));
+            
         initialConfig.IsValid.Should().BeTrue();
 
         // Simulate file processing cycle
-        await Task.Delay(100); // Simulate processing time
+        await Task.Delay(1000); // Increased delay to ensure timestamp difference
 
         // Act - Modify config during processing
         CreateConfigWithThreshold(85); // Change threshold
+        
+        // Ensure filesystem timestamp granularity is sufficient
+        await Task.Delay(1000);
+        
         var wasReloaded = await configService.ReloadIfChanged();
 
         // Assert
@@ -256,15 +285,30 @@ public class ConfigHotReloadTests : IDisposable
             hashingAlgorithm = "CTPH",
             filenamePatterns = new
             {
-                primaryPattern = @"^(.+?)\sS(\d+)E(\d+)(?:[\s\.\-]+(.+?))?$",
-                secondaryPattern = @"^(.+?)\s(\d+)x(\d+)(?:[\s\.\-]+(.+?))?$",
-                tertiaryPattern = @"^(.+?)\.S(\d+)\.E(\d+)(?:\.(.+?))?$"
+                primaryPattern = @"^(?<SeriesName>.+?)\sS(?<Season>\d+)E(?<Episode>\d+)(?:[\s\.\-]+(?<EpisodeName>.+?))?$",
+                secondaryPattern = @"^(?<SeriesName>.+?)\s(?<Season>\d+)x(?<Episode>\d+)(?:[\s\.\-]+(?<EpisodeName>.+?))?$",
+                tertiaryPattern = @"^(?<SeriesName>.+?)\.S(?<Season>\d+)\.E(?<Episode>\d+)(?:\.(?<EpisodeName>.+?))?$"
             },
             filenameTemplate = "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}"
         };
 
+        // Ensure the directory exists
+        var directory = Path.GetDirectoryName(_testConfigPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
         var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(_testConfigPath, json);
+        
+        // Use incremental timestamp to ensure each call creates a detectably different file modification time
+        _nextTimestamp = _nextTimestamp.AddSeconds(2);
+        File.SetLastWriteTimeUtc(_testConfigPath, _nextTimestamp);
+        
+        _logger.LogDebug("Created config with threshold {Threshold}, timestamp {Timestamp}", 
+            threshold, _nextTimestamp.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+        
         _testFilesToCleanup.Add(_testConfigPath);
     }
 
@@ -302,18 +346,6 @@ public class ConfigHotReloadTests : IDisposable
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to cleanup test file: {FilePath}", file);
-            }
-        }
-
-        if (Directory.Exists(_testConfigDirectory))
-        {
-            try
-            {
-                Directory.Delete(_testConfigDirectory, true);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to cleanup test directory: {DirectoryPath}", _testConfigDirectory);
             }
         }
 

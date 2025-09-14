@@ -1,7 +1,7 @@
 {
   "version": "2.0",
   "matchConfidenceThreshold": 0.6,
-  "renameConfidenceThreshold": 0.1,
+  "renameConfidenceThreshold": 0.6,
   "fuzzyHashThreshold": 75,
   "hashingAlgorithm": "CTPH",
   "filenamePatterns": {
@@ -9,5 +9,20 @@
     "secondaryPattern": "^(?<SeriesName>.+?)\\s(?<Season>\\d+)x(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$", 
     "tertiaryPattern": "^(?<SeriesName>.+?)\\.S(?<Season>\\d+)\\.E(?<Episode>\\d+)(?:\\.(?<EpisodeName>.+?))?$"
   },
-  "filenameTemplate": "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}"
+  "filenameTemplate": "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}",
+  "bulkProcessing": {
+    "defaultBatchSize": 100,
+    "defaultMaxConcurrency": 4,
+    "defaultProgressReportingInterval": 1000,
+    "defaultForceGarbageCollection": true,
+    "defaultCreateBackups": false,
+    "defaultContinueOnError": true,
+    "defaultMaxErrorsBeforeAbort": null,
+    "defaultFileProcessingTimeout": "00:05:00",
+    "defaultFileExtensions": [".mkv", ".mp4", ".avi"],
+    "maxBatchSize": 10000,
+    "maxConcurrency": 32,
+    "enableBatchStatistics": false,
+    "enableMemoryMonitoring": true
+  }
 }

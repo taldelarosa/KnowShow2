@@ -17,7 +17,7 @@ dotnet run -- --input video.mkv --hash-db hashes.db
 ```json
 {
   "series": "Breaking Bad",
-  "season": "01", 
+  "season": "01",
   "episode": "05",
   "matchConfidence": 0.95,
   "ambiguityNotes": null,
@@ -37,7 +37,7 @@ dotnet run -- --input video.mkv --hash-db hashes.db --rename
 ```json
 {
   "series": "Breaking Bad",
-  "season": "01", 
+  "season": "01",
   "episode": "05",
   "matchConfidence": 0.95,
   "ambiguityNotes": null,
@@ -59,10 +59,25 @@ dotnet run -- --input video.mkv --hash-db hashes.db --rename
 - **Behavior**: Only active when identification confidence ≥ 90%
 
 ```bash
+
 # Basic usage
+
+
+
+
+
+
+
 --rename
 
 # Combined with existing options
+
+
+
+
+
+
+
 --input video.mkv --hash-db hashes.db --rename --language eng
 ```
 
@@ -73,7 +88,7 @@ dotnet run -- --input video.mkv --hash-db hashes.db --rename
 ```json
 {
   "series": "string",
-  "season": "string", 
+  "season": "string",
   "episode": "string",
   "matchConfidence": "number (0.0-1.0)",
   "ambiguityNotes": "string|null",
@@ -89,7 +104,7 @@ dotnet run -- --input video.mkv --hash-db hashes.db --rename
 ```json
 {
   "series": "Example Show",
-  "season": "01", 
+  "season": "01",
   "episode": "02",
   "matchConfidence": 0.75,
   "ambiguityNotes": "Multiple possible matches found",
@@ -161,7 +176,7 @@ Output: "Very Long Series Name With Many Words - S01E01 - Very Long Episode Titl
 
 ### Low Confidence (< 90%)
 
-- Exclude `suggestedFilename` from response  
+- Exclude `suggestedFilename` from response
 - Ignore `--rename` flag (no file operations)
 - Standard response format maintained
 
@@ -186,7 +201,7 @@ Output: "Very Long Series Name With Many Words - S01E01 - Very Long Episode Titl
 ```json
 {
   "error": {
-    "code": "FILE_RENAME_FAILED", 
+    "code": "FILE_RENAME_FAILED",
     "message": "Permission denied: Cannot write to directory"
   },
   "suggestedFilename": "Breaking Bad - S01E05 - Gray Matter.mkv",
@@ -228,24 +243,55 @@ Output: "Very Long Series Name With Many Words - S01E01 - Very Long Episode Titl
 ### High Confidence Identification
 
 ```bash
+
 # Test filename suggestion
+
+
+
+
+
+
+
 ./test-input.mkv → "Test Show - S01E01 - Pilot.mkv"
 
 # Test automatic rename
+
+
+
+
+
+
+
 ./random-filename.mkv → "Test Show - S01E01 - Pilot.mkv" (file renamed)
 ```
 
-### Low Confidence Identification  
+### Low Confidence Identification
 
 ```bash
+
 # No filename suggestion provided
+
+
+
+
+
+
+
 ./unclear-video.mkv → Standard response, no suggestedFilename field
 ```
 
 ### Character Sanitization
 
 ```bash
+
 # Windows invalid characters
+
+
+
+
+
+
+
 "Show: Title" → "Show  Title"
 "Episode \"Title\"" → "Episode  Title "
 ```
@@ -253,20 +299,50 @@ Output: "Very Long Series Name With Many Words - S01E01 - Very Long Episode Titl
 ### Length Limits
 
 ```bash
+
 # Long names truncated
-"Very Long Series Name... - S01E01 - Very Long Episode Title..." 
+
+
+
+
+
+
+
+"Very Long Series Name... - S01E01 - Very Long Episode Title..."
 → "Very Long Series Name... - S01E01 - Very Long Episode Tit.mkv"
 ```
 
 ### Error Conditions
 
 ```bash
+
 # File already exists
+
+
+
+
+
+
+
 ./video.mkv + target exists → Error with suggestion still provided
 
 # Permission denied
+
+
+
+
+
+
+
 ./video.mkv + no write permission → Error with suggestion still provided
 
 # Invalid filename generated
+
+
+
+
+
+
+
 Series with all invalid chars → Error in filename generation
 ```

@@ -25,26 +25,63 @@ Your current PGS subtitle extraction implementation has several limitations comp
 ### 1. Install pgsrip
 
 ```bash
+
 # Using uv (faster than pip)
+
+
+
+
+
+
+
 uv pip install --system pgsrip
 
 # Or using pip if uv is not available
+
+
+
+
+
+
+
 pip install pgsrip
 ```
 
 ### 2. Install Dependencies
 
 ```bash
+
 # For Ubuntu/Debian:
+
+
+
+
+
+
+
 sudo apt-get install mkvtoolnix tesseract-ocr
 
 # Install better tesseract data for improved OCR:
+
+
+
+
+
+
+
 cd /tmp
 git clone --depth 1 https://github.com/tesseract-ocr/tessdata_best.git
 sudo mv tessdata_best /usr/share/tessdata_best
 export TESSDATA_PREFIX=/usr/share/tessdata_best
 
 # Make the environment variable permanent:
+
+
+
+
+
+
+
 echo 'export TESSDATA_PREFIX=/usr/share/tessdata_best' >> ~/.bashrc
 ```
 
@@ -66,19 +103,19 @@ public async Task<string> ConvertPgsToText(byte[] pgsData, string language = "en
     // Save PGS data to temporary .sup file
     var tempSupFile = Path.GetTempFileName() + ".sup";
     await File.WriteAllBytesAsync(tempSupFile, pgsData);
-    
+
     try
     {
         // Run pgsrip
         var result = await RunPgsRip(tempSupFile, language);
-        
+
         // Read generated SRT file
         var srtFile = Path.ChangeExtension(tempSupFile, ".srt");
         if (File.Exists(srtFile))
         {
             return await File.ReadAllTextAsync(srtFile);
         }
-        
+
         return result;
     }
     finally
@@ -104,11 +141,11 @@ private async Task<string> RunPgsRip(string supFile, string language)
             CreateNoWindow = true
         }
     };
-    
+
     process.Start();
     var output = await process.StandardOutput.ReadToEndAsync();
     await process.WaitForExitAsync();
-    
+
     return output;
 }
 ```
@@ -126,7 +163,15 @@ docker run -it --rm -v /path/to/subtitles:/data ratoaq2/pgsrip -l eng /data/subt
 Create a Python wrapper service:
 
 ```python
+
 # pgsrip_service.py
+
+
+
+
+
+
+
 import sys
 from pgsrip import pgsrip, Sup, Options
 from babelfish import Language
@@ -145,10 +190,10 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python pgsrip_service.py <sup_file> [language]")
         sys.exit(1)
-    
+
     sup_file = sys.argv[1]
     language = sys.argv[2] if len(sys.argv) > 2 else 'eng'
-    
+
     success = convert_sup_to_srt(sup_file, language)
     sys.exit(0 if success else 1)
 ```
@@ -170,7 +215,7 @@ private async Task<bool> RunPgsRipPython(string supFile, string language)
             CreateNoWindow = true
         }
     };
-    
+
     process.Start();
     await process.WaitForExitAsync();
     return process.ExitCode == 0;
@@ -192,10 +237,25 @@ With pgsrip integration, you should see:
 Compare results using your current method vs pgsrip:
 
 ```bash
+
 # Test with pgsrip
+
+
+
+
+
+
+
 pgsrip --language eng --debug your_video.mkv
 
 # Compare output quality, timing accuracy, and completeness
+
+
+
+
+
+
+
 ```
 
 ## Fallback Strategy
@@ -217,7 +277,7 @@ public async Task<string> ConvertPgsToText(byte[] pgsData, string language = "en
             _logger.LogWarning(ex, "pgsrip failed, falling back to original method");
         }
     }
-    
+
     // Fallback to original implementation
     return await ConvertWithOriginalMethod(pgsData, language);
 }

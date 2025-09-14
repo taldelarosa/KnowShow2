@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Core.Models;
 using EpisodeIdentifier.Core.Services;
 using EpisodeIdentifier.Core.Interfaces;
+using System.IO.Abstractions;
 
 namespace EpisodeIdentifier.Core;
 
@@ -53,10 +54,17 @@ public class Program
             "Store subtitle information in the hash database instead of identifying a video");
         rootCommand.Add(storeOption);
 
-        var bulkOption = new Option<DirectoryInfo>(
+        var bulkStoreOption = new Option<DirectoryInfo>(
             "--bulk-store",
             "Store all subtitle files from a directory, parsing series/season/episode from filenames");
-        rootCommand.Add(bulkOption);
+        rootCommand.Add(bulkStoreOption);
+
+        var bulkIdentifyOption = new Option<DirectoryInfo>(
+            "--bulk-identify",
+            "Process all video files from a directory for episode identification. " +
+            "Recursively searches for video files (.mkv, .mp4, .avi, etc.) and identifies each one. " +
+            "Provides progress feedback and summary results.");
+        rootCommand.Add(bulkIdentifyOption);
 
         var seriesOption = new Option<string>(
             "--series",
@@ -92,6 +100,7 @@ public class Program
         rootCommand.Add(renameOption);
 
         // Add configuration management commands
+        //         rootCommand.AddCommand(EpisodeIdentifier.Core.Commands.ConfigurationCommands.CreateConfigCommands());
         rootCommand.AddCommand(EpisodeIdentifier.Core.Commands.ConfigurationCommands.CreateConfigCommands());
 
         rootCommand.SetHandler(async (context) =>
@@ -99,14 +108,15 @@ public class Program
             var input = context.ParseResult.GetValueForOption(inputOption);
             var hashDb = context.ParseResult.GetValueForOption(hashDbOption);
             var store = context.ParseResult.GetValueForOption(storeOption);
-            var bulkDirectory = context.ParseResult.GetValueForOption(bulkOption);
+            var bulkStoreDirectory = context.ParseResult.GetValueForOption(bulkStoreOption);
+            var bulkIdentifyDirectory = context.ParseResult.GetValueForOption(bulkIdentifyOption);
             var series = context.ParseResult.GetValueForOption(seriesOption);
             var season = context.ParseResult.GetValueForOption(seasonOption);
             var episode = context.ParseResult.GetValueForOption(episodeOption);
             var language = context.ParseResult.GetValueForOption(languageOption);
             var rename = context.ParseResult.GetValueForOption(renameOption);
 
-            Environment.Exit(await HandleCommand(input, hashDb!, store, bulkDirectory, series, season, episode, language, rename));
+            Environment.Exit(await HandleCommand(input, hashDb!, store, bulkStoreDirectory, bulkIdentifyDirectory, series, season, episode, language, rename));
         });
 
         return await rootCommand.InvokeAsync(args);
@@ -116,7 +126,8 @@ public class Program
         FileInfo? input,
         FileInfo hashDb,
         bool store,
-        DirectoryInfo? bulkDirectory,
+        DirectoryInfo? bulkStoreDirectory,
+        DirectoryInfo? bulkIdentifyDirectory,
         string? series,
         string? season,
         string? episode,
@@ -127,15 +138,19 @@ public class Program
         var jsonSerializationOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
         // Validate input parameters
-        if (bulkDirectory != null && input != null)
+        var bulkOptions = new[] { bulkStoreDirectory != null, bulkIdentifyDirectory != null }.Count(x => x);
+        var hasInput = input != null;
+        var totalInputOptions = bulkOptions + (hasInput ? 1 : 0);
+
+        if (totalInputOptions > 1)
         {
-            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "CONFLICTING_OPTIONS", message = "Cannot specify both --input and --bulk-store options" } }, jsonSerializationOptions));
+            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "CONFLICTING_OPTIONS", message = "Cannot specify multiple input options. Use either --input, --bulk-store, or --bulk-identify." } }, jsonSerializationOptions));
             return 1;
         }
 
-        if (bulkDirectory == null && input == null)
+        if (totalInputOptions == 0)
         {
-            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "MISSING_INPUT", message = "Must specify either --input or --bulk-store option" } }, jsonSerializationOptions));
+            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "MISSING_INPUT", message = "Must specify either --input, --bulk-store, or --bulk-identify option" } }, jsonSerializationOptions));
             return 1;
         }
 
@@ -181,7 +196,7 @@ public class Program
         var matcher = new SubtitleMatcher(hashService, loggerFactory.CreateLogger<SubtitleMatcher>(), legacyConfigService);
         var filenameParser = new SubtitleFilenameParser(loggerFactory.CreateLogger<SubtitleFilenameParser>(), legacyConfigService);
         var textExtractor = new VideoTextSubtitleExtractor(loggerFactory.CreateLogger<VideoTextSubtitleExtractor>());
-        var filenameService = new FilenameService();
+        var filenameService = new FilenameService(legacyConfigService);
         var fileRenameService = new FileRenameService();
 
         // Create new episode identification service that supports both legacy and CTPH fuzzy hashing
@@ -233,16 +248,16 @@ public class Program
                 }));
                 return 0;
             }
-            else if (bulkDirectory != null)
+            else if (bulkStoreDirectory != null)
             {
-                if (!bulkDirectory.Exists)
+                if (!bulkStoreDirectory.Exists)
                 {
-                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "DIRECTORY_NOT_FOUND", message = $"Directory not found: {bulkDirectory.FullName}" } }));
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "DIRECTORY_NOT_FOUND", message = $"Directory not found: {bulkStoreDirectory.FullName}" } }));
                     return 1;
                 }
 
                 // Scan directory for subtitle files and parse their information
-                var subtitleFiles = await filenameParser.ScanDirectory(bulkDirectory.FullName);
+                var subtitleFiles = await filenameParser.ScanDirectory(bulkStoreDirectory.FullName);
 
                 if (!subtitleFiles.Any())
                 {
@@ -303,6 +318,98 @@ public class Program
                     results
                 }));
                 return failureCount > 0 ? 1 : 0;
+            }
+            else if (bulkIdentifyDirectory != null)
+            {
+                if (!bulkIdentifyDirectory.Exists)
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "DIRECTORY_NOT_FOUND", message = $"Directory not found: {bulkIdentifyDirectory.FullName}" } }));
+                    return 1;
+                }
+
+                // Use bulk processor service for video file identification
+                var fileSystem = new FileSystem();
+                var fileDiscoveryService = new FileDiscoveryService(fileSystem, loggerFactory.CreateLogger<FileDiscoveryService>());
+                var progressTracker = new ProgressTracker(loggerFactory.CreateLogger<ProgressTracker>());
+
+                // Create the complete video file processing service
+                var videoFileProcessingService = new VideoFileProcessingService(
+                    loggerFactory.CreateLogger<VideoFileProcessingService>(),
+                    validator,
+                    extractor,
+                    pgsConverter,
+                    textExtractor,
+                    episodeIdentificationService,
+                    filenameService,
+                    fileRenameService,
+                    legacyConfigService);
+
+                var bulkProcessor = new BulkProcessorService(
+                    loggerFactory.CreateLogger<BulkProcessorService>(),
+                    fileDiscoveryService,
+                    progressTracker,
+                    videoFileProcessingService);
+
+                var request = new BulkProcessingRequest
+                {
+                    Paths = new List<string> { bulkIdentifyDirectory.FullName },
+                    Options = new BulkProcessingOptions
+                    {
+                        Recursive = true,
+                        IncludeExtensions = new List<string> { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v" },
+                        MaxConcurrency = Environment.ProcessorCount,
+                        ContinueOnError = true
+                    }
+                };
+
+                // Set up progress reporting
+                var progressReporter = new Progress<BulkProcessingProgress>(progress =>
+                {
+                    Console.Error.WriteLine($"Progress: {progress.ProcessedFiles}/{progress.TotalFiles} files " +
+                                          $"({progress.PercentComplete:F1}%) - {progress.CurrentPhase}");
+                    if (!string.IsNullOrEmpty(progress.CurrentFile))
+                    {
+                        Console.Error.WriteLine($"  Processing: {Path.GetFileName(progress.CurrentFile)}");
+                    }
+                });
+
+                try
+                {
+                    var result = await bulkProcessor.ProcessAsync(request, progressReporter);
+
+                    // Output JSON results
+                    var jsonResult = new
+                    {
+                        message = "Bulk identification completed",
+                        status = result.Status.ToString(),
+                        summary = new
+                        {
+                            totalFiles = result.TotalFiles,
+                            processedFiles = result.ProcessedFiles,
+                            failedFiles = result.FailedFiles,
+                            skippedFiles = result.SkippedFiles,
+                            processingTime = result.Duration.ToString(@"mm\:ss")
+                        },
+                        results = result.FileResults.Select(fr => new
+                        {
+                            file = Path.GetFileName(fr.FilePath),
+                            status = fr.Status.ToString(),
+                            error = fr.Error?.Message,
+                            processingTime = fr.ProcessingDuration.ToString(@"ss\.fff"),
+                            // For now, we'll handle identification results as generic objects
+                            // until the actual identification service integration is complete
+                            identificationResults = fr.IdentificationResults.Count > 0 ? fr.IdentificationResults : null
+                        }).ToList()
+                    };
+
+                    Console.WriteLine(JsonSerializer.Serialize(jsonResult, jsonSerializationOptions));
+                    return result.FailedFiles > 0 ? 1 : 0;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "BULK_PROCESSING_FAILED", message = ex.Message } }, jsonSerializationOptions));
+                    return 1;
+                }
             }
             else
             {

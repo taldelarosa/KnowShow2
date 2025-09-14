@@ -33,8 +33,7 @@ public class ConfigurationLoadingTests : IDisposable
         _serviceProvider = services.BuildServiceProvider();
         _logger = _serviceProvider.GetRequiredService<ILogger<ConfigurationLoadingTests>>();
 
-        _testConfigDirectory = Path.Combine(Path.GetTempPath(), "episodeidentifier_tests", Guid.NewGuid().ToString());
-        Directory.CreateDirectory(_testConfigDirectory);
+        _testConfigDirectory = AppContext.BaseDirectory;
     }
 
     [Fact]
@@ -124,9 +123,9 @@ public class ConfigurationLoadingTests : IDisposable
         result.Configuration.Should().BeNull();
         result.Errors.Should().NotBeEmpty();
         result.Errors.Should().Contain(error =>
-            error.Contains("matchConfidenceThreshold") ||
-            error.Contains("renameConfidenceThreshold") ||
-            error.Contains("fuzzyHashThreshold"));
+            error.Contains("MatchConfidenceThreshold") ||
+            error.Contains("RenameConfidenceThreshold") ||
+            error.Contains("FuzzyHashThreshold"));
 
         _logger.LogWarning("Properly validated threshold constraints");
     }
@@ -186,15 +185,23 @@ public class ConfigurationLoadingTests : IDisposable
             hashingAlgorithm = "CTPH",
             filenamePatterns = new
             {
-                primaryPattern = @"^(.+?)\sS(\d+)E(\d+)(?:[\s\.\-]+(.+?))?$",
-                secondaryPattern = @"^(.+?)\s(\d+)x(\d+)(?:[\s\.\-]+(.+?))?$",
-                tertiaryPattern = @"^(.+?)\.S(\d+)\.E(\d+)(?:\.(.+?))?$"
+                primaryPattern = @"^(?<SeriesName>.+?)\sS(?<Season>\d+)E(?<Episode>\d+)(?:[\s\.\-]+(?<EpisodeName>.+?))?$",
+                secondaryPattern = @"^(?<SeriesName>.+?)\s(?<Season>\d+)x(?<Episode>\d+)(?:[\s\.\-]+(?<EpisodeName>.+?))?$",
+                tertiaryPattern = @"^(?<SeriesName>.+?)\.S(?<Season>\d+)\.E(?<Episode>\d+)(?:\.(?<EpisodeName>.+?))?$"
             },
             filenameTemplate = "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}"
         };
 
-        var configPath = Path.Combine(_testConfigDirectory, "valid_config.json");
+        var configPath = Path.Combine(_testConfigDirectory, "episodeidentifier.config.json");
         var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+        
+        // Ensure directory exists
+        var directory = Path.GetDirectoryName(configPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+        
         File.WriteAllText(configPath, json);
         _testFilesToCleanup.Add(configPath);
 
@@ -203,7 +210,15 @@ public class ConfigurationLoadingTests : IDisposable
 
     private string CreateInvalidJsonConfig()
     {
-        var configPath = Path.Combine(_testConfigDirectory, "invalid_config.json");
+        var configPath = Path.Combine(_testConfigDirectory, "episodeidentifier.config.json");
+        
+        // Ensure directory exists
+        var directory = Path.GetDirectoryName(configPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+        
         File.WriteAllText(configPath, "{ invalid json syntax missing quotes and commas }");
         _testFilesToCleanup.Add(configPath);
 
@@ -221,8 +236,16 @@ public class ConfigurationLoadingTests : IDisposable
             hashingAlgorithm = "CTPH"
         };
 
-        var configPath = Path.Combine(_testConfigDirectory, "invalid_thresholds_config.json");
+        var configPath = Path.Combine(_testConfigDirectory, "episodeidentifier.config.json");
         var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+        
+        // Ensure directory exists
+        var directory = Path.GetDirectoryName(configPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+        
         File.WriteAllText(configPath, json);
         _testFilesToCleanup.Add(configPath);
 
@@ -238,8 +261,16 @@ public class ConfigurationLoadingTests : IDisposable
             // Missing required fields: filenameTemplate, filenamePatterns
         };
 
-        var configPath = Path.Combine(_testConfigDirectory, "missing_fields_config.json");
+        var configPath = Path.Combine(_testConfigDirectory, "episodeidentifier.config.json");
         var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+        
+        // Ensure directory exists
+        var directory = Path.GetDirectoryName(configPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+        
         File.WriteAllText(configPath, json);
         _testFilesToCleanup.Add(configPath);
 
@@ -257,12 +288,19 @@ public class ConfigurationLoadingTests : IDisposable
             hashingAlgorithm = "CTPH",
             filenamePatterns = new
             {
-                primaryPattern = @"^(.+?)\sS(\d+)E(\d+)(?:[\s\.\-]+(.+?))?$",
-                secondaryPattern = @"^(.+?)\s(\d+)x(\d+)(?:[\s\.\-]+(.+?))?$",
-                tertiaryPattern = @"^(.+?)\.S(\d+)\.E(\d+)(?:\.(.+?))?$"
+                primaryPattern = @"^(?<SeriesName>.+?)\sS(?<Season>\d+)E(?<Episode>\d+)(?:[\s\.\-]+(?<EpisodeName>.+?))?$",
+                secondaryPattern = @"^(?<SeriesName>.+?)\s(?<Season>\d+)x(?<Episode>\d+)(?:[\s\.\-]+(?<EpisodeName>.+?))?$",
+                tertiaryPattern = @"^(?<SeriesName>.+?)\.S(?<Season>\d+)\.E(?<Episode>\d+)(?:\.(?<EpisodeName>.+?))?$"
             },
             filenameTemplate = "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}"
         };
+
+        // Ensure directory exists
+        var directory = Path.GetDirectoryName(configPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
 
         var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(configPath, json);
@@ -280,18 +318,6 @@ public class ConfigurationLoadingTests : IDisposable
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to cleanup test file: {FilePath}", file);
-            }
-        }
-
-        if (Directory.Exists(_testConfigDirectory))
-        {
-            try
-            {
-                Directory.Delete(_testConfigDirectory, true);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to cleanup test directory: {DirectoryPath}", _testConfigDirectory);
             }
         }
 

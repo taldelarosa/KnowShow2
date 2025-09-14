@@ -21,7 +21,15 @@
 ## Example
 
 ```sh
+
 # Example command
+
+
+
+
+
+
+
 ./identify-episode --input "MyShow_S01E02.mkv" --hash-db "./hashes.sqlite"
 ```
 

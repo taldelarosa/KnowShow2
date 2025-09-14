@@ -17,8 +17,19 @@ public class FilenameServiceContractTests
 
     public FilenameServiceContractTests()
     {
-        // This will fail until FilenameService is implemented
-        _filenameService = new FilenameService();
+        var mockConfigService = new TestAppConfigService();
+        _filenameService = new FilenameService(mockConfigService);
+    }
+
+    private class TestAppConfigService : IAppConfigService
+    {
+        public AppConfig Config => new AppConfig
+        {
+            RenameConfidenceThreshold = 0.9
+        };
+
+        public Task LoadConfigurationAsync(string? configPath = null) => Task.CompletedTask;
+        public Task SaveConfigurationAsync(string? configPath = null) => Task.CompletedTask;
     }
 
     [Fact]

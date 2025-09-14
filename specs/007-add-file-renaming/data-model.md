@@ -27,7 +27,7 @@ public class IdentificationResult
     // Existing computed properties
     public bool IsAmbiguous => MatchConfidence < 0.9 && !string.IsNullOrEmpty(AmbiguityNotes);
     public bool HasError => Error != null;
-    
+
     // NEW: Computed property
     public bool HasSuggestedFilename => !string.IsNullOrEmpty(SuggestedFilename);
 }
@@ -127,14 +127,14 @@ public class DatabaseMigration_007
     public static void AddEpisodeNameColumn(SqliteConnection connection)
     {
         using var command = connection.CreateCommand();
-        
+
         // Check if column exists
         command.CommandText = @"
-            SELECT COUNT(*) FROM pragma_table_info('SubtitleHashes') 
+            SELECT COUNT(*) FROM pragma_table_info('SubtitleHashes')
             WHERE name='EpisodeName'";
-        
+
         var exists = (long)command.ExecuteScalar() > 0;
-        
+
         if (!exists)
         {
             command.CommandText = "ALTER TABLE SubtitleHashes ADD COLUMN EpisodeName TEXT NULL";
@@ -157,7 +157,7 @@ public class DatabaseMigration_007
 ### Data Flow
 
 ```
-Video File 
+Video File
     → Episode Identification (with confidence)
     → [High Confidence?] → Filename Generation
     → Suggested Filename in JSON Response
@@ -254,7 +254,7 @@ public static class FilenameDefaults
     public const double MinConfidenceThreshold = 0.9;
     public const string FilenamePattern = "{Series} - S{Season:D2}E{Episode:D2}{EpisodeName}.{Extension}";
     public const string FallbackPattern = "{Series} - S{Season:D2}E{Episode:D2}.{Extension}";
-    
+
     public static readonly char[] WindowsInvalidChars = { '<', '>', ':', '"', '|', '?', '*', '\\' };
     public const char ReplacementChar = ' ';
 }

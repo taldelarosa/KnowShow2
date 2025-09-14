@@ -6,6 +6,7 @@
 ## Execution Flow (main)
 
 ```
+
 1. Load plan.md from feature directory
 2. Load optional design documents: data-model.md, contracts/, research.md, quickstart.md
 3. Generate tasks by category: setup, tests, core, integration, polish

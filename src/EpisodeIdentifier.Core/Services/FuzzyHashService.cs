@@ -401,14 +401,6 @@ public class FuzzyHashService : IDisposable
             {
                 confidence = Math.Max(confidence, CompareFuzzyHashes(inputHashes.CleanHash, storedHashes.CleanHash));
 
-                // Debug output for specific episode we're looking for
-                if (subtitle.Series == "Bones" && subtitle.Season == "12" && subtitle.Episode == "1")
-                {
-                    _logger.LogInformation("DEBUG: Bones S12E1 clean hash comparison: {Confidence:P2}", confidence);
-                    _logger.LogInformation("DEBUG: Input hash sample: {InputHash}", inputHashes.CleanHash.Substring(0, Math.Min(100, inputHashes.CleanHash.Length)));
-                    _logger.LogInformation("DEBUG: Stored hash sample: {StoredHash}", storedHashes.CleanHash.Substring(0, Math.Min(100, storedHashes.CleanHash.Length)));
-                }
-
                 // Early check: if clean comparison is already above threshold, we have a good match
                 if (confidence >= threshold)
                 {
@@ -546,7 +538,7 @@ public class FuzzyHashService : IDisposable
             // Debug output for top matches
             if (confidence > 0.05) // Only log matches above 5%
             {
-                _logger.LogInformation("DEBUG: {Series} S{Season}E{Episode} confidence: {Confidence:P2}",
+                _logger.LogInformation("INFO: {Series} S{Season}E{Episode} confidence: {Confidence:P2}",
                     subtitle.Series, subtitle.Season, subtitle.Episode, confidence);
             }
 

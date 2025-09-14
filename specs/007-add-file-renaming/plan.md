@@ -6,21 +6,62 @@
 ## Execution Flow (/plan command scope)
 
 ```
+
 1. Load feature spec from Input path
    → If not found: ERROR "No feature spec at {path}"
+
+
+
+
+
+
+
+
 2. Fill Technical Context (scan for NEEDS CLARIFICATION)
    → Detect Project Type from context (web=frontend+backend, mobile=app+api)
+
+
+
+
+
+
+
    → Set Structure Decision based on project type
+
 3. Evaluate Constitution Check section below
    → If violations exist: Document in Complexity Tracking
+
+
+
+
+
+
+
    → If no justification possible: ERROR "Simplify approach first"
    → Update Progress Tracking: Initial Constitution Check
+
 4. Execute Phase 0 → research.md
    → If NEEDS CLARIFICATION remain: ERROR "Resolve unknowns"
+
+
+
+
+
+
+
+
 5. Execute Phase 1 → contracts, data-model.md, quickstart.md, agent-specific template file (e.g., `CLAUDE.md` for Claude Code, `.github/copilot-instructions.md` for GitHub Copilot, or `GEMINI.md` for Gemini CLI).
 6. Re-evaluate Constitution Check section
    → If new violations: Refactor design, return to Phase 1
+
+
+
+
+
+
+
    → Update Progress Tracking: Post-Design Constitution Check
+
 7. Plan Phase 2 → Describe task generation approach (DO NOT create tasks.md)
 8. STOP - Ready for /tasks command
 ```
@@ -36,14 +77,14 @@ The file renaming recommendations feature enhances the episode identification sy
 
 ## Technical Context
 
-**Language/Version**: C# 8.0 with .NET 8.0 SDK  
-**Primary Dependencies**: Microsoft.Data.Sqlite, Microsoft.Extensions.Logging, System.CommandLine, FuzzySharp  
-**Storage**: SQLite database for fuzzy hash storage and subtitle metadata  
-**Testing**: NUnit with contract, integration, and unit test layers  
-**Target Platform**: Linux (primary), Windows filesystem compatibility required  
-**Project Type**: Single project (console application with library structure)  
-**Performance Goals**: Filename generation <10ms, Windows filesystem compliance  
-**Constraints**: 260-character Windows filename limit, Windows-disallowed character replacement  
+**Language/Version**: C# 8.0 with .NET 8.0 SDK
+**Primary Dependencies**: Microsoft.Data.Sqlite, Microsoft.Extensions.Logging, System.CommandLine, FuzzySharp
+**Storage**: SQLite database for fuzzy hash storage and subtitle metadata
+**Testing**: NUnit with contract, integration, and unit test layers
+**Target Platform**: Linux (primary), Windows filesystem compatibility required
+**Project Type**: Single project (console application with library structure)
+**Performance Goals**: Filename generation <10ms, Windows filesystem compliance
+**Constraints**: 260-character Windows filename limit, Windows-disallowed character replacement
 **Scale/Scope**: Per-request filename generation, database schema migration, CLI parameter addition
 
 ## Constitution Check
@@ -102,7 +143,15 @@ specs/[###-feature]/
 ### Source Code (repository root)
 
 ```
+
 # Option 1: Single project (DEFAULT)
+
+
+
+
+
+
+
 src/
 ├── models/
 ├── services/
@@ -115,6 +164,13 @@ tests/
 └── unit/
 
 # Option 2: Web application (when "frontend" + "backend" detected)
+
+
+
+
+
+
+
 backend/
 ├── src/
 │   ├── models/
@@ -130,6 +186,13 @@ frontend/
 └── tests/
 
 # Option 3: Mobile + API (when "iOS/Android" detected)
+
+
+
+
+
+
+
 api/
 └── [same as backend above]
 
@@ -231,8 +294,8 @@ ios/ or android/
 
 *These phases are beyond the scope of the /plan command*
 
-**Phase 3**: Task execution (/tasks command creates tasks.md)  
-**Phase 4**: Implementation (execute tasks.md following constitutional principles)  
+**Phase 3**: Task execution (/tasks command creates tasks.md)
+**Phase 4**: Implementation (execute tasks.md following constitutional principles)
 **Phase 5**: Validation (run tests, execute quickstart.md, performance validation)
 
 ## Complexity Tracking
