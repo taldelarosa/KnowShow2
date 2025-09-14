@@ -7,13 +7,35 @@ This application identifies Season and Episode numbers from AV1 encoded video fi
 **⚡ One-Command Setup:**
 
 ```bash
+
 # Check what's needed
+
+
+
+
+
+
+
 ./scripts/setup-prerequisites.sh --check-only
 
-# Install everything automatically (requires sudo)  
+# Install everything automatically (requires sudo)
+
+
+
+
+
+
+
 ./scripts/setup-prerequisites.sh --install
 
 # Build and test
+
+
+
+
+
+
+
 cd src/EpisodeIdentifier.Core && dotnet build
 dotnet test
 ```
@@ -31,14 +53,53 @@ dotnet test
 **⚠️ Important**: This project uses a **feature branch workflow** with branch protection:
 
 ```bash
+
 # ✅ Correct workflow
+
+
+
+
+
+
+
 git checkout -b 005-new-feature    # Create feature branch
+
 # Make changes...
+
+
+
+
+
+
+
 git push origin 005-new-feature    # Push feature branch
+
 # Create Pull Request via GitHub
+
+
+
+
+
+
+
+
 # Get code review → Merge via PR
 
+
+
+
+
+
+
+
 # ❌ Direct pushes to main are blocked
+
+
+
+
+
+
+
 git push origin main  # This will fail!
 ```
 
@@ -59,9 +120,22 @@ git push origin main  # This will fail!
 # C# code formatting
 dotnet format EpisodeIdentifier.sln
 
-# Markdown documentation linting  
-npx markdownlint-cli2 "**/*.md" --fix
+# Markdown documentation linting (manual check)
+./scripts/lint-markdown.sh --fix
+# or directly: markdownlint --config .markdownlint.json '**/*.md' --fix
 ```
+
+**Configuration Files:**
+
+- `.markdownlint.json` - Markdown linting rules optimized for technical documentation
+- Solution-wide formatting enforced via `dotnet format`
+
+**Automatic CI Enforcement:**
+
+- Markdown linting runs on every build with auto-fix enabled
+- If auto-fixes are needed, the CI will fail and show required changes
+- All fixable markdown issues are resolved automatically during CI
+- Contributors should run `markdownlint --fix` locally before committing
 
 **Configuration Files:**
 
@@ -78,7 +152,7 @@ npx markdownlint-cli2 "**/*.md" --fix
 
 **Quality Gates:**
 
-- ✅ .NET Code formatting validation via `dotnet format`  
+- ✅ .NET Code formatting validation via `dotnet format`
 - ✅ Markdown documentation linting via `markdownlint-cli2`
 - ✅ Automated security scanning with Trivy
 - ✅ Dependency caching for faster builds
@@ -125,16 +199,45 @@ npx markdownlint-cli2 "**/*.md" --fix
 ### Required External Tools
 
 ```bash
+
 # Video processing
+
+
+
+
+
+
+
 sudo apt-get install ffmpeg mkvtoolnix-cli
 
-# OCR processing  
+# OCR processing
+
+
+
+
+
+
+
 sudo apt-get install tesseract-ocr tesseract-ocr-eng
 
 # Additional language packs (optional)
+
+
+
+
+
+
+
 sudo apt-get install tesseract-ocr-spa tesseract-ocr-fra tesseract-ocr-deu
 
 # Advanced PGS processor (recommended)
+
+
+
+
+
+
+
 pip install pgsrip
 ```
 
@@ -185,7 +288,7 @@ dotnet run -- --input subtitle.txt --hash-db hashes.sqlite --store --series "Sho
 | `--language` | Preferred subtitle language | ❌ | eng |
 | `--rename` | Automatically rename file to suggested filename | ❌ | false |
 
-*Required for identification mode  
+*Required for identification mode
 **Required when using `--store`
 
 ## Supported Languages
@@ -214,7 +317,7 @@ The application supports multiple subtitle languages through Tesseract OCR:
 ```json
 {
   "series": "Example Show",
-  "season": "01", 
+  "season": "01",
   "episode": "02",
   "matchConfidence": 0.95,
   "suggestedFilename": "Example Show - S01E02 - Episode Title.mkv",
@@ -228,7 +331,7 @@ The application supports multiple subtitle languages through Tesseract OCR:
 ```json
 {
   "series": "Example Show",
-  "season": "01", 
+  "season": "01",
   "episode": "02",
   "matchConfidence": 0.95,
   "suggestedFilename": "Example Show - S01E02 - Episode Title.mkv",
@@ -244,7 +347,7 @@ The application supports multiple subtitle languages through Tesseract OCR:
 ```json
 {
   "series": "Example Show",
-  "season": "01", 
+  "season": "01",
   "episode": "02",
   "matchConfidence": 0.75,
   "ambiguityNotes": "Multiple possible matches found",
@@ -257,7 +360,7 @@ The application supports multiple subtitle languages through Tesseract OCR:
 ```json
 {
   "series": "Example Show",
-  "season": "01", 
+  "season": "01",
   "episode": "02",
   "matchConfidence": 0.95,
   "suggestedFilename": "Example Show - S01E02 - Episode Title.mkv",
@@ -286,7 +389,7 @@ The application supports multiple subtitle languages through Tesseract OCR:
 ```json
 {
   "error": {
-    "code": "MISSING_DEPENDENCY", 
+    "code": "MISSING_DEPENDENCY",
     "message": "Tesseract OCR is required but not available. Please install tesseract-ocr."
   }
 }
@@ -382,17 +485,40 @@ dotnet test tests/contract/
 **"Command not found" or missing dependencies**
 
 ```bash
+
 # Run the comprehensive setup checker
+
+
+
+
+
+
+
 ./scripts/setup-prerequisites.sh --check-only --verbose
 
-# Install any missing dependencies  
+# Install any missing dependencies
+
+
+
+
+
+
+
 ./scripts/setup-prerequisites.sh --install
 ```
 
 **"Permission denied" when running setup**
 
 ```bash
+
 # Make the script executable
+
+
+
+
+
+
+
 chmod +x scripts/setup-prerequisites.sh
 ```
 

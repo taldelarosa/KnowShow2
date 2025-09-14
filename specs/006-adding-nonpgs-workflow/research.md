@@ -55,7 +55,7 @@
 - Handle encoding variations (UTF-8, UTF-16, Latin-1)
 - Strip HTML-like tags if present
 
-### ASS Format Processing  
+### ASS Format Processing
 
 **Pattern**: Complex script format with events section
 
@@ -130,7 +130,7 @@
 All subtitle parsing can be implemented with .NET standard libraries:
 
 - Regex for SRT parsing
-- String manipulation for ASS parsing  
+- String manipulation for ASS parsing
 - Built-in text processing for VTT
 
 This maintains the project's principle of minimal external dependencies.

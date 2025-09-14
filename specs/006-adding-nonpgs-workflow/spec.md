@@ -1,30 +1,79 @@
 # Feature Specification: NonPGS Subtitle Workflow
 
-**Feature Branch**: `006-adding-nonpgs-workflow`  
-**Created**: September 8, 2025  
-**Status**: ✅ IMPLEMENTED AND TESTED  
-**Implementation Date**: September 8, 2025  
-**Test Results**: 46/46 tests passing (8 unit + 8 integration + 30 contract)  
+**Feature Branch**: `006-adding-nonpgs-workflow`
+**Created**: September 8, 2025
+**Status**: ✅ IMPLEMENTED AND TESTED
+**Implementation Date**: September 8, 2025
+**Test Results**: 46/46 tests passing (8 unit + 8 integration + 30 contract)
 **Input**: User description: "Adding nonPGS workflow. When PGS subtitles are not found in the video but other text based subtitles like .srt are found they are directly extracted and then we do the normal workflow where we compare to the sqlite db entries and provide the matching series/season/episode"
 
 ## Execution Flow (main)
 
 ```
+
 1. Parse user description from Input
    → If empty: ERROR "No feature description provided"
+
+
+
+
+
+
+
+
 2. Extract key concepts from description
    → Identify: actors, actions, data, constraints
+
+
+
+
+
+
+
+
 3. For each unclear aspect:
    → Mark with [NEEDS CLARIFICATION: specific question]
+
+
+
+
+
+
+
+
 4. Fill User Scenarios & Testing section
    → If no clear user flow: ERROR "Cannot determine user scenarios"
+
+
+
+
+
+
+
+
 5. Generate Functional Requirements
    → Each requirement must be testable
+
+
+
+
+
+
+
    → Mark ambiguous requirements
+
 6. Identify Key Entities (if data involved)
 7. Run Review Checklist
    → If any [NEEDS CLARIFICATION]: WARN "Spec has uncertainties"
+
+
+
+
+
+
+
    → If implementation details found: ERROR "Remove tech details"
+
 8. Return: SUCCESS (spec ready for planning)
 ```
 
@@ -53,7 +102,7 @@ When creating this spec from a user prompt:
 3. **Think like a tester**: Every vague requirement should fail the "testable and unambiguous" checklist item
 4. **Common underspecified areas**:
    - User types and permissions
-   - Data retention/deletion policies  
+   - Data retention/deletion policies
    - Performance targets and scale
    - Error handling behaviors
    - Integration requirements
@@ -102,14 +151,14 @@ A user has a video file that does not contain PGS (Presentation Graphic Stream) 
 
 - **Text Subtitle Track** (`TextSubtitleTrack.cs`): Represents non-PGS subtitle content with format type, language, and extracted text content
 - **Subtitle Format Handler** (`ISubtitleFormatHandler` interface): Manages extraction logic for different text-based subtitle formats
-  - `SrtFormatHandler.cs`: Handles SubRip (.srt) format with regex-based parsing
-  - `AssFormatHandler.cs`: Handles Advanced SubStation Alpha (.ass) format
+    - `SrtFormatHandler.cs`: Handles SubRip (.srt) format with regex-based parsing
+    - `AssFormatHandler.cs`: Handles Advanced SubStation Alpha (.ass) format
 
 - **Text Subtitle Track** (`TextSubtitleTrack.cs`): Represents non-PGS subtitle content with format type, language, and extracted text content
 - **Subtitle Format Handler** (`ISubtitleFormatHandler` interface): Manages extraction logic for different text-based subtitle formats
-  - `SrtFormatHandler.cs`: Handles SubRip (.srt) format with regex-based parsing
-  - `AssFormatHandler.cs`: Handles Advanced SubStation Alpha (.ass) format
-  - `VttFormatHandler.cs`: Handles WebVTT (.vtt) format
+    - `SrtFormatHandler.cs`: Handles SubRip (.srt) format with regex-based parsing
+    - `AssFormatHandler.cs`: Handles Advanced SubStation Alpha (.ass) format
+    - `VttFormatHandler.cs`: Handles WebVTT (.vtt) format
 - **Subtitle Processing Result** (`SubtitleParsingResult.cs`): Contains identification results with metadata indicating which subtitle source was used
 - **Interface Architecture**: Clean separation with `ISubtitleExtractor` and `ISubtitleMatcher` interfaces
 
@@ -141,7 +190,7 @@ A user has a video file that does not contain PGS (Presentation Graphic Stream) 
 ### Requirement Completeness
 
 - [ ] No [NEEDS CLARIFICATION] markers remain
-- [ ] Requirements are testable and unambiguous  
+- [ ] Requirements are testable and unambiguous
 - [ ] Success criteria are measurable
 - [ ] Scope is clearly bounded
 - [ ] Dependencies and assumptions identified
@@ -153,7 +202,7 @@ A user has a video file that does not contain PGS (Presentation Graphic Stream) 
 *Updated by main() during processing and implementation*
 
 - [x] User description parsed
-- [x] Key concepts extracted  
+- [x] Key concepts extracted
 - [x] Ambiguities marked (resolved during implementation)
 - [x] User scenarios defined
 - [x] Requirements generated
@@ -178,29 +227,29 @@ A user has a video file that does not contain PGS (Presentation Graphic Stream) 
 #### GitHub Actions Workflow Improvements
 
 - **Updated Deprecated Actions**:
-  - `actions/upload-artifact@v3` → `v4`
-  - `actions/cache@v3` → `v4`
-  - `github/codeql-action/upload-sarif@v2` → `v3`
+    - `actions/upload-artifact@v3` → `v4`
+    - `actions/cache@v3` → `v4`
+    - `github/codeql-action/upload-sarif@v2` → `v3`
 - **Build Strategy Optimization**:
-  - Solution-based building using `EpisodeIdentifier.sln`
-  - Individual project builds for working test projects
-  - Temporary exclusion of failing integration tests with compilation issues
+    - Solution-based building using `EpisodeIdentifier.sln`
+    - Individual project builds for working test projects
+    - Temporary exclusion of failing integration tests with compilation issues
 
 #### Code Quality & Formatting
 
 - **Automated .NET Formatting**: Applied `dotnet format` across 27 files with 323 insertions/307 deletions
 - **Markdown Linting Implementation**:
-  - Added `markdownlint-cli2` with automatic fixes applied to 32 markdown files
-  - Created comprehensive `.markdownlint.json` configuration with permissive rules for technical documentation
-  - Resolved thousands of markdown violations including MD022 (headings require blank lines)
-  - Disabled problematic rules: MD013 (line length), MD033 (inline HTML), MD036 (emphasis as heading), MD024 (duplicate headings), MD040 (code language), MD029 (list prefix), MD025 (single H1), MD041 (first line heading)
+    - Added `markdownlint-cli2` with automatic fixes applied to 32 markdown files
+    - Created comprehensive `.markdownlint.json` configuration with permissive rules for technical documentation
+    - Resolved thousands of markdown violations including MD022 (headings require blank lines)
+    - Disabled problematic rules: MD013 (line length), MD033 (inline HTML), MD036 (emphasis as heading), MD024 (duplicate headings), MD040 (code language), MD029 (list prefix), MD025 (single H1), MD041 (first line heading)
 
 #### Testing Infrastructure
 
 - **Test Execution Strategy**:
-  - Unit Tests: 8 passing (MSTest framework)
-  - Contract Tests: 30 passing (xUnit framework)
-  - Integration Tests: Temporarily disabled due to API compatibility issues
+    - Unit Tests: 8 passing (MSTest framework)
+    - Contract Tests: 30 passing (xUnit framework)
+    - Integration Tests: Temporarily disabled due to API compatibility issues
 - **CI Pipeline**: Tests run successfully in GitHub Actions with `--no-build` strategy after solution-wide build
 
 #### NPM Environment

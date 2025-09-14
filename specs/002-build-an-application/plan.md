@@ -7,21 +7,62 @@
 ## Execution Flow (/plan command scope)
 
 ```
+
 1. Load feature spec from Input path
    → If not found: ERROR "No feature spec at {path}"
+
+
+
+
+
+
+
+
 2. Fill Technical Context (scan for NEEDS CLARIFICATION)
    → Detect Project Type from context (web=frontend+backend, mobile=app+api)
+
+
+
+
+
+
+
    → Set Structure Decision based on project type
+
 3. Evaluate Constitution Check section below
    → If violations exist: Document in Complexity Tracking
+
+
+
+
+
+
+
    → If no justification possible: ERROR "Simplify approach first"
    → Update Progress Tracking: Initial Constitution Check
+
 4. Execute Phase 0 → research.md
    → If NEEDS CLARIFICATION remain: ERROR "Resolve unknowns"
+
+
+
+
+
+
+
+
 5. Execute Phase 1 → contracts, data-model.md, quickstart.md, agent-specific template file (e.g., `CLAUDE.md` for Claude Code, `.github/copilot-instructions.md` for GitHub Copilot, or `GEMINI.md` for Gemini CLI).
 6. Re-evaluate Constitution Check section
    → If new violations: Refactor design, return to Phase 1
+
+
+
+
+
+
+
    → Update Progress Tracking: Post-Design Constitution Check
+
 7. Plan Phase 2 → Describe task generation approach (DO NOT create tasks.md)
 8. STOP - Ready for /tasks command
 ```
@@ -44,14 +85,14 @@ This feature provides a CLI-only tool to identify the Season and Episode of an A
 
 ## Technical Context
 
-**Language/Version**: C# (latest stable)  
-**Primary Dependencies**: ffmpeg, mkvextract, sqlite3, fuzzy hash tool (e.g., ssdeep), .NET CLI  
-**Storage**: Text files (subtitles), SQLite (hashes)  
-**Testing**: .NET test, CLI contract tests, integration tests  
-**Target Platform**: Linux server  
-**Project Type**: single (CLI tool, supporting libraries)  
-**Performance Goals**: Fast enough for automation; <5s per file typical  
-**Constraints**: CLI-only, JSON output, no interactive prompts, must run in automated workflows  
+**Language/Version**: C# (latest stable)
+**Primary Dependencies**: ffmpeg, mkvextract, sqlite3, fuzzy hash tool (e.g., ssdeep), .NET CLI
+**Storage**: Text files (subtitles), SQLite (hashes)
+**Testing**: .NET test, CLI contract tests, integration tests
+**Target Platform**: Linux server
+**Project Type**: single (CLI tool, supporting libraries)
+**Performance Goals**: Fast enough for automation; <5s per file typical
+**Constraints**: CLI-only, JSON output, no interactive prompts, must run in automated workflows
 **Scale/Scope**: Single-user, batch/automation use, local or mounted file shares
 
 ## Git Workflow Requirements
@@ -61,9 +102,9 @@ This feature provides a CLI-only tool to identify the Season and Episode of an A
 - **Main branch**: Protected, no direct pushes allowed
 - **Feature branches**: Named `###-feature-description` (e.g., `005-add-ocr-optimization`)
 - **Pull Requests**: Required for all merges to main with:
-  - Code review (minimum 1 approval)
-  - All checks passing (tests, linting, build)
-  - Branch up-to-date with main
+    - Code review (minimum 1 approval)
+    - All checks passing (tests, linting, build)
+    - Branch up-to-date with main
 - **Branch protection**: Enforced via GitHub rules (see `.github/` configuration)
 - **Infrastructure as Code**: Repository settings defined in `.github/repository-config.yml`
 - **Automated deployment**: Use `./scripts/setup-branch-protection.sh` to apply settings
@@ -133,7 +174,15 @@ specs/[###-feature]/
 ### Source Code (repository root)
 
 ```
+
 # Option 1: Single project (DEFAULT)
+
+
+
+
+
+
+
 src/
 ├── models/
 ├── services/
@@ -146,6 +195,13 @@ tests/
 └── unit/
 
 # Option 2: Web application (when "frontend" + "backend" detected)
+
+
+
+
+
+
+
 backend/
 ├── src/
 │   ├── models/
@@ -161,6 +217,13 @@ frontend/
 └── tests/
 
 # Option 3: Mobile + API (when "iOS/Android" detected)
+
+
+
+
+
+
+
 api/
 └── [same as backend above]
 
@@ -186,8 +249,8 @@ The /tasks command will generate tasks based on contracts, data model, and quick
 
 *These phases are beyond the scope of the /plan command*
 
-**Phase 3**: Task execution (/tasks command creates tasks.md)  
-**Phase 4**: Implementation (execute tasks.md following constitutional principles)  
+**Phase 3**: Task execution (/tasks command creates tasks.md)
+**Phase 4**: Implementation (execute tasks.md following constitutional principles)
 **Phase 5**: Validation (run tests, execute quickstart.md, performance validation)
 
 ## Complexity Tracking

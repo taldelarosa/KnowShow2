@@ -19,18 +19,18 @@ public class FilenameGenerationRequest
 {
     [Required]
     public string Series { get; set; }        // Required, non-empty
-    
+
     [Required]
     public string Season { get; set; }        // Required, format: "01", "02", etc.
-    
-    [Required] 
+
+    [Required]
     public string Episode { get; set; }       // Required, format: "01", "02", etc.
-    
+
     public string? EpisodeName { get; set; }  // Optional episode name
-    
+
     [Required]
     public string FileExtension { get; set; } // Required, e.g., ".mkv", ".mp4"
-    
+
     [Range(0.0, 1.0)]
     public double MatchConfidence { get; set; } // Must be ≥ 0.9 for generation
 }
@@ -111,10 +111,10 @@ string TruncateToLimit(string filename, int maxLength = 260)
 ```csharp
 // All required fields must be non-null and non-empty
 if (string.IsNullOrWhiteSpace(request.Series))
-    return new FilenameGenerationResult 
-    { 
-        IsValid = false, 
-        ValidationError = "Series name is required" 
+    return new FilenameGenerationResult
+    {
+        IsValid = false,
+        ValidationError = "Series name is required"
     };
 ```
 
@@ -123,10 +123,10 @@ if (string.IsNullOrWhiteSpace(request.Series))
 ```csharp
 // Season and Episode must be numeric strings
 if (!int.TryParse(request.Season, out int seasonNum) || seasonNum < 1)
-    return new FilenameGenerationResult 
-    { 
-        IsValid = false, 
-        ValidationError = "Invalid season format" 
+    return new FilenameGenerationResult
+    {
+        IsValid = false,
+        ValidationError = "Invalid season format"
     };
 ```
 
@@ -135,10 +135,10 @@ if (!int.TryParse(request.Season, out int seasonNum) || seasonNum < 1)
 ```csharp
 // Extension must start with dot and be valid
 if (!request.FileExtension.StartsWith(".") || request.FileExtension.Length < 2)
-    return new FilenameGenerationResult 
-    { 
-        IsValid = false, 
-        ValidationError = "Invalid file extension format" 
+    return new FilenameGenerationResult
+    {
+        IsValid = false,
+        ValidationError = "Invalid file extension format"
     };
 ```
 
@@ -147,7 +147,7 @@ if (!request.FileExtension.StartsWith(".") || request.FileExtension.Length < 2)
 ### Step 1: Format Construction
 
 ```csharp
-string baseFormat = EpisodeName != null 
+string baseFormat = EpisodeName != null
     ? "{Series} - S{Season:D2}E{Episode:D2} - {EpisodeName}"
     : "{Series} - S{Season:D2}E{Episode:D2}";
 ```
@@ -231,10 +231,10 @@ result.TotalLength = result.SuggestedFilename.Length;
 
 ```csharp
 // Standard case with episode name
-new FilenameGenerationRequest 
+new FilenameGenerationRequest
 {
     Series = "Breaking Bad",
-    Season = "01", 
+    Season = "01",
     Episode = "05",
     EpisodeName = "Gray Matter",
     FileExtension = ".mkv",
@@ -243,11 +243,11 @@ new FilenameGenerationRequest
 // Expected: "Breaking Bad - S01E05 - Gray Matter.mkv"
 
 // No episode name
-new FilenameGenerationRequest 
+new FilenameGenerationRequest
 {
     Series = "The Office",
     Season = "02",
-    Episode = "01", 
+    Episode = "01",
     EpisodeName = null,
     FileExtension = ".mp4",
     MatchConfidence = 0.92
@@ -291,7 +291,7 @@ Series = ""
 - Handles null episode names gracefully
 - No direct database dependencies (data passed via request)
 
-### CLI Integration  
+### CLI Integration
 
 - Called from Program.cs after successful episode identification
 - Result.SuggestedFilename added to JSON response

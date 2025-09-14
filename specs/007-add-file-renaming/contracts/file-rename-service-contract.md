@@ -19,10 +19,10 @@ public class FileRenameRequest
 {
     [Required]
     public string OriginalPath { get; set; }      // Full path to source file
-    
+
     [Required]
     public string SuggestedFilename { get; set; } // Target filename (name only, not path)
-    
+
     public bool ForceOverwrite { get; set; } = false; // Allow overwriting existing files
 }
 ```
@@ -82,8 +82,8 @@ string GetTargetPath(string originalPath, string suggestedFilename)
 ```csharp
 // Input validation
 if (string.IsNullOrWhiteSpace(request.OriginalPath))
-    return new FileRenameResult 
-    { 
+    return new FileRenameResult
+    {
         Success = false,
         ErrorType = FileRenameError.InvalidPath,
         ErrorMessage = "Original path cannot be empty"
@@ -91,8 +91,8 @@ if (string.IsNullOrWhiteSpace(request.OriginalPath))
 
 // File existence check
 if (!File.Exists(request.OriginalPath))
-    return new FileRenameResult 
-    { 
+    return new FileRenameResult
+    {
         Success = false,
         ErrorType = FileRenameError.FileNotFound,
         ErrorMessage = $"Source file not found: {request.OriginalPath}"
@@ -107,8 +107,8 @@ string targetPath = Path.Combine(directory, request.SuggestedFilename);
 
 // Path length validation
 if (targetPath.Length > 260)  // Windows path limit
-    return new FileRenameResult 
-    { 
+    return new FileRenameResult
+    {
         Success = false,
         ErrorType = FileRenameError.PathTooLong,
         ErrorMessage = "Target path exceeds maximum length"
@@ -120,8 +120,8 @@ if (targetPath.Length > 260)  // Windows path limit
 ```csharp
 // Target existence check
 if (File.Exists(targetPath) && !request.ForceOverwrite)
-    return new FileRenameResult 
-    { 
+    return new FileRenameResult
+    {
         Success = false,
         ErrorType = FileRenameError.TargetExists,
         ErrorMessage = $"Target file already exists: {targetPath}"
@@ -134,16 +134,16 @@ if (File.Exists(targetPath) && !request.ForceOverwrite)
 try
 {
     File.Move(request.OriginalPath, targetPath);
-    return new FileRenameResult 
-    { 
+    return new FileRenameResult
+    {
         Success = true,
         NewPath = targetPath
     };
 }
 catch (UnauthorizedAccessException)
 {
-    return new FileRenameResult 
-    { 
+    return new FileRenameResult
+    {
         Success = false,
         ErrorType = FileRenameError.PermissionDenied,
         ErrorMessage = "Permission denied: Cannot rename file"
@@ -157,28 +157,28 @@ catch (UnauthorizedAccessException)
 
 ```csharp
 // File not found
-{ 
+{
     Success = false,
     ErrorType = FileRenameError.FileNotFound,
     ErrorMessage = "Source file not found: /path/to/file.mkv"
 }
 
 // Target exists
-{ 
+{
     Success = false,
     ErrorType = FileRenameError.TargetExists,
     ErrorMessage = "Target file already exists: New Name.mkv"
 }
 
 // Permission denied
-{ 
+{
     Success = false,
     ErrorType = FileRenameError.PermissionDenied,
     ErrorMessage = "Permission denied: Cannot write to directory"
 }
 
 // Disk full
-{ 
+{
     Success = false,
     ErrorType = FileRenameError.DiskFull,
     ErrorMessage = "Insufficient disk space for rename operation"
@@ -189,14 +189,14 @@ catch (UnauthorizedAccessException)
 
 ```csharp
 // Invalid path format
-{ 
+{
     Success = false,
     ErrorType = FileRenameError.InvalidPath,
     ErrorMessage = "Invalid file path format"
 }
 
 // Path too long
-{ 
+{
     Success = false,
     ErrorType = FileRenameError.PathTooLong,
     ErrorMessage = "Target path exceeds maximum length (260 characters)"

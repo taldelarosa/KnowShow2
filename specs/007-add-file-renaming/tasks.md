@@ -6,30 +6,71 @@
 ## Execution Flow (main)
 
 ```
+
 1. Load plan.md from feature directory
    → If not found: ERROR "No implementation plan found"
+
+
+
+
+
+
+
    → Extract: tech stack, libraries, structure
+
 2. Load optional design documents:
    → data-model.md: Extract entities → model tasks
+
+
+
+
+
+
+
    → contracts/: Each file → contract test task
    → research.md: Extract decisions → setup tasks
+
 3. Generate tasks by category:
    → Setup: project init, dependencies, linting
+
+
+
+
+
+
+
    → Tests: contract tests, integration tests
    → Core: models, services, CLI commands
    → Integration: DB, middleware, logging
    → Polish: unit tests, performance, docs
+
 4. Apply task rules:
    → Different files = mark [P] for parallel
+
+
+
+
+
+
+
    → Same file = sequential (no [P])
    → Tests before implementation (TDD)
+
 5. Number tasks sequentially (T001, T002...)
 6. Generate dependency graph
 7. Create parallel execution examples
 8. Validate task completeness:
    → All contracts have tests?
+
+
+
+
+
+
+
    → All entities have models?
    → All endpoints implemented?
+
 9. Return: SUCCESS (tasks ready for execution)
 ```
 
@@ -108,23 +149,52 @@
 ## Parallel Example
 
 ```bash
+
 # Phase 3.1: Launch model creation tasks together
+
+
+
+
+
+
+
 Task: "Create FilenameGenerationRequest model in src/EpisodeIdentifier.Core/Models/FilenameGenerationRequest.cs"
-Task: "Create FilenameGenerationResult model in src/EpisodeIdentifier.Core/Models/FilenameGenerationResult.cs"  
+Task: "Create FilenameGenerationResult model in src/EpisodeIdentifier.Core/Models/FilenameGenerationResult.cs"
 Task: "Create FileRenameRequest model in src/EpisodeIdentifier.Core/Models/FileRenameRequest.cs"
 Task: "Create FileRenameResult model in src/EpisodeIdentifier.Core/Models/FileRenameResult.cs"
 Task: "Create FileRenameError enum in src/EpisodeIdentifier.Core/Models/FileRenameError.cs"
 
 # Phase 3.2: Launch contract tests together
+
+
+
+
+
+
+
 Task: "Contract test for IFilenameService.GenerateFilename in tests/contract/FilenameServiceContractTests.cs"
 Task: "Contract test for IFileRenameService.RenameFileAsync in tests/contract/FileRenameServiceContractTests.cs"
 Task: "Integration test for filename suggestion in tests/integration/FilenameRecommendationTests.cs"
 
-# Phase 3.3: Launch service implementations together  
+# Phase 3.3: Launch service implementations together
+
+
+
+
+
+
+
 Task: "Implement FilenameService class in src/EpisodeIdentifier.Core/Services/FilenameService.cs"
 Task: "Implement FileRenameService class in src/EpisodeIdentifier.Core/Services/FileRenameService.cs"
 
 # Phase 3.5: Launch polish tasks together
+
+
+
+
+
+
+
 Task: "Unit tests for filename sanitization in tests/unit/FilenameServiceTests.cs"
 Task: "Unit tests for file rename errors in tests/unit/FileRenameServiceTests.cs"
 Task: "Performance test for filename generation in tests/performance/FilenamePerformanceTests.cs"
@@ -164,7 +234,7 @@ Task: "Performance test for filename generation in tests/performance/FilenamePer
 ## Task Generation Rules Applied
 
 ✅ Each contract file → contract test task marked [P]
-✅ Each entity in data-model → model creation task marked [P]  
+✅ Each entity in data-model → model creation task marked [P]
 ✅ Each user story → integration test marked [P]
 ✅ Different files = can be parallel [P]
 ✅ Same file = sequential (no [P])

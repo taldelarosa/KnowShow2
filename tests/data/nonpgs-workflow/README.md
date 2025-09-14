@@ -11,7 +11,7 @@ This directory contains test video files with various subtitle configurations fo
 - Duration: ~45 minutes
 - Should match an entry in the episode database
 
-### 2. sample_episode_with_ass.mkv  
+### 2. sample_episode_with_ass.mkv
 
 - Video file containing only ASS/SSA subtitle track
 - Language: Japanese with English translation
@@ -28,9 +28,9 @@ This directory contains test video files with various subtitle configurations fo
 ### 4. sample_episode_multi_subs.mkv
 
 - Video file with multiple text subtitle tracks:
-  - Track 0: SRT (English) - no match
-  - Track 1: ASS (Japanese) - no match  
-  - Track 2: SRT (Spanish) - should match
+    - Track 0: SRT (English) - no match
+    - Track 1: ASS (Japanese) - no match
+    - Track 2: SRT (Spanish) - should match
 - Test sequential processing until match found
 
 ### 5. sample_episode_mixed_subs.mkv
@@ -55,13 +55,28 @@ This directory contains test video files with various subtitle configurations fo
 ## Validation Commands
 
 ```bash
+
 # Check subtitle tracks
+
+
+
+
+
+
+
 for file in *.mkv; do
     echo "=== $file ==="
     ffprobe -v quiet -print_format json -show_streams "$file" | jq '.streams[] | select(.codec_type=="subtitle") | {index, codec_name, tags}'
 done
 
 # Test file accessibility
+
+
+
+
+
+
+
 ls -la *.mkv
 ```
 

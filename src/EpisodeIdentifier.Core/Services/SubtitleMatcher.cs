@@ -46,13 +46,14 @@ public class SubtitleMatcher : ISubtitleMatcher
                         _logger.LogInformation("Best match found but below threshold: {Series} S{Season}E{Episode} ({Confidence:P1} confidence, below {MinConfidence:P0} threshold)",
                             subtitle.Series, subtitle.Season, subtitle.Episode, confidence, threshold);
 
-                        // Return no match without error for tests
+                        // Return the best match found even though it's below threshold for manual verification
                         return new IdentificationResult
                         {
                             MatchConfidence = confidence,
-                            Series = null,
-                            Season = null,
-                            Episode = null
+                            Series = subtitle.Series,
+                            Season = subtitle.Season?.ToString(),
+                            Episode = subtitle.Episode?.ToString(),
+                            EpisodeName = subtitle.EpisodeName
                         };
                     }
                 }

@@ -1,29 +1,78 @@
 
 # Feature Specification: Identify Season and Episode from AV1 Video via PGS Subtitle Comparison (CLI, JSON Output)
 
-**Feature Branch**: `002-build-an-application`  
-**Created**: September 7, 2025  
-**Status**: Draft  
+**Feature Branch**: `002-build-an-application`
+**Created**: September 7, 2025
+**Status**: Draft
 **Input**: User description: "Build an application that can identify the Season and Episode number of a provided AV1 encoded video file by extracting the PGS subtitles and comparing them to other known labelled subtitles that exist on the file system in a folder structure of Subtitles=>Series=>Season. This will be part of an automated workflow so it will only run on the command line and will always output JSON responses."
 
 ## Execution Flow (main)
 
 ```
+
 1. Parse user description from Input
    → If empty: ERROR "No feature description provided"
+
+
+
+
+
+
+
+
 2. Extract key concepts from description
    → Identify: actors, actions, data, constraints
+
+
+
+
+
+
+
+
 3. For each unclear aspect:
    → Mark with [NEEDS CLARIFICATION: specific question]
+
+
+
+
+
+
+
+
 4. Fill User Scenarios & Testing section
    → If no clear user flow: ERROR "Cannot determine user scenarios"
+
+
+
+
+
+
+
+
 5. Generate Functional Requirements
    → Each requirement must be testable
+
+
+
+
+
+
+
    → Mark ambiguous requirements
+
 6. Identify Key Entities (if data involved)
 7. Run Review Checklist
    → If any [NEEDS CLARIFICATION]: WARN "Spec has uncertainties"
+
+
+
+
+
+
+
    → If implementation details found: ERROR "Remove tech details"
+
 8. Return: SUCCESS (spec ready for planning)
 ```
 
@@ -50,7 +99,7 @@ When creating this spec from a user prompt:
 3. **Think like a tester**: Every vague requirement should fail the "testable and unambiguous" checklist item
 4. **Common underspecified areas**:
    - User types and permissions
-   - Data retention/deletion policies  
+   - Data retention/deletion policies
    - Performance targets and scale
    - Error handling behaviors
    - Integration requirements
@@ -118,7 +167,7 @@ A user (or automated workflow) provides an AV1 encoded video file via the comman
 ### Requirement Completeness
 
 - [ ] No [NEEDS CLARIFICATION] markers remain
-- [ ] Requirements are testable and unambiguous  
+- [ ] Requirements are testable and unambiguous
 - [ ] Success criteria are measurable
 - [ ] Scope is clearly bounded
 - [ ] Dependencies and assumptions identified

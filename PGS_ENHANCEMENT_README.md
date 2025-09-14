@@ -41,13 +41,35 @@ This enhancement replaces your current PGS subtitle extraction with a superior a
 ### 1. Install pgsrip
 
 ```bash
+
 # Install pgsrip using uv (much faster than pip)
+
+
+
+
+
+
+
 uv pip install --system pgsrip
 
 # Install dependencies (Ubuntu/Debian)
+
+
+
+
+
+
+
 sudo apt-get install mkvtoolnix tesseract-ocr
 
 # Optional: Install better tessdata for improved OCR
+
+
+
+
+
+
+
 cd /tmp
 git clone --depth 1 https://github.com/tesseract-ocr/tessdata_best.git
 sudo mv tessdata_best /usr/share/tessdata_best
@@ -58,13 +80,35 @@ echo 'export TESSDATA_PREFIX=/usr/share/tessdata_best' >> ~/.bashrc
 ### 2. Test the Enhancement
 
 ```bash
+
 # Make the test script executable
+
+
+
+
+
+
+
 chmod +x scripts/pgsrip-converter.sh
 
 # Test with a video file
+
+
+
+
+
+
+
 ./scripts/pgsrip-converter.sh your-video.mkv
 
 # Test with a SUP file
+
+
+
+
+
+
+
 ./scripts/pgsrip-converter.sh -l deu subtitles.sup
 ```
 
@@ -139,13 +183,35 @@ if (!qualityInfo.PgsRipAvailable)
 ### Command Line Testing
 
 ```bash
+
 # Test German subtitles with 2 workers
+
+
+
+
+
+
+
 ./scripts/pgsrip-converter.sh --language deu --workers 2 movie.mkv
 
 # Force overwrite existing files
+
+
+
+
+
+
+
 ./scripts/pgsrip-converter.sh --force subtitle.sup
 
 # Get help
+
+
+
+
+
+
+
 ./scripts/pgsrip-converter.sh --help
 ```
 
@@ -201,20 +267,50 @@ How are you?    # Perfect character recognition
 ### pgsrip Not Found
 
 ```bash
+
 # Install pgsrip
+
+
+
+
+
+
+
 pip install pgsrip
 
 # Verify installation
+
+
+
+
+
+
+
 pgsrip --version
 ```
 
 ### Missing Dependencies
 
 ```bash
+
 # Ubuntu/Debian
+
+
+
+
+
+
+
 sudo apt-get install mkvtoolnix tesseract-ocr
 
 # Check installation
+
+
+
+
+
+
+
 mkvextract --version
 tesseract --version
 ```
@@ -222,7 +318,15 @@ tesseract --version
 ### Poor OCR Quality
 
 ```bash
+
 # Install better tessdata
+
+
+
+
+
+
+
 git clone https://github.com/tesseract-ocr/tessdata_best.git
 export TESSDATA_PREFIX=/path/to/tessdata_best
 ```
@@ -237,10 +341,34 @@ export TESSDATA_PREFIX=/path/to/tessdata_best
 ### Test Script
 
 ```bash
+
 # Compare original vs enhanced
+
+
+
+
+
+
+
 ./scripts/pgsrip-converter.sh test-video.mkv > pgsrip-result.srt
+
 # Run your original method > original-result.srt
+
+
+
+
+
+
+
+
 # Compare the files
+
+
+
+
+
+
+
 ```
 
 ## Next Steps

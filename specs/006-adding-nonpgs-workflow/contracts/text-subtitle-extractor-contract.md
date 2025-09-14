@@ -45,7 +45,7 @@ Task&lt;List&lt;TextSubtitleTrack&gt;&gt; DetectTextSubtitleTracksAsync(string v
 
 ```csharp
 Task&lt;TextSubtitleContent&gt; ExtractTextSubtitleContentAsync(
-    string videoFilePath, 
+    string videoFilePath,
     TextSubtitleTrack track)
 ```
 
@@ -84,7 +84,7 @@ Task&lt;TextSubtitleContent&gt; ExtractTextSubtitleContentAsync(
 
 ```csharp
 Task&lt;SubtitleProcessingResult&gt; TryExtractAllTextSubtitlesAsync(
-    string videoFilePath, 
+    string videoFilePath,
     CancellationToken cancellationToken = default)
 ```
 

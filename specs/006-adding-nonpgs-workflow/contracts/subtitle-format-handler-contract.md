@@ -54,7 +54,7 @@ bool CanHandle(SubtitleFormat format)
 
 ```csharp
 Task&lt;string&gt; ParseSubtitleTextAsync(
-    Stream subtitleData, 
+    Stream subtitleData,
     string encoding = "UTF-8")
 ```
 
@@ -102,7 +102,7 @@ Task&lt;string&gt; ParseSubtitleTextAsync(
 - Preserve line breaks within subtitles
 - Skip malformed sequences
 
-### AssFormatHandler  
+### AssFormatHandler
 
 **Pattern Recognition**:
 

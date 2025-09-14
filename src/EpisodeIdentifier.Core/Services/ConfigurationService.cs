@@ -22,12 +22,16 @@ public class ConfigurationService : IConfigurationService
 
     public ConfigurationService(
         ILogger<ConfigurationService> logger,
-        IFileSystem? fileSystem = null)
+        IFileSystem? fileSystem = null,
+        string? configFilePath = null)
     {
         _logger = logger;
         _fileSystem = fileSystem ?? new System.IO.Abstractions.FileSystem();
         _validator = new ConfigurationValidator();
-        _configFilePath = Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
+        _configFilePath = configFilePath ?? Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
+
+        // Debug logging to track which path is being used
+        _logger.LogInformation("ConfigurationService initialized with path: {ConfigPath}", _configFilePath);
     }
 
     /// <summary>
@@ -80,7 +84,8 @@ public class ConfigurationService : IConfigurationService
                 {
                     PropertyNameCaseInsensitive = true,
                     AllowTrailingCommas = true,
-                    ReadCommentHandling = JsonCommentHandling.Skip
+                    ReadCommentHandling = JsonCommentHandling.Skip,
+                    Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
                 });
 
                 _logger.LogDebug("Configuration JSON deserialization successful");
@@ -159,6 +164,14 @@ public class ConfigurationService : IConfigurationService
             {
                 _logger.LogWarning("Configuration file not found during reload check - Operation: {OperationId}, Path: {ConfigPath}, Duration: {Duration}ms",
                     operationId, _configFilePath, stopwatch.ElapsedMilliseconds);
+                return false;
+            }
+
+            // If no config has been loaded yet, this is not a "reload"
+            if (_lastLoadedConfig == null || _lastFileWriteTime == DateTime.MinValue)
+            {
+                _logger.LogTrace("No previous configuration loaded, not considered a reload - Operation: {OperationId}, Duration: {Duration}ms",
+                    operationId, stopwatch.ElapsedMilliseconds);
                 return false;
             }
 

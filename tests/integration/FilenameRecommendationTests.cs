@@ -24,6 +24,7 @@ public class FilenameRecommendationTests : IDisposable
         services.AddLogging(builder => builder.AddConsole());
 
         // Register services
+        services.AddSingleton<IAppConfigService, TestAppConfigService>();
         services.AddScoped<IFilenameService, FilenameService>();
         services.AddScoped<SubtitleNormalizationService>();
         services.AddScoped<FuzzyHashService>(provider =>

@@ -58,6 +58,12 @@ public class Configuration
     public string FilenameTemplate { get; set; } = string.Empty;
 
     /// <summary>
+    /// Configuration settings for bulk processing operations.
+    /// Optional - when null, defaults are used.
+    /// </summary>
+    public BulkProcessingConfiguration? BulkProcessing { get; set; }
+
+    /// <summary>
     /// Timestamp when this configuration was last loaded.
     /// Used for hot-reload change detection.
     /// </summary>
@@ -89,6 +95,96 @@ public enum HashingAlgorithm
     /// Context-triggered piecewise hashing (fuzzy matching).
     /// </summary>
     CTPH = 2
+}
+
+/// <summary>
+/// Configuration settings for bulk processing operations.
+/// </summary>
+public class BulkProcessingConfiguration
+{
+    /// <summary>
+    /// Default batch size for processing files.
+    /// Range: 1-10000, Default: 100.
+    /// </summary>
+    [Range(1, 10000)]
+    public int DefaultBatchSize { get; set; } = 100;
+
+    /// <summary>
+    /// Default maximum number of concurrent processing tasks.
+    /// Range: 1-100, Default: CPU core count.
+    /// </summary>
+    [Range(1, 100)]
+    public int DefaultMaxConcurrency { get; set; } = Environment.ProcessorCount;
+
+    /// <summary>
+    /// Default progress reporting interval in milliseconds.
+    /// Range: 100-60000, Default: 1000ms.
+    /// </summary>
+    [Range(100, 60000)]
+    public int DefaultProgressReportingInterval { get; set; } = 1000;
+
+    /// <summary>
+    /// Whether to force garbage collection between batches by default.
+    /// Default: true for memory optimization.
+    /// </summary>
+    public bool DefaultForceGarbageCollection { get; set; } = true;
+
+    /// <summary>
+    /// Whether to create backups before processing files by default.
+    /// Default: false for performance.
+    /// </summary>
+    public bool DefaultCreateBackups { get; set; } = false;
+
+    /// <summary>
+    /// Whether to continue processing when individual files fail by default.
+    /// Default: true for maximum throughput.
+    /// </summary>
+    public bool DefaultContinueOnError { get; set; } = true;
+
+    /// <summary>
+    /// Default maximum number of errors before aborting processing.
+    /// Null means no limit. Range: 1-100000.
+    /// </summary>
+    [Range(1, 100000)]
+    public int? DefaultMaxErrorsBeforeAbort { get; set; } = null;
+
+    /// <summary>
+    /// Default timeout for processing individual files.
+    /// Null means no timeout. Range: 1 second to 1 hour.
+    /// </summary>
+    public TimeSpan? DefaultFileProcessingTimeout { get; set; } = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    /// Default file extensions to include in bulk processing.
+    /// Empty list uses system defaults.
+    /// </summary>
+    public List<string> DefaultFileExtensions { get; set; } = new();
+
+    /// <summary>
+    /// Maximum allowed batch size for validation.
+    /// Range: 1-50000, Default: 10000.
+    /// </summary>
+    [Range(1, 50000)]
+    public int MaxBatchSize { get; set; } = 10000;
+
+    /// <summary>
+    /// Maximum allowed concurrency for validation.
+    /// Range: 1-500, Default: CPU cores * 8.
+    /// </summary>
+    [Range(1, 500)]
+    public int MaxConcurrency { get; set; } = Environment.ProcessorCount * 8;
+
+    /// <summary>
+    /// Whether to enable detailed batch statistics logging.
+    /// Default: false for performance.
+    /// </summary>
+    public bool EnableBatchStatistics { get; set; } = false;
+
+    /// <summary>
+    /// Whether to enable memory usage monitoring during processing.
+    /// Default: true for stability.
+    /// </summary>
+    public bool EnableMemoryMonitoring { get; set; } = true;
 }
 
 /// <summary>
@@ -143,6 +239,56 @@ public class ConfigurationValidator : AbstractValidator<Configuration>
             .WithMessage("FilenameTemplate is required")
             .Must(ContainRequiredPlaceholders)
             .WithMessage("FilenameTemplate must contain required placeholders: {SeriesName}, {Season}, {Episode}");
+
+        // Bulk processing configuration validation rules
+        When(x => x.BulkProcessing != null, () =>
+        {
+            RuleFor(x => x.BulkProcessing!.DefaultBatchSize)
+                .InclusiveBetween(1, 10000)
+                .WithMessage("BulkProcessing.DefaultBatchSize must be between 1 and 10000");
+
+            RuleFor(x => x.BulkProcessing!.DefaultMaxConcurrency)
+                .InclusiveBetween(1, 100)
+                .WithMessage("BulkProcessing.DefaultMaxConcurrency must be between 1 and 100");
+
+            RuleFor(x => x.BulkProcessing!.DefaultProgressReportingInterval)
+                .InclusiveBetween(100, 60000)
+                .WithMessage("BulkProcessing.DefaultProgressReportingInterval must be between 100 and 60000 milliseconds");
+
+            When(x => x.BulkProcessing!.DefaultMaxErrorsBeforeAbort.HasValue, () =>
+            {
+                RuleFor(x => x.BulkProcessing!.DefaultMaxErrorsBeforeAbort!.Value)
+                    .InclusiveBetween(1, 100000)
+                    .WithMessage("BulkProcessing.DefaultMaxErrorsBeforeAbort must be between 1 and 100000");
+            });
+
+            When(x => x.BulkProcessing!.DefaultFileProcessingTimeout.HasValue, () =>
+            {
+                RuleFor(x => x.BulkProcessing!.DefaultFileProcessingTimeout!.Value)
+                    .GreaterThanOrEqualTo(TimeSpan.FromSeconds(1))
+                    .WithMessage("BulkProcessing.DefaultFileProcessingTimeout must be at least 1 second")
+                    .LessThanOrEqualTo(TimeSpan.FromHours(1))
+                    .WithMessage("BulkProcessing.DefaultFileProcessingTimeout must be at most 1 hour");
+            });
+
+            RuleFor(x => x.BulkProcessing!.MaxBatchSize)
+                .InclusiveBetween(1, 50000)
+                .WithMessage("BulkProcessing.MaxBatchSize must be between 1 and 50000");
+
+            RuleFor(x => x.BulkProcessing!.MaxConcurrency)
+                .InclusiveBetween(1, 500)
+                .WithMessage("BulkProcessing.MaxConcurrency must be between 1 and 500");
+
+            RuleFor(x => x.BulkProcessing!)
+                .Must(x => x.DefaultBatchSize <= x.MaxBatchSize)
+                .WithMessage("BulkProcessing.DefaultBatchSize must not exceed MaxBatchSize")
+                .WithName("DefaultBatchSize");
+
+            RuleFor(x => x.BulkProcessing!)
+                .Must(x => x.DefaultMaxConcurrency <= x.MaxConcurrency)
+                .WithMessage("BulkProcessing.DefaultMaxConcurrency must not exceed MaxConcurrency")
+                .WithName("DefaultMaxConcurrency");
+        });
     }
 
     private static bool BeValidSemanticVersion(string version)
@@ -163,8 +309,10 @@ public class ConfigurationValidator : AbstractValidator<Configuration>
         if (string.IsNullOrWhiteSpace(template))
             return false;
 
-        var requiredPlaceholders = new[] { "{SeriesName}", "{Season}", "{Episode}" };
-        return requiredPlaceholders.All(placeholder => template.Contains(placeholder));
+        // Check for placeholders with optional format specifiers (e.g., {Season:D2})
+        var requiredPlaceholders = new[] { "SeriesName", "Season", "Episode" };
+        return requiredPlaceholders.All(placeholder =>
+            template.Contains($"{{{placeholder}}}") || template.Contains($"{{{placeholder}:"));
     }
 }
 

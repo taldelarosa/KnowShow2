@@ -26,6 +26,7 @@ public class FileRenameIntegrationTests : IDisposable
         services.AddLogging(builder => builder.AddConsole());
 
         // Register services
+        services.AddSingleton<IAppConfigService, TestAppConfigService>();
         services.AddScoped<IFilenameService, FilenameService>();
         services.AddScoped<IFileRenameService, FileRenameService>();
         services.AddScoped<SubtitleNormalizationService>();

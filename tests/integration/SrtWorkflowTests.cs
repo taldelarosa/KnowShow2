@@ -37,11 +37,13 @@ public class SrtWorkflowTests
         var fuzzyLogger = loggerFactory.CreateLogger<FuzzyHashService>();
         var normalizationLogger = loggerFactory.CreateLogger<SubtitleNormalizationService>();
         var matcherLogger = loggerFactory.CreateLogger<SubtitleMatcher>();
+        var configLogger = loggerFactory.CreateLogger<AppConfigService>();
 
         var normalizationService = new SubtitleNormalizationService(normalizationLogger);
         var testDbPath = TestDatabaseConfig.GetTestDatabasePath();
         var hashService = new FuzzyHashService(testDbPath, fuzzyLogger, normalizationService);
-        _matcher = new SubtitleMatcher(hashService, matcherLogger);
+        var configService = new AppConfigService(configLogger);
+        _matcher = new SubtitleMatcher(hashService, matcherLogger, configService);
     }
 
     [Fact]

@@ -39,7 +39,7 @@ dotnet run -- --config-validate
 ```
 ✓ Configuration loaded successfully
 ✓ All threshold values are valid
-✓ Filename patterns compiled successfully  
+✓ Filename patterns compiled successfully
 ✓ CTPH hashing library available
 Configuration validation: PASSED
 ```
@@ -89,7 +89,15 @@ Comparison time: 23ms
 ### Step 5: Test Backward Compatibility
 
 ```bash
+
 # Test with legacy config (no fuzzy hash settings)
+
+
+
+
+
+
+
 cp episodeidentifier.config.json episodeidentifier.config.legacy.json
 dotnet run -- --config-file episodeidentifier.config.legacy.json --process /path/to/episodes/
 ```
@@ -117,7 +125,7 @@ dotnet run -- --config-file episodeidentifier.config.legacy.json --process /path
 - Ensure ssdeep-dotnet package is installed
 - Check .NET 8.0 compatibility
 
-### "Configuration validation failed"  
+### "Configuration validation failed"
 
 - Verify JSON syntax
 - Check threshold ranges (0.0-1.0 for confidence, 0-100 for fuzzy hash)

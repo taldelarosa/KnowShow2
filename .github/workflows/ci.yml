@@ -142,10 +142,33 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Check markdown files
-      uses: DavidAnson/markdownlint-cli2-action@v13
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
-        globs: '**/*.md'
+        node-version: '18'
+        
+    - name: Install markdownlint-cli
+      run: npm install -g markdownlint-cli
+      
+    - name: Run markdownlint with auto-fix
+      run: |
+        echo "Running markdownlint with auto-fix..."
+        # First run with --fix to auto-correct issues
+        markdownlint --fix --config .markdownlint.json '**/*.md' || echo "Auto-fixing completed"
+        
+        echo "Running final markdownlint check..."
+        # Then run without --fix to check for remaining issues
+        markdownlint --config .markdownlint.json '**/*.md'
+        
+    - name: Check for changes after auto-fix
+      run: |
+        if ! git diff --exit-code; then
+          echo "::warning::Markdownlint made automatic fixes. Please commit these changes."
+          echo "Changed files:"
+          git diff --name-only
+          git diff
+          exit 1
+        fi
         
     - name: Check for broken links
       uses: gaurav-nelson/github-action-markdown-link-check@v1
