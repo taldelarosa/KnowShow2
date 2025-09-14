@@ -1,8 +1,22 @@
 # Configuration Guide
 
+
+
+
+
+
+
+
 EpisodeIdentifier.Core supports JSON-based configuration for maximum flexibility. The configuration file `episodeidentifier.config.json` is automatically created with default values if not present.
 
 ## Configuration File Location
+
+
+
+
+
+
+
 
 The configuration file should be placed in the same directory as the executable:
 
@@ -10,7 +24,21 @@ The configuration file should be placed in the same directory as the executable:
 
 ## Configuration Options
 
+
+
+
+
+
+
+
 ### Match Confidence Thresholds
+
+
+
+
+
+
+
 
 ```json
 {
@@ -18,6 +46,13 @@ The configuration file should be placed in the same directory as the executable:
   "renameConfidenceThreshold": 0.85
 }
 ```
+
+
+
+
+
+
+
 
 - **matchConfidenceThreshold**: Minimum confidence (0.0-1.0) required for episode identification
   - Default: `0.8` (80%)
@@ -31,15 +66,29 @@ The configuration file should be placed in the same directory as the executable:
 
 ### Filename Parsing Patterns
 
+
+
+
+
+
+
+
 ```json
 {
   "filenamePatterns": {
     "primaryPattern": "^(.+?)\\s+S(\\d+)E(\\d+)(?:[\\s\\.\\-]+(.+?))?$",
-    "secondaryPattern": "^(.+?)\\s+(\\d+)x(\\d+)(?:[\\s\\.\\-]+(.+?))?$", 
+    "secondaryPattern": "^(.+?)\\s+(\\d+)x(\\d+)(?:[\\s\\.\\-]+(.+?))?$",
     "tertiaryPattern": "^(.+?)\\.S(\\d+)\\.E(\\d+)(?:\\.(.+?))?$"
   }
 }
 ```
+
+
+
+
+
+
+
 
 These regex patterns control how series information is extracted from subtitle filenames:
 
@@ -57,11 +106,25 @@ These regex patterns control how series information is extracted from subtitle f
 
 ### Filename Template
 
+
+
+
+
+
+
+
 ```json
 {
   "filenameTemplate": "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}"
 }
 ```
+
+
+
+
+
+
+
 
 Controls the format of renamed files. Available placeholders:
 
@@ -75,7 +138,21 @@ Controls the format of renamed files. Available placeholders:
 
 ## Example Configurations
 
+
+
+
+
+
+
+
 ### Conservative (High Accuracy)
+
+
+
+
+
+
+
 
 ```json
 {
@@ -84,7 +161,21 @@ Controls the format of renamed files. Available placeholders:
 }
 ```
 
+
+
+
+
+
+
+
 ### Permissive (More Matches)
+
+
+
+
+
+
+
 
 ```json
 {
@@ -93,7 +184,21 @@ Controls the format of renamed files. Available placeholders:
 }
 ```
 
+
+
+
+
+
+
+
 ### Custom Patterns for Different Naming Conventions
+
+
+
+
+
+
+
 
 ```json
 {
@@ -105,7 +210,21 @@ Controls the format of renamed files. Available placeholders:
 }
 ```
 
+
+
+
+
+
+
+
 ## Configuration Validation
+
+
+
+
+
+
+
 
 The application will log warnings if:
 
@@ -116,6 +235,13 @@ The application will log warnings if:
 In case of errors, the application falls back to default values and continues operation.
 
 ## Runtime Configuration Loading
+
+
+
+
+
+
+
 
 Configuration is loaded once at application startup. To apply changes:
 

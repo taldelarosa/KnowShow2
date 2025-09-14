@@ -1,16 +1,51 @@
 # Service Contract: File Rename Service
 
+
+
+
+
+
+
+
 ## Overview
+
+
+
+
+
+
+
 
 Service contract for performing safe file rename operations with error handling and validation.
 
 ## IFileRenameService Interface
 
+
+
+
+
+
+
+
 ### RenameFileAsync Method
+
+
+
+
+
+
+
 
 ```csharp
 Task<FileRenameResult> RenameFileAsync(FileRenameRequest request)
 ```
+
+
+
+
+
+
+
 
 **Input Contract**:
 
@@ -19,13 +54,20 @@ public class FileRenameRequest
 {
     [Required]
     public string OriginalPath { get; set; }      // Full path to source file
-    
+
     [Required]
     public string SuggestedFilename { get; set; } // Target filename (name only, not path)
-    
+
     public bool ForceOverwrite { get; set; } = false; // Allow overwriting existing files
 }
 ```
+
+
+
+
+
+
+
 
 **Output Contract**:
 
@@ -49,11 +91,32 @@ public enum FileRenameError
 }
 ```
 
+
+
+
+
+
+
+
 ### CanRenameFile Method
+
+
+
+
+
+
+
 
 ```csharp
 bool CanRenameFile(string filePath)
 ```
+
+
+
+
+
+
+
 
 **Validation Checks**:
 
@@ -64,9 +127,23 @@ bool CanRenameFile(string filePath)
 
 ### GetTargetPath Method
 
+
+
+
+
+
+
+
 ```csharp
 string GetTargetPath(string originalPath, string suggestedFilename)
 ```
+
+
+
+
+
+
+
 
 **Behavior**:
 
@@ -77,13 +154,27 @@ string GetTargetPath(string originalPath, string suggestedFilename)
 
 ## Service Implementation Contract
 
+
+
+
+
+
+
+
 ### Pre-Operation Validation
+
+
+
+
+
+
+
 
 ```csharp
 // Input validation
 if (string.IsNullOrWhiteSpace(request.OriginalPath))
-    return new FileRenameResult 
-    { 
+    return new FileRenameResult
+    {
         Success = false,
         ErrorType = FileRenameError.InvalidPath,
         ErrorMessage = "Original path cannot be empty"
@@ -91,15 +182,29 @@ if (string.IsNullOrWhiteSpace(request.OriginalPath))
 
 // File existence check
 if (!File.Exists(request.OriginalPath))
-    return new FileRenameResult 
-    { 
+    return new FileRenameResult
+    {
         Success = false,
         ErrorType = FileRenameError.FileNotFound,
         ErrorMessage = $"Source file not found: {request.OriginalPath}"
     };
 ```
 
+
+
+
+
+
+
+
 ### Target Path Generation
+
+
+
+
+
+
+
 
 ```csharp
 string directory = Path.GetDirectoryName(request.OriginalPath);
@@ -107,43 +212,71 @@ string targetPath = Path.Combine(directory, request.SuggestedFilename);
 
 // Path length validation
 if (targetPath.Length > 260)  // Windows path limit
-    return new FileRenameResult 
-    { 
+    return new FileRenameResult
+    {
         Success = false,
         ErrorType = FileRenameError.PathTooLong,
         ErrorMessage = "Target path exceeds maximum length"
     };
 ```
 
+
+
+
+
+
+
+
 ### Collision Detection
+
+
+
+
+
+
+
 
 ```csharp
 // Target existence check
 if (File.Exists(targetPath) && !request.ForceOverwrite)
-    return new FileRenameResult 
-    { 
+    return new FileRenameResult
+    {
         Success = false,
         ErrorType = FileRenameError.TargetExists,
         ErrorMessage = $"Target file already exists: {targetPath}"
     };
 ```
 
+
+
+
+
+
+
+
 ### Atomic Rename Operation
+
+
+
+
+
+
+
 
 ```csharp
 try
 {
     File.Move(request.OriginalPath, targetPath);
-    return new FileRenameResult 
-    { 
+    return new FileRenameResult
+    {
         Success = true,
         NewPath = targetPath
     };
 }
 catch (UnauthorizedAccessException)
 {
-    return new FileRenameResult 
-    { 
+    return new FileRenameResult
+    {
         Success = false,
         ErrorType = FileRenameError.PermissionDenied,
         ErrorMessage = "Permission denied: Cannot rename file"
@@ -151,61 +284,117 @@ catch (UnauthorizedAccessException)
 }
 ```
 
+
+
+
+
+
+
+
 ## Error Handling Contract
+
+
+
+
+
+
+
 
 ### File System Errors
 
+
+
+
+
+
+
+
 ```csharp
 // File not found
-{ 
+{
     Success = false,
     ErrorType = FileRenameError.FileNotFound,
     ErrorMessage = "Source file not found: /path/to/file.mkv"
 }
 
 // Target exists
-{ 
+{
     Success = false,
     ErrorType = FileRenameError.TargetExists,
     ErrorMessage = "Target file already exists: New Name.mkv"
 }
 
 // Permission denied
-{ 
+{
     Success = false,
     ErrorType = FileRenameError.PermissionDenied,
     ErrorMessage = "Permission denied: Cannot write to directory"
 }
 
 // Disk full
-{ 
+{
     Success = false,
     ErrorType = FileRenameError.DiskFull,
     ErrorMessage = "Insufficient disk space for rename operation"
 }
 ```
 
+
+
+
+
+
+
+
 ### Path Validation Errors
+
+
+
+
+
+
+
 
 ```csharp
 // Invalid path format
-{ 
+{
     Success = false,
     ErrorType = FileRenameError.InvalidPath,
     ErrorMessage = "Invalid file path format"
 }
 
 // Path too long
-{ 
+{
     Success = false,
     ErrorType = FileRenameError.PathTooLong,
     ErrorMessage = "Target path exceeds maximum length (260 characters)"
 }
 ```
 
+
+
+
+
+
+
+
 ## Safety Requirements
 
+
+
+
+
+
+
+
 ### Atomic Operations
+
+
+
+
+
+
+
 
 - Use `File.Move()` for atomic rename operation
 - No intermediate states or temporary files
@@ -213,11 +402,25 @@ catch (UnauthorizedAccessException)
 
 ### Data Preservation
 
+
+
+
+
+
+
+
 - Original file preserved on any error
 - No data loss under any circumstances
 - Rollback not required (operation is atomic)
 
 ### Validation Sequence
+
+
+
+
+
+
+
 
 1. Input parameter validation
 2. Source file existence check
@@ -229,12 +432,33 @@ catch (UnauthorizedAccessException)
 
 ## Performance Contract
 
+
+
+
+
+
+
+
 ### Response Time
+
+
+
+
+
+
+
 
 - **Target**: < 100ms for local file operations
 - **Maximum**: < 1000ms for network drives
 
 ### Resource Usage
+
+
+
+
+
+
+
 
 - **Memory**: < 1MB per operation (no file content loading)
 - **CPU**: Minimal (file system operations only)
@@ -242,13 +466,34 @@ catch (UnauthorizedAccessException)
 
 ### Concurrency
 
+
+
+
+
+
+
+
 - **Thread Safety**: All methods must be thread-safe
 - **File Locking**: Handle file lock conflicts gracefully
 - **Simultaneous Operations**: Support multiple concurrent renames
 
 ## Test Scenarios
 
+
+
+
+
+
+
+
 ### Success Cases
+
+
+
+
+
+
+
 
 ```csharp
 // Standard rename
@@ -260,7 +505,21 @@ Request: { OriginalPath = "/path/video.mkv", SuggestedFilename = "existing.mkv",
 Result: { Success = true, NewPath = "/path/existing.mkv" }
 ```
 
+
+
+
+
+
+
+
 ### Error Cases
+
+
+
+
+
+
+
 
 ```csharp
 // File not found
@@ -280,7 +539,21 @@ Request: { OriginalPath = "/video.mkv", SuggestedFilename = "very-long-name-that
 Result: { Success = false, ErrorType = PathTooLong }
 ```
 
+
+
+
+
+
+
+
 ### Edge Cases
+
+
+
+
+
+
+
 
 ```csharp
 // Same filename (no-op)
@@ -296,9 +569,30 @@ Request: { OriginalPath = "/dir1/video.mkv", SuggestedFilename = "../dir2/video.
 Result: { Success = false, ErrorType = InvalidPath }
 ```
 
+
+
+
+
+
+
+
 ## Integration Points
 
+
+
+
+
+
+
+
 ### CLI Integration
+
+
+
+
+
+
+
 
 - Called from Program.cs when --rename flag is present
 - Result integrated into JSON response
@@ -306,11 +600,25 @@ Result: { Success = false, ErrorType = InvalidPath }
 
 ### Filename Service Integration
 
+
+
+
+
+
+
+
 - Receives suggested filename from IFilenameService
 - No direct dependency (filename passed as parameter)
 - Validates filename format before attempting rename
 
 ### Logging Integration
+
+
+
+
+
+
+
 
 - Log all rename attempts (success and failure)
 - Include original and target paths in logs
@@ -318,7 +626,21 @@ Result: { Success = false, ErrorType = InvalidPath }
 
 ## Security Considerations
 
+
+
+
+
+
+
+
 ### Path Traversal Prevention
+
+
+
+
+
+
+
 
 - Validate all paths stay within intended directory
 - Reject paths containing "../" or similar patterns
@@ -326,11 +648,25 @@ Result: { Success = false, ErrorType = InvalidPath }
 
 ### Permission Validation
 
+
+
+
+
+
+
+
 - Check directory write permissions before attempting rename
 - Handle access denied scenarios gracefully
 - No elevation of privileges
 
 ### File System Safety
+
+
+
+
+
+
+
 
 - No deletion of original file until rename confirmed
 - Atomic operations prevent partial states

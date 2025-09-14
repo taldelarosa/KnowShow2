@@ -1,36 +1,121 @@
 # Feature Specification: Fuzzy Hashing Plus Configuration System
 
-**Feature Branch**: `008-fuzzy-hashing-plus`  
-**Created**: September 12, 2025  
-**Status**: Draft  
+
+
+
+
+
+
+
+**Feature Branch**: `008-fuzzy-hashing-plus`
+**Created**: September 12, 2025
+**Status**: Draft
 **Input**: User description: "fuzzy hashing plus configs. The app will now read a JSON config file for match threshold, name confidence threshold, and filename templates. It will also use Context-triggered piecewise hashing (CTPH) instead of SHA1/MD5 hashing. The app will now accept individual video files or a directory as input for bulk processing."
 
 ## Execution Flow (main)
 
+
+
+
+
+
+
+
 ```
+
 1. Parse user description from Input
    → Key concepts identified: configuration system, fuzzy hashing, CTPH algorithm, bulk processing
+
+
+
+
+
+
+
+
 2. Extract key concepts from description
    → Actors: users/administrators configuring thresholds and processing files/directories
+
+
+
+
+
+
+
    → Actions: reading config files, applying thresholds, using CTPH hashing, processing individual files or directories
    → Data: match thresholds, confidence thresholds, filename templates, hash values, video files, directory structures
    → Constraints: JSON format, CTPH algorithm requirement, support for both single files and directories
+
 3. For each unclear aspect:
    → Marked configuration storage location and validation requirements, bulk processing workflow
+
+
+
+
+
+
+
+
 4. Fill User Scenarios & Testing section
    → Clear user flow: configure thresholds → select input (file/directory) → apply to episode identification
+
+
+
+
+
+
+
+
 5. Generate Functional Requirements
    → Each requirement testable and specific to configuration, hashing, and bulk processing
+
+
+
+
+
+
+
+
 6. Identify Key Entities
    → Configuration, HashingAlgorithm, MatchingThreshold, InputProcessor entities
+
+
+
+
+
+
+
+
 7. Run Review Checklist
    → Some configuration and processing details need clarification
+
+
+
+
+
+
+
+
 8. Return: SUCCESS (spec ready for planning)
 ```
+
+
+
+
+
+
+
 
 ---
 
 ## ⚡ Quick Guidelines
+
+
+
+
+
+
+
 
 - ✅ Focus on WHAT users need and WHY
 - ❌ Avoid HOW to implement (no tech stack, APIs, code structure)
@@ -40,13 +125,34 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
+
+
+
+
+
+
+
 ### Primary User Story
+
+
+
+
+
+
+
 
 As a system administrator or power user, I need to configure the episode identification system with custom matching thresholds and filename templates so that the system can be tuned for different content libraries and identification accuracy requirements. The system should use more sophisticated fuzzy hashing to improve matching accuracy while allowing fine-tuned control over matching behavior.
 
 Additionally, I need to process either individual video files or entire directories containing multiple video files to efficiently identify and organize large collections of content.
 
 ### Acceptance Scenarios
+
+
+
+
+
+
+
 
 1. **Given** a JSON configuration file with match threshold settings, **When** the system starts, **Then** it loads and applies these thresholds for episode identification
 2. **Given** configured name confidence thresholds, **When** identifying episodes, **Then** the system uses these thresholds to determine match quality
@@ -61,6 +167,13 @@ Additionally, I need to process either individual video files or entire director
 
 ### Quality Gates & Build Requirements
 
+
+
+
+
+
+
+
 1. **Given** the project build process, **When** executing build commands, **Then** all tests must pass with zero failures
 2. **Given** markdown documentation in the project, **When** running linting checks, **Then** all markdown files must pass markdownlint-cli validation with zero issues
 3. **Given** code quality standards, **When** building the project, **Then** the build must complete successfully with no compilation errors
@@ -68,6 +181,13 @@ Additionally, I need to process either individual video files or entire director
 5. **Given** the feature is ready for delivery, **When** evaluating completion criteria, **Then** the system must have clean builds, passing tests, and zero linting issues
 
 ### Edge Cases
+
+
+
+
+
+
+
 
 - What happens when the configuration file is missing or corrupted?
 - How does the system handle invalid threshold values (negative, > 100%, non-numeric)?
@@ -82,6 +202,13 @@ Additionally, I need to process either individual video files or entire director
 
 ### Build Process & Quality Assurance
 
+
+
+
+
+
+
+
 The feature implementation must adhere to strict quality standards:
 
 - **Linting Prerequisites**: All markdown documentation must pass markdownlint-cli validation before build completion
@@ -92,7 +219,21 @@ The feature implementation must adhere to strict quality standards:
 
 ## Requirements *(mandatory)*
 
+
+
+
+
+
+
+
 ### Functional Requirements
+
+
+
+
+
+
+
 
 - **FR-001**: System MUST read configuration from a JSON file containing match thresholds, name confidence thresholds, and filename templates
 - **FR-002**: System MUST validate all configuration values and reject invalid settings with clear error messages
@@ -116,6 +257,13 @@ The feature implementation must adhere to strict quality standards:
 
 ### Quality & Build Requirements
 
+
+
+
+
+
+
+
 - **QR-001**: Build process MUST include markdown linting as a prerequisite using markdownlint-cli
 - **QR-002**: All markdown documentation MUST pass linting validation with zero issues before build completion
 - **QR-003**: Linting issues MUST be resolved using markdownlint-cli with --fix flag for auto-fixable problems
@@ -125,6 +273,13 @@ The feature implementation must adhere to strict quality standards:
 
 ### Key Entities *(include if feature involves data)*
 
+
+
+
+
+
+
+
 - **Configuration**: JSON structure containing match thresholds (numeric), name confidence thresholds (numeric), and filename templates (string patterns)
 - **HashingAlgorithm**: CTPH-based fuzzy hashing implementation that produces similarity scores rather than exact hash matches
 - **MatchingThreshold**: Configurable numeric values (0-100%) that determine when file similarities qualify as matches
@@ -133,6 +288,13 @@ The feature implementation must adhere to strict quality standards:
 - **ProcessingResult**: Data structure containing identification results, processing status, and error information for each processed file
 
 ### Configuration Structure Details
+
+
+
+
+
+
+
 
 The system uses a JSON configuration file (`episodeidentifier.config.json`) with the following structure:
 
@@ -169,9 +331,23 @@ The system uses a JSON configuration file (`episodeidentifier.config.json`) with
 
 ## Review & Acceptance Checklist
 
+
+
+
+
+
+
+
 *GATE: Automated checks run during main() execution*
 
 ### Content Quality
+
+
+
+
+
+
+
 
 - [x] No implementation details (languages, frameworks, APIs)
 - [x] Focused on user value and business needs
@@ -179,6 +355,13 @@ The system uses a JSON configuration file (`episodeidentifier.config.json`) with
 - [x] All mandatory sections completed
 
 ### Requirement Completeness
+
+
+
+
+
+
+
 
 - [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
@@ -190,6 +373,13 @@ The system uses a JSON configuration file (`episodeidentifier.config.json`) with
 - [x] Configuration structure and validation requirements detailed---
 
 ## Execution Status
+
+
+
+
+
+
+
 
 *Updated by main() during processing*
 

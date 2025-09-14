@@ -1,5 +1,12 @@
 # Break down the plan into executable tasks
 
+
+
+
+
+
+
+
 Break down the plan into executable tasks.
 
 This is the third step in the Spec-Driven Development lifecycle.
@@ -10,11 +17,12 @@ Given the context provided as an argument, do this:
 2. Load and analyze available design documents:
    - Always read plan.md for tech stack and libraries
    - IF EXISTS: Read data-model.md for entities
-   - IF EXISTS: Read contracts/ for API endpoints  
+   - IF EXISTS: Read contracts/ for API endpoints
    - IF EXISTS: Read research.md for technical decisions
    - IF EXISTS: Read quickstart.md for test scenarios
 
    Note: Not all projects have all documents. For example:
+
    - CLI tools might not have contracts/
    - Simple libraries might not need data-model.md
    - Generate tasks based on what's available

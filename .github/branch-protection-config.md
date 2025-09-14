@@ -1,34 +1,119 @@
 # Branch Protection Configuration
 
+
+
+
+
+
+
+
 # This file documents the automated GitHub branch protection setup for this repository
+
+
+
+
+
+
+
 
 # Branch protection is now configured via YAML and applied using GitHub CLI
 
+
+
+
+
+
+
+
 ## Automated Configuration (Recommended)
 
+
+
+
+
+
+
+
 ### YAML-Based Configuration
+
+
+
+
+
+
+
 
 Branch protection is defined in `.github/repository-config.yml` and applied using:
 
 ```bash
+
 # Validate configuration
+
+
+
+
+
+
+
 ./scripts/validate-config.sh
 
 # Preview changes
+
+
+
+
+
+
+
 ./scripts/setup-branch-protection.sh --dry-run
 
 # Apply all repository settings and branch protection
+
+
+
+
+
+
+
 ./scripts/setup-branch-protection.sh
 
 # Apply only repository settings (skip branch protection)
+
+
+
+
+
+
+
 ./scripts/setup-branch-protection.sh --config-only
 ```
 
+
+
+
+
+
+
+
 ### Prerequisites
+
+
+
+
+
+
+
 
 ```
 
 ### Prerequisites
+
+
+
+
+
+
+
 
 - GitHub CLI (`gh`) installed and authenticated
 - `yq` installed for YAML parsing
@@ -37,24 +122,75 @@ Branch protection is defined in `.github/repository-config.yml` and applied usin
 
 ### Installation
 
+
+
+
+
+
+
+
 ```bash
+
+
+
+
+
+
+
+
 # Install prerequisites
+
+
+
+
+
+
+
 sudo snap install gh
 sudo snap install yq
 sudo apt-get install jq
 
 # Authenticate with GitHub
+
+
+
+
+
+
+
 gh auth login
 
 # Run setup
+
+
+
+
+
+
+
 ./scripts/setup-branch-protection.sh
+
 ```
 
 ## Current Configuration
 
+
+
+
+
+
+
+
 The YAML configuration (`.github/repository-config.yml`) defines:
 
 ### General Protection Rules
+
+
+
+
+
+
+
 
 - ✅ **Restrict pushes that create files**: Enabled
 - ✅ **Require a pull request before merging**: Enabled
@@ -65,6 +201,13 @@ The YAML configuration (`.github/repository-config.yml`) defines:
   - ✅ **Allow specified actors to bypass required pull requests**: Disabled
 
 ### Status Check Requirements
+
+
+
+
+
+
+
 
 - ✅ **Require status checks to pass before merging**: Enabled
 - ✅ **Require branches to be up to date before merging**: Enabled
@@ -77,6 +220,13 @@ The YAML configuration (`.github/repository-config.yml`) defines:
 
 ### Additional Restrictions
 
+
+
+
+
+
+
+
 - ✅ **Restrict pushes that create files**: Enabled
 - ✅ **Require signed commits**: Recommended (optional)
 - ✅ **Require linear history**: Enabled (enforces squash or rebase merging)
@@ -88,7 +238,21 @@ The YAML configuration (`.github/repository-config.yml`) defines:
 
 ## Administrative Settings
 
+
+
+
+
+
+
+
 ### Repository Settings
+
+
+
+
+
+
+
 
 - **Default branch**: `main`
 - **Merge button options**:
@@ -99,6 +263,13 @@ The YAML configuration (`.github/repository-config.yml`) defines:
 
 ### Collaborator Permissions
 
+
+
+
+
+
+
+
 - **Base permissions**: Read
 - **Admin access**: Repository owner only
 - **Write access**: Trusted contributors only
@@ -106,12 +277,26 @@ The YAML configuration (`.github/repository-config.yml`) defines:
 
 ## Setup Instructions
 
+
+
+
+
+
+
+
 1. Navigate to repository Settings → Branches
 2. Click "Add rule" or edit existing rule for `main` branch
 3. Configure all settings listed above
 4. Save the branch protection rule
 
 ## Enforcement
+
+
+
+
+
+
+
 
 These settings ensure:
 
@@ -123,6 +308,13 @@ These settings ensure:
 
 ## Bypassing Rules
 
+
+
+
+
+
+
+
 Branch protection rules should NOT be bypassed except in emergency situations by repository administrators. Any bypass should be:
 
 1. Documented with reasoning
@@ -130,6 +322,13 @@ Branch protection rules should NOT be bypassed except in emergency situations by
 3. Followed by immediate process improvement
 
 ## Verification
+
+
+
+
+
+
+
 
 To verify branch protection is working:
 
@@ -139,6 +338,13 @@ To verify branch protection is working:
 4. Verify all status checks are required
 
 ## Related Files
+
+
+
+
+
+
+
 
 - `.github/workflows/ci.yml` - Defines the CI/CD pipeline
 - `.github/pull_request_template.md` - PR template

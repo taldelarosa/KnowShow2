@@ -42,6 +42,7 @@ public class VttWorkflowTests : IDisposable
         services.AddTransient<ISubtitleFormatHandler, AssFormatHandler>();
         services.AddTransient<EnhancedPgsToTextConverter>();
         services.AddTransient<PgsToTextConverter>();
+        services.AddTransient<IAppConfigService, AppConfigService>();
         services.AddTransient<SubtitleMatcher>();
         services.AddTransient<FuzzyHashService>(provider => new FuzzyHashService(TestDatabaseConfig.GetTestDatabasePath(), provider.GetRequiredService<ILogger<FuzzyHashService>>(), provider.GetRequiredService<SubtitleNormalizationService>()));
         services.AddTransient<SubtitleWorkflowCoordinator>();

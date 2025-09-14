@@ -32,10 +32,25 @@ var fuzzyHashService = TestDatabaseConfig.CreateTestFuzzyHashService();
 Set the `TEST_DATABASE_PATH` environment variable to use a custom database:
 
 ```bash
+
 # Linux/Mac
+
+
+
+
+
+
+
 export TEST_DATABASE_PATH="/path/to/custom/test.db"
 
 # Windows
+
+
+
+
+
+
+
 set TEST_DATABASE_PATH=C:\path\to\custom\test.db
 ```
 
@@ -57,7 +72,7 @@ TestDatabaseConfig.CleanupTempDatabase(tempDbPath);
 The following test files have been updated to use the centralized configuration:
 
 - `tests/integration/VttWorkflowTests.cs`
-- `tests/integration/SrtWorkflowTests.cs`  
+- `tests/integration/SrtWorkflowTests.cs`
 - `tests/integration/AssWorkflowTests.cs`
 - `tests/integration/EndToEndIdentificationTests.cs`
 

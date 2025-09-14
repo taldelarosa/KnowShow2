@@ -1,12 +1,40 @@
 # Data Model: File Renaming Recommendations
 
+
+
+
+
+
+
+
 ## Overview
+
+
+
+
+
+
+
 
 Data model extensions for the file renaming recommendations feature, including enhanced response models, database schema changes, and new service models.
 
 ## Enhanced Models
 
+
+
+
+
+
+
+
 ### IdentificationResult Extension
+
+
+
+
+
+
+
 
 ```csharp
 public class IdentificationResult
@@ -27,15 +55,36 @@ public class IdentificationResult
     // Existing computed properties
     public bool IsAmbiguous => MatchConfidence < 0.9 && !string.IsNullOrEmpty(AmbiguityNotes);
     public bool HasError => Error != null;
-    
+
     // NEW: Computed property
     public bool HasSuggestedFilename => !string.IsNullOrEmpty(SuggestedFilename);
 }
 ```
 
+
+
+
+
+
+
+
 ### New Service Models
 
+
+
+
+
+
+
+
 #### FilenameGenerationRequest
+
+
+
+
+
+
+
 
 ```csharp
 public class FilenameGenerationRequest
@@ -49,7 +98,21 @@ public class FilenameGenerationRequest
 }
 ```
 
+
+
+
+
+
+
+
 #### FilenameGenerationResult
+
+
+
+
+
+
+
 
 ```csharp
 public class FilenameGenerationResult
@@ -63,7 +126,21 @@ public class FilenameGenerationResult
 }
 ```
 
+
+
+
+
+
+
+
 #### FileRenameRequest
+
+
+
+
+
+
+
 
 ```csharp
 public class FileRenameRequest
@@ -74,7 +151,21 @@ public class FileRenameRequest
 }
 ```
 
+
+
+
+
+
+
+
 #### FileRenameResult
+
+
+
+
+
+
+
 
 ```csharp
 public class FileRenameResult
@@ -96,9 +187,30 @@ public enum FileRenameError
 }
 ```
 
+
+
+
+
+
+
+
 ## Database Schema Changes
 
+
+
+
+
+
+
+
 ### SubtitleHashes Table Extension
+
+
+
+
+
+
+
 
 ```sql
 -- Migration: Add EpisodeName column
@@ -119,7 +231,21 @@ CREATE TABLE SubtitleHashes (
 );
 ```
 
+
+
+
+
+
+
+
 ### Database Migration Strategy
+
+
+
+
+
+
+
 
 ```csharp
 public class DatabaseMigration_007
@@ -127,14 +253,14 @@ public class DatabaseMigration_007
     public static void AddEpisodeNameColumn(SqliteConnection connection)
     {
         using var command = connection.CreateCommand();
-        
+
         // Check if column exists
         command.CommandText = @"
-            SELECT COUNT(*) FROM pragma_table_info('SubtitleHashes') 
+            SELECT COUNT(*) FROM pragma_table_info('SubtitleHashes')
             WHERE name='EpisodeName'";
-        
+
         var exists = (long)command.ExecuteScalar() > 0;
-        
+
         if (!exists)
         {
             command.CommandText = "ALTER TABLE SubtitleHashes ADD COLUMN EpisodeName TEXT NULL";
@@ -144,9 +270,30 @@ public class DatabaseMigration_007
 }
 ```
 
+
+
+
+
+
+
+
 ## Entity Relationships
 
+
+
+
+
+
+
+
 ### Core Entities
+
+
+
+
+
+
+
 
 - **Video File**: Input file requiring episode identification
 - **Episode Identification**: Process that produces confidence score and metadata
@@ -156,17 +303,45 @@ public class DatabaseMigration_007
 
 ### Data Flow
 
+
+
+
+
+
+
+
 ```
-Video File 
+Video File
     → Episode Identification (with confidence)
     → [High Confidence?] → Filename Generation
     → Suggested Filename in JSON Response
     → [Rename Flag?] → File Rename Operation
 ```
 
+
+
+
+
+
+
+
 ### Validation Rules
 
+
+
+
+
+
+
+
 #### Filename Generation Rules
+
+
+
+
+
+
+
 
 - Series name: Required, max 100 characters after sanitization
 - Season: Required, format S## (zero-padded)
@@ -177,11 +352,25 @@ Video File
 
 #### High Confidence Criteria
 
+
+
+
+
+
+
+
 - MatchConfidence >= 0.9 (90% confidence threshold)
 - No error conditions present
 - Valid series, season, episode metadata available
 
 #### Windows Compatibility Rules
+
+
+
+
+
+
+
 
 - Replace characters: `< > : " | ? * \` with single space
 - Trim multiple consecutive spaces to single space
@@ -190,7 +379,21 @@ Video File
 
 ## Service Interfaces
 
+
+
+
+
+
+
+
 ### IFilenameService
+
+
+
+
+
+
+
 
 ```csharp
 public interface IFilenameService
@@ -202,7 +405,21 @@ public interface IFilenameService
 }
 ```
 
+
+
+
+
+
+
+
 ### IFileRenameService
+
+
+
+
+
+
+
 
 ```csharp
 public interface IFileRenameService
@@ -213,7 +430,21 @@ public interface IFileRenameService
 }
 ```
 
+
+
+
+
+
+
+
 ### IDatabaseMigrationService
+
+
+
+
+
+
+
 
 ```csharp
 public interface IDatabaseMigrationService
@@ -224,9 +455,30 @@ public interface IDatabaseMigrationService
 }
 ```
 
+
+
+
+
+
+
+
 ## State Transitions
 
+
+
+
+
+
+
+
 ### Filename Generation States
+
+
+
+
+
+
+
 
 1. **Input Validation**: Validate required fields
 2. **Confidence Check**: Verify ≥90% confidence
@@ -237,6 +489,13 @@ public interface IDatabaseMigrationService
 
 ### File Rename States
 
+
+
+
+
+
+
+
 1. **Pre-flight Check**: File exists, writable
 2. **Target Validation**: Target path available
 3. **Rename Operation**: Atomic file move
@@ -245,7 +504,21 @@ public interface IDatabaseMigrationService
 
 ## Configuration Values
 
+
+
+
+
+
+
+
 ### Default Settings
+
+
+
+
+
+
+
 
 ```csharp
 public static class FilenameDefaults
@@ -254,15 +527,36 @@ public static class FilenameDefaults
     public const double MinConfidenceThreshold = 0.9;
     public const string FilenamePattern = "{Series} - S{Season:D2}E{Episode:D2}{EpisodeName}.{Extension}";
     public const string FallbackPattern = "{Series} - S{Season:D2}E{Episode:D2}.{Extension}";
-    
+
     public static readonly char[] WindowsInvalidChars = { '<', '>', ':', '"', '|', '?', '*', '\\' };
     public const char ReplacementChar = ' ';
 }
 ```
 
+
+
+
+
+
+
+
 ## Error Handling Patterns
 
+
+
+
+
+
+
+
 ### Validation Errors
+
+
+
+
+
+
+
 
 - Invalid series/season/episode format
 - Filename too long after sanitization
@@ -270,12 +564,26 @@ public static class FilenameDefaults
 
 ### Runtime Errors
 
+
+
+
+
+
+
+
 - File not found during rename
 - Permission denied for file operations
 - Target file already exists
 - Disk space insufficient
 
 ### Recovery Strategies
+
+
+
+
+
+
+
 
 - Graceful degradation: Skip rename on error, still return suggestion
 - Detailed error messages for debugging

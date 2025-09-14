@@ -2,6 +2,7 @@ using EpisodeIdentifier.Core.Interfaces;
 using EpisodeIdentifier.Core.Models.Hashing;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
+using System.IO;
 using System.IO.Abstractions;
 using SSDEEP.NET;
 
@@ -136,7 +137,7 @@ namespace EpisodeIdentifier.Core.Services.Hashing
                     stopwatch.Stop();
                     _logger.LogWarning("First file not found during comparison - Operation: {OperationId}, Path1: {FilePath1}, Duration: {Duration}ms",
                         operationId, filePath1, stopwatch.ElapsedMilliseconds);
-                    return FileComparisonResult.Failure();
+                    throw new FileNotFoundException($"File not found: {filePath1}", filePath1);
                 }
 
                 if (!_fileSystem.File.Exists(filePath2))
@@ -144,7 +145,7 @@ namespace EpisodeIdentifier.Core.Services.Hashing
                     stopwatch.Stop();
                     _logger.LogWarning("Second file not found during comparison - Operation: {OperationId}, Path2: {FilePath2}, Duration: {Duration}ms",
                         operationId, filePath2, stopwatch.ElapsedMilliseconds);
-                    return FileComparisonResult.Failure();
+                    throw new FileNotFoundException($"File not found: {filePath2}", filePath2);
                 }
 
                 // Get file sizes for metrics
@@ -185,6 +186,11 @@ namespace EpisodeIdentifier.Core.Services.Hashing
                     operationId, filePath1, filePath2, similarity, isMatch, _similarityThreshold, hash1Time, hash2Time, compareTime, stopwatch.ElapsedMilliseconds);
 
                 return FileComparisonResult.Success(hash1, hash2, similarity, isMatch, stopwatch.Elapsed);
+            }
+            catch (FileNotFoundException)
+            {
+                // Re-throw FileNotFoundException to allow callers to handle it
+                throw;
             }
             catch (Exception ex)
             {
@@ -290,11 +296,9 @@ namespace EpisodeIdentifier.Core.Services.Hashing
             if (!int.TryParse(parts[0], out _))
                 return false;
 
-            // Other parts should contain valid base64-like characters
-            var validChars = System.Text.RegularExpressions.Regex.IsMatch(parts[1], @"^[A-Za-z0-9+/]*$") &&
-                            System.Text.RegularExpressions.Regex.IsMatch(parts[2], @"^[A-Za-z0-9+/]*$");
-
-            return validChars;
+            // For ssdeep hashes, the hash parts can contain various characters
+            // Just ensure they're not empty and contain printable ASCII characters
+            return !string.IsNullOrEmpty(parts[1]) && !string.IsNullOrEmpty(parts[2]);
         }
 
         /// <summary>

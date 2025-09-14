@@ -49,12 +49,14 @@ public class EndToEndIdentificationTests : IDisposable
         var fuzzyLogger = loggerFactory.CreateLogger<FuzzyHashService>();
         var normalizationLogger = loggerFactory.CreateLogger<SubtitleNormalizationService>();
         var matcherLogger = loggerFactory.CreateLogger<SubtitleMatcher>();
+        var configLogger = loggerFactory.CreateLogger<AppConfigService>();
         var coordinatorLogger = loggerFactory.CreateLogger<SubtitleWorkflowCoordinator>();
 
         var normalizationService = new SubtitleNormalizationService(normalizationLogger);
         var testDbPath = TestDatabaseConfig.GetTestDatabasePath();
         var hashService = new FuzzyHashService(testDbPath, fuzzyLogger, normalizationService);
-        var matcher = new SubtitleMatcher(hashService, matcherLogger);
+        var configService = new AppConfigService(configLogger);
+        var matcher = new SubtitleMatcher(hashService, matcherLogger, configService);
 
         // Create coordinator
         _coordinator = new SubtitleWorkflowCoordinator(

@@ -1,5 +1,7 @@
 using EpisodeIdentifier.Core.Models;
 using EpisodeIdentifier.Core.Services;
+using EpisodeIdentifier.Core.Interfaces;
+using NSubstitute;
 using Xunit;
 
 namespace EpisodeIdentifier.Tests.Unit;
@@ -7,10 +9,13 @@ namespace EpisodeIdentifier.Tests.Unit;
 public class FilenameServiceTests
 {
     private readonly FilenameService _filenameService;
+    private readonly IAppConfigService _mockConfigService;
 
     public FilenameServiceTests()
     {
-        _filenameService = new FilenameService();
+        _mockConfigService = Substitute.For<IAppConfigService>();
+        _mockConfigService.Config.RenameConfidenceThreshold.Returns(0.1);
+        _filenameService = new FilenameService(_mockConfigService);
     }
 
     [Theory]

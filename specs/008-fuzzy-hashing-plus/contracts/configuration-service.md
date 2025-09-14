@@ -1,8 +1,29 @@
 # Configuration Service Contract
 
+
+
+
+
+
+
+
 ## Interface: IConfigurationService
 
+
+
+
+
+
+
+
 ### LoadConfiguration()
+
+
+
+
+
+
+
 
 **Signature**: `Task<ConfigurationResult> LoadConfiguration()`
 
@@ -28,6 +49,13 @@
 }
 ```
 
+
+
+
+
+
+
+
 **Error Cases**:
 
 ```json
@@ -41,7 +69,21 @@
 }
 ```
 
+
+
+
+
+
+
+
 ### ReloadIfChanged()
+
+
+
+
+
+
+
 
 **Signature**: `Task<bool> ReloadIfChanged()`
 
@@ -56,6 +98,13 @@
 
 ### ValidateConfiguration()
 
+
+
+
+
+
+
+
 **Signature**: `ValidationResult ValidateConfiguration(Configuration config)`
 
 **Returns**:
@@ -66,6 +115,13 @@
   "errors": []
 }
 ```
+
+
+
+
+
+
+
 
 **Validation Errors**:
 
@@ -79,3 +135,10 @@
   ]
 }
 ```
+
+
+
+
+
+
+

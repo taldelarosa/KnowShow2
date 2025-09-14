@@ -1,6 +1,20 @@
 # Quickstart: Identify Season and Episode from AV1 Video via PGS Subtitle Comparison (CLI, JSON Output)
 
+
+
+
+
+
+
+
 ## Prerequisites
+
+
+
+
+
+
+
 
 - Linux environment
 - C# runtime (dotnet)
@@ -9,6 +23,13 @@
 - SQLite database for fuzzy hashes
 
 ## Steps
+
+
+
+
+
+
+
 
 1. Place AV1 video file in working directory
 2. Run CLI tool: `dotnet run -- --input <video-file> --hash-db <sqlite-db>`
@@ -20,12 +41,41 @@
 
 ## Example
 
+
+
+
+
+
+
+
 ```sh
+
 # Example command
+
+
+
+
+
+
+
 ./identify-episode --input "MyShow_S01E02.mkv" --hash-db "./hashes.sqlite"
 ```
 
+
+
+
+
+
+
+
 ## Output
+
+
+
+
+
+
+
 
 - JSON object with fields: series, season, episode, matchConfidence, ambiguityNotes, error
 

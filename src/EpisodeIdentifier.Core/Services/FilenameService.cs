@@ -13,6 +13,12 @@ public class FilenameService : IFilenameService
 {
     private readonly char[] _invalidWindowsChars = { '<', '>', ':', '"', '|', '?', '*', '\\', '/' };
     private readonly string[] _reservedWindowsNames = { "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9" };
+    private readonly IAppConfigService _configService;
+
+    public FilenameService(IAppConfigService configService)
+    {
+        _configService = configService ?? throw new ArgumentNullException(nameof(configService));
+    }
 
     /// <inheritdoc/>
     public FilenameGenerationResult GenerateFilename(FilenameGenerationRequest request)
@@ -32,10 +38,11 @@ public class FilenameService : IFilenameService
         }
 
         // Check confidence threshold
-        if (request.MatchConfidence < 0.85)
+        var thresholdFromConfig = _configService.Config.RenameConfidenceThreshold;
+        if (request.MatchConfidence < thresholdFromConfig)
         {
             result.IsValid = false;
-            result.ValidationError = $"Match confidence {request.MatchConfidence:F2} is below required threshold of 0.85";
+            result.ValidationError = $"Match confidence {request.MatchConfidence:F2} is below required threshold of {thresholdFromConfig:F2}";
             return result;
         }
 
@@ -217,7 +224,66 @@ public class FilenameService : IFilenameService
         if (availableLength <= 0)
             return extension.Length > 0 && extension.Length <= maxLength ? extension : filename.Substring(0, Math.Max(1, maxLength));
 
-        // Simple case: just truncate the name part to fit exactly
+        // Try to preserve the season/episode pattern (S##E##) by smart truncation
+        var seasonEpisodeMatch = Regex.Match(nameWithoutExtension, @" - (S\d{2}E\d{2}) - ");
+        if (seasonEpisodeMatch.Success)
+        {
+            // We have a standard format: "Series - S##E## - Episode"
+            var beforeSeasonEpisode = nameWithoutExtension.Substring(0, seasonEpisodeMatch.Index);
+            var seasonEpisodePart = seasonEpisodeMatch.Groups[1].Value; // "S01E01"
+            var afterSeasonEpisodeIndex = seasonEpisodeMatch.Index + seasonEpisodeMatch.Length;
+            var afterSeasonEpisode = afterSeasonEpisodeIndex < nameWithoutExtension.Length
+                ? nameWithoutExtension.Substring(afterSeasonEpisodeIndex)
+                : "";
+
+            // Essential parts: " - " + "S01E01" + " - " = 12 characters minimum
+            var essentialLength = 12;
+            var remainingLength = availableLength - essentialLength;
+
+            if (remainingLength > 0)
+            {
+                // Split remaining space between series and episode names
+                var seriesMaxLength = remainingLength / 2;
+                var episodeMaxLength = remainingLength - seriesMaxLength;
+
+                var truncatedSeries = beforeSeasonEpisode.Length > seriesMaxLength ?
+                    beforeSeasonEpisode.Substring(0, seriesMaxLength) : beforeSeasonEpisode;
+                var truncatedEpisode = afterSeasonEpisode.Length > episodeMaxLength ?
+                    afterSeasonEpisode.Substring(0, episodeMaxLength) : afterSeasonEpisode;
+
+                return $"{truncatedSeries} - {seasonEpisodePart} - {truncatedEpisode}{extension}";
+            }
+            else
+            {
+                // Not enough space even for essential parts, just return season/episode with extension
+                return $"{seasonEpisodePart}{extension}";
+            }
+        }
+
+        // Fallback for files without the standard format or season/episode pattern
+        var seasonEpisodeOnlyMatch = Regex.Match(nameWithoutExtension, @" - (S\d{2}E\d{2})$");
+        if (seasonEpisodeOnlyMatch.Success)
+        {
+            // Format: "Series - S##E##"
+            var beforeSeasonEpisode = nameWithoutExtension.Substring(0, seasonEpisodeOnlyMatch.Index);
+            var seasonEpisodePart = seasonEpisodeOnlyMatch.Groups[1].Value;
+
+            var essentialLength = 3 + seasonEpisodePart.Length; // " - " + "S01E01" = 9 characters
+            var remainingLength = availableLength - essentialLength;
+
+            if (remainingLength > 0)
+            {
+                var truncatedSeries = beforeSeasonEpisode.Length > remainingLength ?
+                    beforeSeasonEpisode.Substring(0, remainingLength) : beforeSeasonEpisode;
+                return $"{truncatedSeries} - {seasonEpisodePart}{extension}";
+            }
+            else
+            {
+                return $"{seasonEpisodePart}{extension}";
+            }
+        }
+
+        // Simple case: just truncate the name part to fit exactly (no season/episode pattern found)
         if (nameWithoutExtension.Length > availableLength)
         {
             nameWithoutExtension = nameWithoutExtension.Substring(0, availableLength);

@@ -1,30 +1,87 @@
 # Feature Specification: Bulk Processing Extension for Episode Identification
 
-**Feature Branch**: `009-bulk-processing-extension`  
-**Created**: September 13, 2025  
-**Status**: Draft  
+**Feature Branch**: `009-bulk-processing-extension`
+**Created**: September 13, 2025
+**Status**: Draft
 **Input**: User description: "The app will now accept individual video files or a directory as input for bulk processing. This extends the existing fuzzy hashing and configuration system with comprehensive bulk processing capabilities."
 
 ## Execution Flow (main)
 
 ```
+
 1. Parse user description from Input
    → Key concepts identified: bulk processing, directory input, individual file input
+
+
+
+
+
+
+
+
 2. Extract key concepts from description
    → Actors: users processing files and directories in bulk
+
+
+
+
+
+
+
    → Actions: processing individual files, processing directories, recursive discovery
    → Data: video files, directory structures, processing results, progress feedback
    → Constraints: support for both single files and directories, recursive processing
+
 3. For each unclear aspect:
    → Marked bulk processing workflow and progress reporting requirements
+
+
+
+
+
+
+
+
 4. Fill User Scenarios & Testing section
    → Clear user flow: select input (file/directory) → process → view results
+
+
+
+
+
+
+
+
 5. Generate Functional Requirements
    → Each requirement testable and specific to bulk processing functionality
+
+
+
+
+
+
+
+
 6. Identify Key Entities
    → InputProcessor, ProcessingResult, BulkProcessor entities
+
+
+
+
+
+
+
+
 7. Run Review Checklist
    → Bulk processing details and performance considerations reviewed
+
+
+
+
+
+
+
+
 8. Return: SUCCESS (spec ready for planning)
 ```
 
