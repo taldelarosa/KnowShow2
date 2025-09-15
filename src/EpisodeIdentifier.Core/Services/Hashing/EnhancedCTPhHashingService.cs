@@ -7,6 +7,7 @@ using FuzzySharp;
 using EpisodeIdentifier.Core.Interfaces;
 using EpisodeIdentifier.Core.Models;
 using EpisodeIdentifier.Core.Models.Hashing;
+using EpisodeIdentifier.Core.Models.Configuration;
 using EpisodeIdentifier.Core.Services;
 
 namespace EpisodeIdentifier.Core.Services.Hashing
@@ -19,15 +20,18 @@ namespace EpisodeIdentifier.Core.Services.Hashing
         private readonly ICTPhHashingService _ctphService;
         private readonly FuzzyHashService _fuzzyHashService;
         private readonly ILogger<EnhancedCTPhHashingService> _logger;
+        private readonly IConfigurationService _configService;
 
         public EnhancedCTPhHashingService(
             ICTPhHashingService ctphService,
             FuzzyHashService fuzzyHashService,
-            ILogger<EnhancedCTPhHashingService> logger)
+            ILogger<EnhancedCTPhHashingService> logger,
+            IConfigurationService configService)
         {
             _ctphService = ctphService ?? throw new ArgumentNullException(nameof(ctphService));
             _fuzzyHashService = fuzzyHashService ?? throw new ArgumentNullException(nameof(fuzzyHashService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _configService = configService ?? throw new ArgumentNullException(nameof(configService));
         }
 
         /// <summary>
@@ -59,14 +63,25 @@ namespace EpisodeIdentifier.Core.Services.Hashing
                     return EnhancedComparisonResult.Failure("EMPTY_SUBTITLE_TEXT");
                 }
 
-                var ctphThreshold = _ctphService.GetSimilarityThreshold() / 100.0; // Convert to 0-1 range
+                // Load configuration
+                var configResult = await _configService.LoadConfiguration();
+                var config = configResult.Configuration;
+                if (config == null)
+                {
+                    _logger.LogWarning("Configuration not available, using default values - Operation: {OperationId}", operationId);
+                    // Fall back to default behavior if config is not available
+                    return EnhancedComparisonResult.Failure("CONFIGURATION_UNAVAILABLE");
+                }
+
+                var ctphThreshold = (double)config.FuzzyHashThreshold / 100.0; // Convert to 0-1 range
+                var textFallbackHashThreshold = 0.3; // 30% hash similarity for candidates - could be configurable in future
 
                 // Step 1: Try CTPH-style fast hash matching using existing FuzzyHashService
                 var hashMatches = await _fuzzyHashService.FindMatches(subtitleText, ctphThreshold);
-                
+
                 var hashMatchTime = stopwatch.Elapsed;
-                _logger.LogDebug("CTPH-style hash matching completed - Operation: {OperationId}, MatchesFound: {MatchesFound}, Duration: {Duration}ms",
-                    operationId, hashMatches.Count, hashMatchTime.TotalMilliseconds);
+                _logger.LogDebug("CTPH-style hash matching completed - Operation: {OperationId}, MatchesFound: {MatchesFound}, Duration: {Duration}ms, Threshold: {Threshold:P2}",
+                    operationId, hashMatches.Count, hashMatchTime.TotalMilliseconds, ctphThreshold);
 
                 // Check if we have good hash matches above threshold
                 if (hashMatches.Count > 0)
@@ -74,11 +89,11 @@ namespace EpisodeIdentifier.Core.Services.Hashing
                     var bestHashMatch = hashMatches.First();
                     var hashSimilarityScore = (int)(bestHashMatch.Confidence * 100);
 
-                    if (hashSimilarityScore >= _ctphService.GetSimilarityThreshold())
+                    if (hashSimilarityScore >= config.FuzzyHashThreshold)
                     {
                         stopwatch.Stop();
                         _logger.LogInformation("High-confidence hash match found - Operation: {OperationId}, Series: {Series} S{Season}E{Episode}, Score: {Score}%, Duration: {Duration}ms",
-                            operationId, bestHashMatch.Subtitle.Series, bestHashMatch.Subtitle.Season, bestHashMatch.Subtitle.Episode, 
+                            operationId, bestHashMatch.Subtitle.Series, bestHashMatch.Subtitle.Season, bestHashMatch.Subtitle.Episode,
                             hashSimilarityScore, stopwatch.ElapsedMilliseconds);
 
                         return EnhancedComparisonResult.Success(
@@ -91,15 +106,15 @@ namespace EpisodeIdentifier.Core.Services.Hashing
                 // Step 2: If hash matching didn't find good matches and text fallback is enabled, try text comparison
                 if (enableTextFallback && (hashMatches.Count == 0 || hashMatches.First().Confidence < ctphThreshold))
                 {
-                    _logger.LogInformation("Hash matching below threshold, attempting text fallback - Operation: {OperationId}, BestHashConfidence: {BestHashConfidence:P2}",
-                        operationId, hashMatches.Count > 0 ? hashMatches.First().Confidence : 0);
+                    _logger.LogInformation("Hash matching below threshold, attempting text fallback - Operation: {OperationId}, BestHashConfidence: {BestHashConfidence:P2}, HashThreshold: {HashThreshold:P2}",
+                        operationId, hashMatches.Count > 0 ? hashMatches.First().Confidence : 0, ctphThreshold);
 
                     var textFallbackStopwatch = System.Diagnostics.Stopwatch.StartNew();
 
                     try
                     {
                         // Get candidates for text comparison - use lower threshold for hash to get more candidates
-                        var textCandidates = await _fuzzyHashService.FindMatches(subtitleText, 0.3); // 30% hash similarity for candidates
+                        var textCandidates = await _fuzzyHashService.FindMatches(subtitleText, textFallbackHashThreshold);
 
                         if (textCandidates.Count > 0)
                         {
@@ -116,13 +131,13 @@ namespace EpisodeIdentifier.Core.Services.Hashing
                             if (bestTextMatch != null)
                             {
                                 var hashSimilarity = hashMatches.Count > 0 ? (int)(hashMatches.First().Confidence * 100) : 0;
-                                
+
                                 _logger.LogInformation("Text fallback found match - Operation: {OperationId}, Series: {Series} S{Season}E{Episode}, HashScore: {HashScore}%, TextScore: {TextScore}%",
-                                    operationId, bestTextMatch.Series, bestTextMatch.Season, bestTextMatch.Episode, 
+                                    operationId, bestTextMatch.Series, bestTextMatch.Season, bestTextMatch.Episode,
                                     hashSimilarity, bestTextMatch.TextSimilarityScore);
 
                                 stopwatch.Stop();
-                                
+
                                 return EnhancedComparisonResult.SuccessWithTextFallback(
                                     hashSimilarity, bestTextMatch.TextSimilarityScore,
                                     bestTextMatch.TextSimilarityScore >= 75, // 75% threshold for text matching
@@ -144,13 +159,13 @@ namespace EpisodeIdentifier.Core.Services.Hashing
                 }
 
                 stopwatch.Stop();
-                
+
                 // Return result with best hash match if available, even if below threshold
                 if (hashMatches.Count > 0)
                 {
                     var bestMatch = hashMatches.First();
                     var hashSimilarityScore = (int)(bestMatch.Confidence * 100);
-                    
+
                     return EnhancedComparisonResult.Success(
                         hashSimilarityScore, false, stopwatch.Elapsed,
                         bestMatch.Subtitle.Series, bestMatch.Subtitle.Season, bestMatch.Subtitle.Episode,
@@ -172,7 +187,7 @@ namespace EpisodeIdentifier.Core.Services.Hashing
         /// Finds the best text match among candidate episodes using fuzzy string comparison
         /// </summary>
         private async Task<TextMatchResult?> FindBestTextMatch(
-            string inputText, 
+            string inputText,
             IEnumerable<IGrouping<string, (LabelledSubtitle Subtitle, double Confidence)>> seriesGroups)
         {
             TextMatchResult? bestMatch = null;
@@ -187,7 +202,7 @@ namespace EpisodeIdentifier.Core.Services.Hashing
                 foreach (var candidate in seriesGroup.Take(5)) // Top 5 episodes per series
                 {
                     var textScore = await CompareTextsAsync(inputText, candidate.Subtitle.SubtitleText);
-                    
+
                     if (textScore > bestScore)
                     {
                         bestScore = textScore;

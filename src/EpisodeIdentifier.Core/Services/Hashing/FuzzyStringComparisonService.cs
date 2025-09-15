@@ -25,8 +25,8 @@ namespace EpisodeIdentifier.Core.Services.Hashing
         private readonly int _similarityThreshold;
 
         public FuzzyStringComparisonService(
-            string dbPath, 
-            ILogger<FuzzyStringComparisonService> logger, 
+            string dbPath,
+            ILogger<FuzzyStringComparisonService> logger,
             SubtitleNormalizationService normalizationService)
         {
             _dbPath = dbPath ?? throw new ArgumentNullException(nameof(dbPath));
@@ -42,7 +42,7 @@ namespace EpisodeIdentifier.Core.Services.Hashing
         {
             var operationId = Guid.NewGuid();
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            
+
             using var scope = _logger.BeginScope(new Dictionary<string, object>
             {
                 ["Operation"] = "FuzzyStringFallback",
@@ -104,11 +104,11 @@ namespace EpisodeIdentifier.Core.Services.Hashing
 
                 using var reader = await command.ExecuteReaderAsync();
                 int recordsProcessed = 0;
-                
+
                 while (await reader.ReadAsync())
                 {
                     recordsProcessed++;
-                    
+
                     var subtitle = new LabelledSubtitle
                     {
                         Series = reader.GetString(0),
@@ -130,7 +130,7 @@ namespace EpisodeIdentifier.Core.Services.Hashing
                     // Compare each input version against each stored version
                     var bestScore = 0;
                     var bestVersion = "";
-                    
+
                     foreach (var inputKvp in inputVersions)
                     {
                         foreach (var storedKvp in storedVersions)

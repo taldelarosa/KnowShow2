@@ -356,7 +356,7 @@ namespace EpisodeIdentifier.Core.Services.Hashing
                 // For now, we'll simulate a low similarity score to trigger text fallback
                 var hashSimilarity = 0; // This would come from database comparison
                 var isHashMatch = hashSimilarity >= _similarityThreshold;
-                
+
                 _logger.LogDebug("CTPH hash comparison result - Operation: {OperationId}, Similarity: {Similarity}%, Threshold: {Threshold}%, IsMatch: {IsMatch}",
                     operationId, hashSimilarity, _similarityThreshold, isHashMatch);
 
@@ -367,16 +367,16 @@ namespace EpisodeIdentifier.Core.Services.Hashing
                         operationId);
 
                     var textFallbackStopwatch = System.Diagnostics.Stopwatch.StartNew();
-                    
+
                     try
                     {
                         // Read file content for text comparison
                         var fileContent = await _fileSystem.File.ReadAllTextAsync(filePath);
-                        
+
                         // Parse filename to extract series info for targeted search
                         var filename = _fileSystem.Path.GetFileNameWithoutExtension(filePath);
                         var parsedInfo = ParseFilenameForSeriesInfo(filename);
-                        
+
                         if (!string.IsNullOrEmpty(parsedInfo.series))
                         {
                             // Perform text comparison using FuzzySharp directly
@@ -409,7 +409,7 @@ namespace EpisodeIdentifier.Core.Services.Hashing
                 }
 
                 stopwatch.Stop();
-                
+
                 // Return standard result if no text fallback or no match found
                 return FileComparisonResult.Success(hash, "NO_DATABASE_MATCH", hashSimilarity, isHashMatch, stopwatch.Elapsed);
             }

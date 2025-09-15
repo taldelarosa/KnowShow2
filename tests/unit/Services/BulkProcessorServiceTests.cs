@@ -24,7 +24,7 @@ public class BulkProcessorServiceTests : IDisposable
     {
         using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
         _logger = loggerFactory.CreateLogger<BulkProcessorService>();
-        
+
         _fileDiscoveryService = Substitute.For<IFileDiscoveryService>();
         _progressTracker = Substitute.For<IProgressTracker>();
         _videoFileProcessingService = Substitute.For<IVideoFileProcessingService>();

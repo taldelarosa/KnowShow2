@@ -50,7 +50,7 @@ namespace EpisodeIdentifier.Core.Tests.Unit.Services.Hashing
         {
             // Arrange & Act
             var result = EnhancedComparisonResult.SuccessWithTextFallback(
-                40, 80, true, 
+                40, 80, true,
                 TimeSpan.FromMilliseconds(5), TimeSpan.FromMilliseconds(45),
                 "Test Show", "2", "3", "Test Episode");
 

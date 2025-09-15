@@ -24,7 +24,7 @@ namespace EpisodeIdentifier.Core.Examples
             // Setup logging
             using var loggerFactory = LoggerFactory.Create(builder =>
                 builder.AddConsole().SetMinimumLevel(LogLevel.Information));
-            
+
             var logger = loggerFactory.CreateLogger<TextSearchFallbackExample>();
             var enhancedLogger = loggerFactory.CreateLogger<EnhancedCTPhHashingService>();
             var fuzzyLogger = loggerFactory.CreateLogger<FuzzyHashService>();
@@ -41,10 +41,13 @@ namespace EpisodeIdentifier.Core.Examples
 
                 // Create a mock CTPH service
                 var mockCtphService = new MockCTPhHashingService();
-                
+
+                // Create a mock configuration service for testing
+                var configService = new ConfigurationService(Microsoft.Extensions.Logging.Abstractions.NullLogger<ConfigurationService>.Instance);
+
                 // Create the enhanced service
                 var enhancedService = new EnhancedCTPhHashingService(
-                    mockCtphService, fuzzyHashService, enhancedLogger);
+                    mockCtphService, fuzzyHashService, enhancedLogger, configService);
 
                 // Example 1: Add some sample data to the database
                 await AddSampleData(fuzzyHashService, logger);
@@ -103,7 +106,7 @@ namespace EpisodeIdentifier.Core.Examples
                 },
                 new LabelledSubtitle
                 {
-                    Series = "Sample Show", 
+                    Series = "Sample Show",
                     Season = "1",
                     Episode = "2",
                     EpisodeName = "The Meeting",
@@ -117,7 +120,7 @@ namespace EpisodeIdentifier.Core.Examples
                 new LabelledSubtitle
                 {
                     Series = "Another Series",
-                    Season = "2", 
+                    Season = "2",
                     Episode = "5",
                     EpisodeName = "The Adventure",
                     SubtitleText = @"
@@ -142,7 +145,7 @@ namespace EpisodeIdentifier.Core.Examples
         private static void DisplayResults(EnhancedComparisonResult result, ILogger logger)
         {
             logger.LogInformation("=== Comparison Results ===");
-            
+
             if (!result.IsSuccess)
             {
                 logger.LogWarning("Comparison failed: {Error}", result.ErrorMessage);
@@ -152,13 +155,13 @@ namespace EpisodeIdentifier.Core.Examples
             logger.LogInformation("Match found: {IsMatch}", result.IsMatch);
             logger.LogInformation("Used text fallback: {UsedFallback}", result.UsedTextFallback);
             logger.LogInformation("Hash similarity score: {HashScore}%", result.HashSimilarityScore);
-            
+
             if (result.UsedTextFallback)
             {
                 logger.LogInformation("Text similarity score: {TextScore}%", result.TextSimilarityScore);
                 logger.LogInformation("Text fallback time: {FallbackTime}ms", result.TextFallbackTime.TotalMilliseconds);
             }
-            
+
             logger.LogInformation("Hash comparison time: {HashTime}ms", result.HashComparisonTime.TotalMilliseconds);
 
             if (result.IsMatch && !string.IsNullOrEmpty(result.MatchedSeries))

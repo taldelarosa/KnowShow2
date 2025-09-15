@@ -11,6 +11,27 @@ public class IdentificationResult
     public IdentificationError? Error { get; set; }
 
     /// <summary>
+    /// The matching method used to identify this episode.
+    /// Possible values: "CTPH", "Legacy", "TextFallback"
+    /// </summary>
+    public string? MatchingMethod { get; set; }
+
+    /// <summary>
+    /// Indicates whether fuzzy string comparison was used as a fallback when hash similarity was below threshold.
+    /// </summary>
+    public bool UsedTextFallback { get; set; }
+
+    /// <summary>
+    /// Hash similarity score (0-100) when available. Only set when hash comparison was performed.
+    /// </summary>
+    public int? HashSimilarityScore { get; set; }
+
+    /// <summary>
+    /// Text similarity score (0-100) when text fallback was used. Only set when UsedTextFallback is true.
+    /// </summary>
+    public int? TextSimilarityScore { get; set; }
+
+    /// <summary>
     /// Suggested filename for high confidence episode identifications.
     /// Format: "SeriesName - S01E01 - EpisodeName.ext"
     /// Only populated when MatchConfidence >= 0.9
