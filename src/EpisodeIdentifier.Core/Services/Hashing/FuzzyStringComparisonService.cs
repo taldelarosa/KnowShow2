@@ -24,15 +24,23 @@ namespace EpisodeIdentifier.Core.Services.Hashing
         private const int DEFAULT_SIMILARITY_THRESHOLD = 75;
         private readonly int _similarityThreshold;
 
+        /// <summary>
+        /// Creates a new instance of FuzzyStringComparisonService.
+        /// </summary>
+        /// <param name="dbPath">Path to the database.</param>
+        /// <param name="logger">Logger instance.</param>
+        /// <param name="normalizationService">Subtitle normalization service.</param>
+        /// <param name="similarityThreshold">Optional similarity threshold (default: 75).</param>
         public FuzzyStringComparisonService(
             string dbPath,
             ILogger<FuzzyStringComparisonService> logger,
-            SubtitleNormalizationService normalizationService)
+            SubtitleNormalizationService normalizationService,
+            int similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD)
         {
             _dbPath = dbPath ?? throw new ArgumentNullException(nameof(dbPath));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _normalizationService = normalizationService ?? throw new ArgumentNullException(nameof(normalizationService));
-            _similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
+            _similarityThreshold = similarityThreshold;
         }
 
         /// <summary>
