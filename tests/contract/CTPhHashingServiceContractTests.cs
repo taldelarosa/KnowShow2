@@ -30,17 +30,17 @@ public class CTPhHashingServiceContractTests
 
         // Setup mock file system with test files
         _mockFileSystem = new MockFileSystem();
-        
+
         // Create test file paths
         _testFilePath = Path.Combine(Path.GetTempPath(), "test_file.mkv");
         _testFile2Path = Path.Combine(Path.GetTempPath(), "test_file2.mkv");
-        
+
         // Create test files with some content
         var testContent = new byte[1024]; // 1KB of data
         new Random().NextBytes(testContent);
         _mockFileSystem.AddFile(_testFilePath, new MockFileData(testContent));
         _mockFileSystem.AddFile(_testFile2Path, new MockFileData(testContent));
-        
+
         // Create identical file for testing
         var identicalPath = Path.Combine(Path.GetTempPath(), "identical.mkv");
         _mockFileSystem.AddFile(identicalPath, new MockFileData(testContent));
@@ -83,10 +83,10 @@ public class CTPhHashingServiceContractTests
         // Arrange - Create a file and simulate access denied
         var restrictedFile = Path.Combine(Path.GetTempPath(), "restricted_file.mkv");
         _mockFileSystem.AddFile(restrictedFile, new MockFileData("content"));
-        
+
         // Mock file system doesn't simulate permissions, so we'll skip this test
         // In a real implementation, this would test actual file system permissions
-        
+
         // Act & Assert - For now, just verify the method handles invalid access gracefully
         var result = await _hashingService.ComputeFuzzyHash(restrictedFile);
         result.Should().NotBeNull(); // Service should handle gracefully, not throw in mock environment
@@ -206,7 +206,7 @@ public class CTPhHashingServiceContractTests
 
         // Act & Assert - The service should handle empty files gracefully
         var result = await _hashingService.ComputeFuzzyHash(corruptedFile);
-        
+
         // Empty files might return empty hash or specific behavior - verify it doesn't crash
         result.Should().NotBeNull();
     }

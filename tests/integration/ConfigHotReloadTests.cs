@@ -41,7 +41,7 @@ public class ConfigHotReloadTests : IDisposable
 
         _serviceProvider = services.BuildServiceProvider();
         _logger = _serviceProvider.GetRequiredService<ILogger<ConfigHotReloadTests>>();
-        
+
         // Debug: Log the test config path to verify it's correct
         _logger.LogInformation("ConfigHotReloadTests initialized with config path: {ConfigPath}", _testConfigPath);
 
@@ -56,7 +56,7 @@ public class ConfigHotReloadTests : IDisposable
 
         // Create initial config
         CreateConfigWithThreshold(75);
-        
+
         // Debug: Check if file was created
         _logger.LogInformation("Test config path: {ConfigPath}", _testConfigPath);
         _logger.LogInformation("File exists: {FileExists}", File.Exists(_testConfigPath));
@@ -64,15 +64,15 @@ public class ConfigHotReloadTests : IDisposable
         {
             _logger.LogInformation("File size: {FileSize} bytes", new FileInfo(_testConfigPath).Length);
         }
-        
+
         var initialConfig = await configService.LoadConfiguration();
-        
-        _logger.LogInformation("Initial config valid: {IsValid}, Errors: {Errors}", 
+
+        _logger.LogInformation("Initial config valid: {IsValid}, Errors: {Errors}",
             initialConfig.IsValid, string.Join(", ", initialConfig.Errors));
-        
-        _logger.LogInformation("Initial config valid: {IsValid}, Errors: {Errors}", 
+
+        _logger.LogInformation("Initial config valid: {IsValid}, Errors: {Errors}",
             initialConfig.IsValid, string.Join(", ", initialConfig.Errors));
-            
+
         initialConfig.IsValid.Should().BeTrue();
 
         // Simulate file processing cycle
@@ -80,10 +80,10 @@ public class ConfigHotReloadTests : IDisposable
 
         // Act - Modify config during processing
         CreateConfigWithThreshold(85); // Change threshold
-        
+
         // Ensure filesystem timestamp granularity is sufficient
         await Task.Delay(1000);
-        
+
         var wasReloaded = await configService.ReloadIfChanged();
 
         // Assert
@@ -301,14 +301,14 @@ public class ConfigHotReloadTests : IDisposable
 
         var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(_testConfigPath, json);
-        
+
         // Use incremental timestamp to ensure each call creates a detectably different file modification time
         _nextTimestamp = _nextTimestamp.AddSeconds(2);
         File.SetLastWriteTimeUtc(_testConfigPath, _nextTimestamp);
-        
-        _logger.LogDebug("Created config with threshold {Threshold}, timestamp {Timestamp}", 
+
+        _logger.LogDebug("Created config with threshold {Threshold}, timestamp {Timestamp}",
             threshold, _nextTimestamp.ToString("yyyy-MM-dd HH:mm:ss.fff"));
-        
+
         _testFilesToCleanup.Add(_testConfigPath);
     }
 

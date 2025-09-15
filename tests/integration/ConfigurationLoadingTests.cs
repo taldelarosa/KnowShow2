@@ -194,14 +194,14 @@ public class ConfigurationLoadingTests : IDisposable
 
         var configPath = Path.Combine(_testConfigDirectory, "episodeidentifier.config.json");
         var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
-        
+
         // Ensure directory exists
         var directory = Path.GetDirectoryName(configPath);
         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
             Directory.CreateDirectory(directory);
         }
-        
+
         File.WriteAllText(configPath, json);
         _testFilesToCleanup.Add(configPath);
 
@@ -211,14 +211,14 @@ public class ConfigurationLoadingTests : IDisposable
     private string CreateInvalidJsonConfig()
     {
         var configPath = Path.Combine(_testConfigDirectory, "episodeidentifier.config.json");
-        
+
         // Ensure directory exists
         var directory = Path.GetDirectoryName(configPath);
         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
             Directory.CreateDirectory(directory);
         }
-        
+
         File.WriteAllText(configPath, "{ invalid json syntax missing quotes and commas }");
         _testFilesToCleanup.Add(configPath);
 
@@ -238,14 +238,14 @@ public class ConfigurationLoadingTests : IDisposable
 
         var configPath = Path.Combine(_testConfigDirectory, "episodeidentifier.config.json");
         var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
-        
+
         // Ensure directory exists
         var directory = Path.GetDirectoryName(configPath);
         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
             Directory.CreateDirectory(directory);
         }
-        
+
         File.WriteAllText(configPath, json);
         _testFilesToCleanup.Add(configPath);
 
@@ -263,14 +263,14 @@ public class ConfigurationLoadingTests : IDisposable
 
         var configPath = Path.Combine(_testConfigDirectory, "episodeidentifier.config.json");
         var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
-        
+
         // Ensure directory exists
         var directory = Path.GetDirectoryName(configPath);
         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
             Directory.CreateDirectory(directory);
         }
-        
+
         File.WriteAllText(configPath, json);
         _testFilesToCleanup.Add(configPath);
 

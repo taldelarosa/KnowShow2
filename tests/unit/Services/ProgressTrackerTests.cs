@@ -126,7 +126,7 @@ public class ProgressTrackerTests
         var progress = _progressTracker.GetProgress(requestId);
         progress!.SkippedFiles.Should().Be(1);
         progress.AdditionalMetrics.Should().ContainKey("SkipReasons");
-        
+
         var skipReasons = (Dictionary<string, int>)progress.AdditionalMetrics["SkipReasons"];
         skipReasons.Should().ContainKey("Unsupported format");
         skipReasons["Unsupported format"].Should().Be(1);
@@ -302,9 +302,9 @@ public class ProgressTrackerTests
         // Arrange
         var requestId = "test-request";
         var eventsFired = new List<ProgressUpdatedEventArgs>();
-        
+
         _progressTracker.ProgressUpdated += (sender, args) => eventsFired.Add(args);
-        
+
         // Act
         _progressTracker.Initialize(requestId, 10, new BulkProcessingOptions());
         _progressTracker.ReportFileSuccess(requestId, "/test/file.txt", TimeSpan.FromSeconds(1));
