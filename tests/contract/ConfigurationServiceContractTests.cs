@@ -29,7 +29,7 @@ public class ConfigurationServiceContractTests
 
         // Setup mock file system
         _mockFileSystem = new MockFileSystem();
-        
+
         // Setup valid configuration
         _validConfig = new Configuration
         {
@@ -47,7 +47,7 @@ public class ConfigurationServiceContractTests
 
         // Create config file path in mock file system
         _configFilePath = Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
-        
+
         // Add valid config file to mock file system
         var configJson = JsonSerializer.Serialize(_validConfig, new JsonSerializerOptions { WriteIndented = true });
         _mockFileSystem.AddFile(_configFilePath, new MockFileData(configJson));
@@ -157,13 +157,13 @@ public class ConfigurationServiceContractTests
         var updatedConfig = _validConfig;
         updatedConfig.MatchConfidenceThreshold = 0.75m; // Change a value
         var updatedConfigJson = JsonSerializer.Serialize(updatedConfig, new JsonSerializerOptions { WriteIndented = true });
-        
+
         // Update the file in mock file system with new timestamp
         _mockFileSystem.RemoveFile(_configFilePath);
         await Task.Delay(10); // Small delay to ensure different timestamp
-        _mockFileSystem.AddFile(_configFilePath, new MockFileData(updatedConfigJson) 
-        { 
-            LastWriteTime = DateTime.Now.AddSeconds(1) 
+        _mockFileSystem.AddFile(_configFilePath, new MockFileData(updatedConfigJson)
+        {
+            LastWriteTime = DateTime.Now.AddSeconds(1)
         });
 
         // Act

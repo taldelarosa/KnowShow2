@@ -84,7 +84,7 @@ public class FuzzyHashWorkflowTests : IDisposable
     {
         // Arrange - This test MUST FAIL until implementation exists
         var testFile1 = CreateTestMediaFile("identical_file.mkv", 1024 * 1024, sameContent: true); // Both files identical
-        var testFile2 = CreateTestMediaFile("identical_copy.mkv", 1024 * 1024, sameContent: true); 
+        var testFile2 = CreateTestMediaFile("identical_copy.mkv", 1024 * 1024, sameContent: true);
         var hashingService = _serviceProvider.GetRequiredService<ICTPhHashingService>();
 
         // Act
@@ -294,14 +294,14 @@ public class FuzzyHashWorkflowTests : IDisposable
                 while (bytesWritten < sizeBytes)
                 {
                     var bytesToWrite = Math.Min(buffer.Length, sizeBytes - bytesWritten);
-                    
+
                     // Vary the pattern slightly for each chunk to create realistic file structure
                     var chunkModifier = (byte)((bytesWritten / buffer.Length) % 256);
                     for (int i = 0; i < bytesToWrite; i++)
                     {
                         buffer[i] = (byte)((buffer[i] + chunkModifier) % 256);
                     }
-                    
+
                     stream.Write(buffer, 0, bytesToWrite);
                     bytesWritten += bytesToWrite;
                 }

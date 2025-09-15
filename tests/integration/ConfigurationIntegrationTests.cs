@@ -77,7 +77,7 @@ public class ConfigurationIntegrationTests : IDisposable
         result.IsValid.Should().BeFalse();
         result.Configuration.Should().BeNull();
         result.Errors.Should().NotBeEmpty();
-        
+
         // Should have specific validation errors
         result.Errors.Should().Contain(error => error.Contains("DefaultBatchSize"));
         result.Errors.Should().Contain(error => error.Contains("DefaultMaxConcurrency"));
@@ -97,9 +97,9 @@ public class ConfigurationIntegrationTests : IDisposable
         // Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().NotBeEmpty();
-        result.Errors.Should().Contain(error => 
+        result.Errors.Should().Contain(error =>
             error.Contains("DefaultBatchSize") && error.Contains("MaxBatchSize"));
-        result.Errors.Should().Contain(error => 
+        result.Errors.Should().Contain(error =>
             error.Contains("DefaultMaxConcurrency") && error.Contains("MaxConcurrency"));
     }
 

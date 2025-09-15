@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Core.Models;
 using EpisodeIdentifier.Core.Services;
+using EpisodeIdentifier.Core.Services.Hashing;
 using EpisodeIdentifier.Core.Interfaces;
 using System.IO.Abstractions;
 
@@ -46,7 +47,11 @@ public class Program
 
         var hashDbOption = new Option<FileInfo>(
             "--hash-db",
-            "Path to SQLite database for fuzzy hashes");
+            "Path to SQLite database for fuzzy hashes")
+        {
+            IsRequired = false
+        };
+        hashDbOption.SetDefaultValue(new FileInfo("production_hashes.db"));
         rootCommand.Add(hashDbOption);
 
         var storeOption = new Option<bool>(
@@ -199,10 +204,21 @@ public class Program
         var filenameService = new FilenameService(legacyConfigService);
         var fileRenameService = new FileRenameService();
 
-        // Create new episode identification service that supports both legacy and CTPH fuzzy hashing
+        // Create enhanced services for modern CTPH + text fallback functionality
+        var fileSystem = new System.IO.Abstractions.FileSystem();
+        var ctphHashingService = new CTPhHashingService(loggerFactory.CreateLogger<CTPhHashingService>(), fileSystem);
+        var enhancedCtphService = new EnhancedCTPhHashingService(
+            ctphHashingService,
+            hashService,
+            loggerFactory.CreateLogger<EnhancedCTPhHashingService>(),
+            fuzzyHashConfigService);
+
+        // Create new episode identification service that supports both legacy and enhanced CTPH fuzzy hashing with text fallback
         var episodeIdentificationService = new EpisodeIdentificationService(
             loggerFactory.CreateLogger<EpisodeIdentificationService>(),
-            matcher);
+            matcher,
+            fileSystem,
+            enhancedCtphService);
 
         try
         {
@@ -328,8 +344,8 @@ public class Program
                 }
 
                 // Use bulk processor service for video file identification
-                var fileSystem = new FileSystem();
-                var fileDiscoveryService = new FileDiscoveryService(fileSystem, loggerFactory.CreateLogger<FileDiscoveryService>());
+                var localFileSystem = new FileSystem();
+                var fileDiscoveryService = new FileDiscoveryService(localFileSystem, loggerFactory.CreateLogger<FileDiscoveryService>());
                 var progressTracker = new ProgressTracker(loggerFactory.CreateLogger<ProgressTracker>());
 
                 // Create the complete video file processing service

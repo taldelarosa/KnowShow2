@@ -35,5 +35,13 @@ namespace EpisodeIdentifier.Core.Interfaces
         /// </summary>
         /// <returns>The similarity threshold (0-100)</returns>
         int GetSimilarityThreshold();
+
+        /// <summary>
+        /// Compares a file against database with text fallback when CTPH similarity is below threshold
+        /// </summary>
+        /// <param name="filePath">Path to the file to compare</param>
+        /// <param name="enableTextFallback">Whether to enable text search fallback</param>
+        /// <returns>Detailed comparison result with potential text fallback information</returns>
+        Task<FileComparisonResult> CompareFileWithFallback(string filePath, bool enableTextFallback = true);
     }
 }

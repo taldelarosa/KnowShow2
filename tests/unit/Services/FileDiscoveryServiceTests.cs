@@ -153,8 +153,8 @@ public class FileDiscoveryServiceTests
         _mockFileSystem.AddFile("/test/file2.jpg", new MockFileData("content2"));
         _mockFileSystem.AddFile("/test/file3.txt", new MockFileData("content3"));
         var paths = new[] { directoryPath };
-        var options = new BulkProcessingOptions 
-        { 
+        var options = new BulkProcessingOptions
+        {
             IncludeExtensions = new List<string> { ".txt" }
         };
 
@@ -181,8 +181,8 @@ public class FileDiscoveryServiceTests
         _mockFileSystem.AddFile("/test/file2.jpg", new MockFileData("content2"));
         _mockFileSystem.AddFile("/test/file3.png", new MockFileData("content3"));
         var paths = new[] { directoryPath };
-        var options = new BulkProcessingOptions 
-        { 
+        var options = new BulkProcessingOptions
+        {
             ExcludeExtensions = new List<string> { ".jpg", ".png" }
         };
 
@@ -208,8 +208,8 @@ public class FileDiscoveryServiceTests
         _mockFileSystem.AddFile("/test/file1.txt", new MockFileData("content1"));
         _mockFileSystem.AddFile("/test/file2.txt", new MockFileData("content2"));
         var paths = new[] { directoryPath };
-        var options = new BulkProcessingOptions 
-        { 
+        var options = new BulkProcessingOptions
+        {
             IncludeExtensions = new List<string> { ".txt" },
             ExcludeExtensions = new List<string> { ".txt" }
         };
@@ -248,7 +248,7 @@ public class FileDiscoveryServiceTests
             {
                 results.Add(file);
                 fileCount++;
-                
+
                 // Cancel after processing a few files
                 if (fileCount >= 3)
                 {
@@ -342,8 +342,8 @@ public class FileDiscoveryServiceTests
         string filePath, string[] includeExtensions, string[] excludeExtensions, bool expected)
     {
         // Arrange
-        var options = new BulkProcessingOptions 
-        { 
+        var options = new BulkProcessingOptions
+        {
             IncludeExtensions = includeExtensions.ToList(),
             ExcludeExtensions = excludeExtensions.ToList()
         };
@@ -380,8 +380,8 @@ public class FileDiscoveryServiceTests
         // Arrange
         var directoryPath = "/test";
         var fileContent = "test content";
-        _mockFileSystem.AddFile("/test/file.txt", new MockFileData(fileContent) 
-        { 
+        _mockFileSystem.AddFile("/test/file.txt", new MockFileData(fileContent)
+        {
             CreationTime = new DateTime(2023, 1, 1, 10, 0, 0, DateTimeKind.Utc),
             LastWriteTime = new DateTime(2023, 1, 2, 10, 0, 0, DateTimeKind.Utc)
         });

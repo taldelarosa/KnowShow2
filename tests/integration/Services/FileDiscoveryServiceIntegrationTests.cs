@@ -25,7 +25,7 @@ public class FileDiscoveryServiceIntegrationTests : IDisposable
         using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
         _logger = loggerFactory.CreateLogger<FileDiscoveryService>();
         _service = new FileDiscoveryService(new FileSystem(), _logger);
-        
+
         // Create a unique test directory
         _testDirectory = Path.Combine(Path.GetTempPath(), $"FileDiscoveryTest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(_testDirectory);
@@ -63,7 +63,7 @@ public class FileDiscoveryServiceIntegrationTests : IDisposable
         // Arrange
         var fileCount = 1000;
         var files = new List<string>();
-        
+
         for (int i = 0; i < fileCount; i++)
         {
             var fileName = $"testfile_{i:D4}.txt";
@@ -80,7 +80,7 @@ public class FileDiscoveryServiceIntegrationTests : IDisposable
         {
             results.Add(file);
         }
-        
+
         stopwatch.Stop();
 
         // Assert
@@ -157,7 +157,7 @@ public class FileDiscoveryServiceIntegrationTests : IDisposable
         var fileContent = "This is test content for file info";
         var filePath = CreateTestFile(fileName, fileContent);
         var fileInfo = new FileInfo(filePath);
-        
+
         var options = new BulkProcessingOptions();
 
         // Act
@@ -170,7 +170,7 @@ public class FileDiscoveryServiceIntegrationTests : IDisposable
         // Assert
         results.Should().ContainSingle();
         var discoveredFile = results[0];
-        
+
         discoveredFile.FilePath.Should().Be(filePath);
         discoveredFile.FileName.Should().Be(fileName);
         discoveredFile.Extension.Should().Be(".txt");
@@ -211,8 +211,8 @@ public class FileDiscoveryServiceIntegrationTests : IDisposable
         var jpgFile = CreateTestFile("image.jpg", "fake image content");
         var pdfFile = CreateTestFile("document.pdf", "fake pdf content");
 
-        var options = new BulkProcessingOptions 
-        { 
+        var options = new BulkProcessingOptions
+        {
             IncludeExtensions = new List<string> { ".txt", ".srt", ".vtt" }
         };
 
@@ -244,8 +244,8 @@ public class FileDiscoveryServiceIntegrationTests : IDisposable
         var level3Dir = CreateTestDirectory(Path.Combine("level1", "level2", "level3"));
         var level3File = CreateTestFile(Path.Combine("level1", "level2", "level3", "level3.txt"), "level 3");
 
-        var options = new BulkProcessingOptions 
-        { 
+        var options = new BulkProcessingOptions
+        {
             Recursive = true,
             MaxDepth = 2
         };
@@ -269,13 +269,13 @@ public class FileDiscoveryServiceIntegrationTests : IDisposable
     {
         var fullPath = Path.Combine(_testDirectory, relativePath);
         var directory = Path.GetDirectoryName(fullPath)!;
-        
+
         if (!Directory.Exists(directory))
         {
             Directory.CreateDirectory(directory);
             _createdDirectories.Add(directory);
         }
-        
+
         File.WriteAllText(fullPath, content);
         _createdFiles.Add(fullPath);
         return fullPath;
