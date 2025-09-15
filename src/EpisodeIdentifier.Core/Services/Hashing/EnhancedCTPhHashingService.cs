@@ -243,7 +243,6 @@ namespace EpisodeIdentifier.Core.Services.Hashing
 
                 try
                 {
-                    // Import FuzzySharp at the top if not already
                     return FuzzySharp.Fuzz.TokenSetRatio(text1, text2);
                 }
                 catch
