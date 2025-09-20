@@ -12,13 +12,13 @@ namespace EpisodeIdentifier.Core.Services;
 public class FuzzyHashService : IDisposable
 {
     private readonly string _dbPath;
-    private readonly ILogger<FuzzyHashService>_logger;
+    private readonly ILogger<FuzzyHashService> _logger;
     private readonly SubtitleNormalizationService _normalizationService;
-    private readonly SqliteConnection?_sharedConnection; // For in-memory databases
+    private readonly SqliteConnection? _sharedConnection; // For in-memory databases
     private readonly string _connectionString = string.Empty; // Cached for file-based dbs
-    private readonly ConcurrentBag<SqliteConnection>_readConnections = new();
+    private readonly ConcurrentBag<SqliteConnection> _readConnections = new();
     private readonly SemaphoreSlim? _readConnSemaphore; // gate pooled read connections
-    private readonly int_maxReadConnections = 0;
+    private readonly int _maxReadConnections = 0;
 
     public FuzzyHashService(string dbPath, ILogger<FuzzyHashService> logger, SubtitleNormalizationService normalizationService)
     {

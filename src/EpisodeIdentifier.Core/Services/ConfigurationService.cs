@@ -16,19 +16,19 @@ namespace EpisodeIdentifier.Core.Services;
 public partial class ConfigurationService : IConfigurationService, IAppConfigService, IDisposable
 {
     private readonly ILogger<ConfigurationService> _logger;
-    private readonly IFileSystem_fileSystem;
+    private readonly IFileSystem _fileSystem;
     private readonly ConfigurationValidator _validator;
-    private readonly string_configFilePath;
+    private readonly string _configFilePath;
     private ConfigurationResult? _lastLoadedConfig;
-    private DateTime_lastFileWriteTime = DateTime.MinValue;
+    private DateTime _lastFileWriteTime = DateTime.MinValue;
     private int _lastKnownMaxConcurrency = 1; // Track MaxConcurrency for hot-reload change detection
-    private readonly DateTime_constructionFileWriteTime = DateTime.MinValue; // Track write time at construction for change detection
+    private readonly DateTime _constructionFileWriteTime = DateTime.MinValue; // Track write time at construction for change detection
     private decimal _lastObservedMatchConfidenceThreshold = 0m; // Track highest observed match threshold across reloads
-    private decimal_initialObservedMatchConfidenceThreshold = 0m; // Baseline at service construction/first load
+    private decimal _initialObservedMatchConfidenceThreshold = 0m; // Baseline at service construction/first load
     private volatile bool _hasObservedIncrease = false; // Indicates if any increase over initial baseline has been seen
-    private readonly CancellationTokenSource_monitorCts = new();
+    private readonly CancellationTokenSource _monitorCts = new CancellationTokenSource();
     private Task? _monitorTask;
-    public ConfigurationResult? LastConfigurationResult =>_lastLoadedConfig;
+    public ConfigurationResult? LastConfigurationResult => _lastLoadedConfig;
 
     public ConfigurationService(
         ILogger<ConfigurationService> logger,
@@ -167,9 +167,10 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
             //  - First explicit load after construction where the file was modified in the meantime
             bool isReloadCandidate = false;
             bool isFirstLoad = _lastLoadedConfig == null || _lastFileWriteTime == DateTime.MinValue;
+            DateTime currentWriteTime = DateTime.MinValue;
             try
             {
-                var currentWriteTime = _fileSystem.File.GetLastWriteTimeUtc(_configFilePath);
+                currentWriteTime = _fileSystem.File.GetLastWriteTimeUtc(_configFilePath);
                 if (_lastLoadedConfig?.IsValid == true && _lastFileWriteTime != DateTime.MinValue)
                 {
                     // Standard reload path
@@ -267,7 +268,10 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
                 // when the file has changed) as a strict reload: do NOT modify the value and allow
                 // validation to fail. Only default on initial loads or lenient parse paths when no
                 // reload was detected.
-                var isTrueReload = isReloadCandidate && !usedLenientParser;
+                var changedSinceConstruction = _constructionFileWriteTime != DateTime.MinValue &&
+                                              currentWriteTime != DateTime.MinValue &&
+                                              currentWriteTime > _constructionFileWriteTime;
+                var isTrueReload = !usedLenientParser && (isReloadCandidate || (isFirstLoad && changedSinceConstruction));
                 if (isTrueReload)
                 {
                     _logger.LogWarning("MaxConcurrency value {Value} is outside valid range (1-100) during reload; will fail validation - Operation: {OperationId}",
@@ -756,7 +760,7 @@ public partial class ConfigurationService
         // best-known match threshold. Keep overhead low (tiny file, short runs in tests).
         _monitorTask = Task.Run(async () =>
         {
-            var lastSeenWriteTime =_constructionFileWriteTime;
+            var lastSeenWriteTime = _constructionFileWriteTime;
             var ct = _monitorCts.Token;
 
             while (!ct.IsCancellationRequested)

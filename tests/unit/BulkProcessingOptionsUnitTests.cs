@@ -235,7 +235,7 @@ public class BulkProcessingOptionsUnitTests
         // Arrange
         var mockConfigService1 = Substitute.For<IAppConfigService>();
         var mockConfigService2 = Substitute.For<IAppConfigService>();
-        
+
         mockConfigService1.MaxConcurrency.Returns(5);
         mockConfigService2.MaxConcurrency.Returns(15);
 
@@ -258,9 +258,12 @@ public class BulkProcessingOptionsUnitTests
         try
         {
             // Create config without explicit maxConcurrency (should use default)
-            var config = new Configuration { Version = "1.0.0", 
+            var config = new Configuration
+            {
+                Version = "1.0.0",
                 FilenameTemplate = "{ShowName} - S{Season:D2}E{Episode:D2} - {EpisodeTitle}",
-                HashingAlgorithm = HashingAlgorithm.CTPH };
+                HashingAlgorithm = HashingAlgorithm.CTPH
+            };
             var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
             await File.WriteAllTextAsync(tempConfigPath, json);
 

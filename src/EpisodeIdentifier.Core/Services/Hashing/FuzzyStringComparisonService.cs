@@ -19,10 +19,10 @@ namespace EpisodeIdentifier.Core.Services.Hashing
     public class FuzzyStringComparisonService : IFuzzyStringComparisonService
     {
         private readonly string _dbPath;
-        private readonly ILogger<FuzzyStringComparisonService>_logger;
+        private readonly ILogger<FuzzyStringComparisonService> _logger;
         private readonly SubtitleNormalizationService _normalizationService;
         private const int DEFAULT_SIMILARITY_THRESHOLD = 75;
-        private readonly int_similarityThreshold;
+        private readonly int _similarityThreshold;
 
         /// <summary>
         /// Creates a new instance of FuzzyStringComparisonService.

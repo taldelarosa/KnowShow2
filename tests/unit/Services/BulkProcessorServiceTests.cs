@@ -15,9 +15,9 @@ namespace EpisodeIdentifier.Tests.Unit.Services;
 public class BulkProcessorServiceTests : IDisposable
 {
     private readonly ILogger<BulkProcessorService> _logger;
-    private readonly IFileDiscoveryService_fileDiscoveryService;
+    private readonly IFileDiscoveryService _fileDiscoveryService;
     private readonly IProgressTracker _progressTracker;
-    private readonly IVideoFileProcessingService_videoFileProcessingService;
+    private readonly IVideoFileProcessingService _videoFileProcessingService;
     private readonly BulkProcessorService _bulkProcessorService;
 
     public BulkProcessorServiceTests()

@@ -15,9 +15,9 @@ namespace EpisodeIdentifier.Tests.Integration;
 public class VttWorkflowTests : IDisposable
 {
     private readonly ServiceProvider _serviceProvider;
-    private readonly SubtitleWorkflowCoordinator_coordinator;
+    private readonly SubtitleWorkflowCoordinator _coordinator;
     private readonly VideoFormatValidator _validator;
-    private readonly ITextSubtitleExtractor_textExtractor;
+    private readonly ITextSubtitleExtractor _textExtractor;
 
     public VttWorkflowTests()
     {

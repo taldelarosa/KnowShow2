@@ -27,9 +27,9 @@ public static class ConcurrencyValidationExtensions
 
         // Value is invalid, apply clamping and log warning
         var clampedValue = Math.Clamp(value, ConfigurationDefaults.Concurrency.MIN, ConfigurationDefaults.Concurrency.MAX);
-        
+
         var contextPrefix = string.IsNullOrEmpty(context) ? "" : $"[{context}] ";
-        
+
         logger?.LogWarning(
             "{Context}Invalid MaxConcurrency value {InvalidValue} is outside valid range ({Range}), " +
             "clamping to {ClampedValue}",
@@ -51,7 +51,7 @@ public static class ConcurrencyValidationExtensions
             return ConcurrencyValidationResult.Success(value);
         }
 
-        return ConcurrencyValidationResult.Failure(value, 
+        return ConcurrencyValidationResult.Failure(value,
             $"MaxConcurrency value {value} is outside valid range ({ConfigurationDefaults.Concurrency.RANGE_DESCRIPTION})");
     }
 

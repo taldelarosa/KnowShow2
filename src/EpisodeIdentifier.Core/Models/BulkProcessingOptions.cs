@@ -116,9 +116,9 @@ public class BulkProcessingOptions
     {
         if (configService == null)
             throw new ArgumentNullException(nameof(configService));
-            
+
         var options = new BulkProcessingOptions();
-        
+
         try
         {
             // Attempt to trigger configuration loading, but only await if a non-null Task is returned.
@@ -139,7 +139,7 @@ public class BulkProcessingOptions
         // Intentionally use the raw value exposed by the service.
         // Clamping/validation is handled elsewhere and unit tests expect pass-through here.
         options.MaxConcurrency = configService.MaxConcurrency;
-        
+
         return options;
     }
 }

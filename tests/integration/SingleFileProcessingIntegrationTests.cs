@@ -25,7 +25,7 @@ namespace EpisodeIdentifier.Tests.Integration;
 public class SingleFileProcessingIntegrationTests
 {
     private readonly ITestOutputHelper _output;
-    private readonly MockFileSystem_fileSystem;
+    private readonly MockFileSystem _fileSystem;
 
     public SingleFileProcessingIntegrationTests(ITestOutputHelper output)
     {
@@ -36,9 +36,9 @@ public class SingleFileProcessingIntegrationTests
     private IServiceProvider CreateServiceProvider(string configPath)
     {
         var services = new ServiceCollection();
-        
+
         // Setup logging to capture test output
-        services.AddLogging(builder => 
+        services.AddLogging(builder =>
         {
             builder.AddProvider(new XunitLoggerProvider(_output));
             builder.SetMinimumLevel(LogLevel.Debug);
@@ -46,18 +46,18 @@ public class SingleFileProcessingIntegrationTests
 
         // Override file system with mock
         services.AddSingleton<System.IO.Abstractions.IFileSystem>(_fileSystem);
-        
+
         // Add all episode identification services using the extension method
         services.AddEpisodeIdentificationServices();
-        
+
         // Override the configuration service to use the test config path
-        services.AddScoped<IConfigurationService>(provider => 
+        services.AddScoped<IConfigurationService>(provider =>
             new ConfigurationService(
                 provider.GetRequiredService<ILogger<ConfigurationService>>(),
                 provider.GetRequiredService<System.IO.Abstractions.IFileSystem>(),
                 configPath
             ));
-        
+
         return services.BuildServiceProvider();
     }
 
@@ -67,7 +67,7 @@ public class SingleFileProcessingIntegrationTests
         // Arrange
         var configPath = Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
         var testFilePath = Path.Combine(AppContext.BaseDirectory, "test_episode.S01E01.mkv");
-        
+
         // Create configuration with maxConcurrency = 1
         var configContent = """
         {
@@ -83,7 +83,7 @@ public class SingleFileProcessingIntegrationTests
             "FilenameTemplate": "{SeriesName} - S{Season:00}E{Episode:00}"
         }
         """;
-        
+
         _fileSystem.AddFile(configPath, new MockFileData(configContent));
         _fileSystem.AddFile(testFilePath, new MockFileData("test episode content"));
 
@@ -113,9 +113,9 @@ public class SingleFileProcessingIntegrationTests
             Paths = new List<string> { testFilePath },
             Options = bulkOptions
         };
-        
+
         var result = await bulkProcessor.ProcessAsync(request);
-        
+
         result.Should().NotBeNull();
         result.Status.Should().Be(BulkProcessingStatus.Completed);
         result.TotalFiles.Should().Be(1);
@@ -128,7 +128,7 @@ public class SingleFileProcessingIntegrationTests
         // Arrange - Invalid configuration with maxConcurrency out of range
         var configPath = Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
         var testFilePath = Path.Combine(AppContext.BaseDirectory, "test_episode.S01E01.mkv");
-        
+
         var invalidConfigContent = """
         {
             "Version": "2.0",
@@ -143,7 +143,7 @@ public class SingleFileProcessingIntegrationTests
             "FilenameTemplate": "{SeriesName} - S{Season:00}E{Episode:00}"
         }
         """;
-        
+
         _fileSystem.AddFile(configPath, new MockFileData(invalidConfigContent));
         _fileSystem.AddFile(testFilePath, new MockFileData("test episode content"));
 
@@ -155,7 +155,7 @@ public class SingleFileProcessingIntegrationTests
         // Act & Assert - Configuration should fail validation or be clamped
         var configResult = await configService.LoadConfiguration();
         configResult.Should().NotBeNull();
-        
+
         // The system should either:
         // 1. Reject the configuration (IsValid = false) OR
         // 2. Clamp the value to valid range (IsValid = true, MaxConcurrency = 100)
@@ -167,7 +167,7 @@ public class SingleFileProcessingIntegrationTests
         // Act & Assert - BulkProcessingOptions should use safe defaults
         var bulkOptions = new BulkProcessingOptions
         {
-            MaxConcurrency = configResult.IsValid ? 
+            MaxConcurrency = configResult.IsValid ?
                 Math.Min(configResult.Configuration!.MaxConcurrency, 100) : 1
         };
         bulkOptions.Should().NotBeNull();
@@ -180,7 +180,7 @@ public class SingleFileProcessingIntegrationTests
         // Arrange - No configuration file exists
         var configPath = Path.Combine(AppContext.BaseDirectory, "nonexistent.config.json");
         var testFilePath = Path.Combine(AppContext.BaseDirectory, "test_episode.S01E01.mkv");
-        
+
         _fileSystem.AddFile(testFilePath, new MockFileData("test episode content"));
 
         // Create service provider with all dependencies (no config file)
@@ -196,7 +196,7 @@ public class SingleFileProcessingIntegrationTests
         // Act & Assert - BulkProcessingOptions should use default maxConcurrency
         var bulkOptions = new BulkProcessingOptions
         {
-            MaxConcurrency = configResult.IsValid ? 
+            MaxConcurrency = configResult.IsValid ?
                 configResult.Configuration!.MaxConcurrency : 1 // Use 1 as fallback
         };
         bulkOptions.Should().NotBeNull();
@@ -213,7 +213,7 @@ public class SingleFileProcessingIntegrationTests
         // Arrange
         var configPath = Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
         var testFilePath = Path.Combine(AppContext.BaseDirectory, filename);
-        
+
         var configContent = """
         {
             "Version": "2.0",
@@ -228,7 +228,7 @@ public class SingleFileProcessingIntegrationTests
             "FilenameTemplate": "{SeriesName} - S{Season:00}E{Episode:00}"
         }
         """;
-        
+
         _fileSystem.AddFile(configPath, new MockFileData(configContent));
         _fileSystem.AddFile(testFilePath, new MockFileData("test episode content"));
 
@@ -240,7 +240,7 @@ public class SingleFileProcessingIntegrationTests
         // Act - Load configuration and process file
         var configResult = await configService.LoadConfiguration();
         configResult.IsValid.Should().BeTrue();
-        
+
         var bulkOptions = new BulkProcessingOptions
         {
             MaxConcurrency = configResult.Configuration!.MaxConcurrency
@@ -252,14 +252,14 @@ public class SingleFileProcessingIntegrationTests
             Paths = new List<string> { testFilePath },
             Options = bulkOptions
         };
-        
+
         var result = await bulkProcessor.ProcessAsync(request);
 
         // Assert - Result should reflect pattern matching
         result.Should().NotBeNull();
         result.Status.Should().Be(BulkProcessingStatus.Completed);
         result.TotalFiles.Should().Be(1);
-        
+
         if (shouldMatch)
         {
             // File should be processed (though may not find episode data)
@@ -280,7 +280,7 @@ public class SingleFileProcessingIntegrationTests
         // Arrange
         var configPath = Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
         var testFilePath = Path.Combine(AppContext.BaseDirectory, "test.S01E01.mkv");
-        
+
         var configContent = """
         {
             "Version": "2.0",
@@ -295,7 +295,7 @@ public class SingleFileProcessingIntegrationTests
             "FilenameTemplate": "{SeriesName} - S{Season:00}E{Episode:00}"
         }
         """;
-        
+
         _fileSystem.AddFile(configPath, new MockFileData(configContent));
         _fileSystem.AddFile(testFilePath, new MockFileData("test episode content"));
 
@@ -310,13 +310,13 @@ public class SingleFileProcessingIntegrationTests
         {
             MaxConcurrency = configResult.Configuration!.MaxConcurrency
         };
-        
+
         var request = new BulkProcessingRequest
         {
             Paths = new List<string> { testFilePath },
             Options = bulkOptions
         };
-        
+
         var startTime = DateTime.UtcNow;
         var result = await bulkProcessor.ProcessAsync(request);
         var endTime = DateTime.UtcNow;
@@ -351,7 +351,7 @@ public class XunitLoggerProvider : ILoggerProvider
 public class XunitLogger : ILogger
 {
     private readonly ITestOutputHelper _output;
-    private readonly string_categoryName;
+    private readonly string _categoryName;
 
     public XunitLogger(ITestOutputHelper output, string categoryName)
     {

@@ -25,7 +25,7 @@ namespace EpisodeIdentifier.Tests.Contract
         {
             var services = new ServiceCollection();
             services.AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Debug));
-            
+
             // Create a test configuration file
             var configPath = Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
             var mockFileSystem = new MockFileSystem();
@@ -34,7 +34,7 @@ namespace EpisodeIdentifier.Tests.Contract
                 provider.GetRequiredService<ILogger<ConfigurationService>>(),
                 mockFileSystem,
                 configPath));
-            
+
             _serviceProvider = services.BuildServiceProvider();
         }
 
@@ -43,13 +43,13 @@ namespace EpisodeIdentifier.Tests.Contract
         {
             // Arrange
             var configService = _serviceProvider.GetRequiredService<IAppConfigService>();
-            
+
             // Create config with MaxConcurrency = 1 (default from our T001 implementation)
             await CreateValidConfigurationFile(maxConcurrency: 1);
-            
+
             // Act
             var options = await BulkProcessingOptions.CreateFromConfigurationAsync(configService);
-            
+
             // Assert
             options.Should().NotBeNull();
             options.MaxConcurrency.Should().Be(1, "should use configured MaxConcurrency instead of Environment.ProcessorCount");
@@ -66,10 +66,10 @@ namespace EpisodeIdentifier.Tests.Contract
             // Arrange
             var configService = _serviceProvider.GetRequiredService<IAppConfigService>();
             await CreateValidConfigurationFile(maxConcurrency: expectedConcurrency);
-            
+
             // Act
             var options = await BulkProcessingOptions.CreateFromConfigurationAsync(configService);
-            
+
             // Assert
             options.MaxConcurrency.Should().Be(expectedConcurrency, "should use the exact configured MaxConcurrency value");
         }
@@ -80,10 +80,10 @@ namespace EpisodeIdentifier.Tests.Contract
             // Arrange
             var configService = _serviceProvider.GetRequiredService<IAppConfigService>();
             // Do not create config file - this should cause load failure
-            
+
             // Act
             var options = await BulkProcessingOptions.CreateFromConfigurationAsync(configService);
-            
+
             // Assert
             options.Should().NotBeNull();
             options.MaxConcurrency.Should().Be(1, "should use fallback default when configuration fails to load");
@@ -95,10 +95,10 @@ namespace EpisodeIdentifier.Tests.Contract
             // Arrange
             var configService = _serviceProvider.GetRequiredService<IAppConfigService>();
             await CreateInvalidConfigurationFile(maxConcurrency: 101); // Invalid: exceeds range
-            
+
             // Act
             var options = await BulkProcessingOptions.CreateFromConfigurationAsync(configService);
-            
+
             // Assert
             options.Should().NotBeNull();
             options.MaxConcurrency.Should().Be(1, "should use fallback default when MaxConcurrency is invalid");
@@ -114,10 +114,10 @@ namespace EpisodeIdentifier.Tests.Contract
             // Arrange
             var configService = _serviceProvider.GetRequiredService<IAppConfigService>();
             await CreateInvalidConfigurationFile(maxConcurrency: invalidConcurrency);
-            
+
             // Act
             var options = await BulkProcessingOptions.CreateFromConfigurationAsync(configService);
-            
+
             // Assert
             options.MaxConcurrency.Should().Be(1, $"should use fallback default when MaxConcurrency ({invalidConcurrency}) is out of valid range");
         }
@@ -128,10 +128,10 @@ namespace EpisodeIdentifier.Tests.Contract
             // Arrange
             var configService = _serviceProvider.GetRequiredService<IAppConfigService>();
             await CreateValidConfigurationFile(maxConcurrency: 10);
-            
+
             // Act
             var options = await BulkProcessingOptions.CreateFromConfigurationAsync(configService);
-            
+
             // Assert
             // Verify other properties maintain their expected defaults
             options.BatchSize.Should().Be(100);
@@ -148,19 +148,19 @@ namespace EpisodeIdentifier.Tests.Contract
         {
             // Arrange
             var configService = _serviceProvider.GetRequiredService<IAppConfigService>();
-            
+
             // Initial configuration
             await CreateValidConfigurationFile(maxConcurrency: 5);
             var initialOptions = await BulkProcessingOptions.CreateFromConfigurationAsync(configService);
             initialOptions.MaxConcurrency.Should().Be(5);
-            
+
             // Simulate hot-reload with new MaxConcurrency
             await CreateValidConfigurationFile(maxConcurrency: 15);
             await Task.Delay(100); // Allow time for file change detection
-            
+
             // Act
             var updatedOptions = await BulkProcessingOptions.CreateFromConfigurationAsync(configService);
-            
+
             // Assert
             updatedOptions.MaxConcurrency.Should().Be(15, "should reflect hot-reloaded MaxConcurrency value");
         }
@@ -170,7 +170,7 @@ namespace EpisodeIdentifier.Tests.Contract
         {
             // Arrange & Act
             var property = typeof(BulkProcessingOptions).GetProperty(nameof(BulkProcessingOptions.MaxConcurrency));
-            
+
             // Assert
             property.Should().NotBeNull();
             var rangeAttribute = property!.GetCustomAttributes(typeof(System.ComponentModel.DataAnnotations.RangeAttribute), false);
@@ -183,11 +183,11 @@ namespace EpisodeIdentifier.Tests.Contract
             // Arrange
             var configService = _serviceProvider.GetRequiredService<IAppConfigService>();
             await CreateValidConfigurationFile(maxConcurrency: 8);
-            
+
             // Act
             var options1 = await BulkProcessingOptions.CreateFromConfigurationAsync(configService);
             var options2 = await BulkProcessingOptions.CreateFromConfigurationAsync(configService);
-            
+
             // Assert
             options1.Should().NotBeSameAs(options2, "should create new instance each time");
             options1.MaxConcurrency.Should().Be(options2.MaxConcurrency, "but both should have same configured values");
@@ -197,7 +197,7 @@ namespace EpisodeIdentifier.Tests.Contract
         {
             var configPath = Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
             var mockFileSystem = (MockFileSystem)_serviceProvider.GetRequiredService<System.IO.Abstractions.IFileSystem>();
-            
+
             var config = $$"""
             {
                 "version": "2.0",
@@ -212,7 +212,7 @@ namespace EpisodeIdentifier.Tests.Contract
                 "filenameTemplate": "{SeriesName} - S{Season}E{Episode} - {EpisodeName}{FileExtension}"
             }
             """;
-            
+
             mockFileSystem.AddFile(configPath, config);
         }
 
@@ -220,7 +220,7 @@ namespace EpisodeIdentifier.Tests.Contract
         {
             var configPath = Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
             var mockFileSystem = (MockFileSystem)_serviceProvider.GetRequiredService<System.IO.Abstractions.IFileSystem>();
-            
+
             var config = $$"""
             {
                 "version": "2.0",
@@ -235,7 +235,7 @@ namespace EpisodeIdentifier.Tests.Contract
                 "filenameTemplate": "{SeriesName} - S{Season}E{Episode} - {EpisodeName}{FileExtension}"
             }
             """;
-            
+
             mockFileSystem.AddFile(configPath, config);
         }
     }

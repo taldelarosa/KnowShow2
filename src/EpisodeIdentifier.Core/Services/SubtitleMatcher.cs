@@ -8,7 +8,7 @@ namespace EpisodeIdentifier.Core.Services;
 public class SubtitleMatcher : ISubtitleMatcher
 {
     private readonly FuzzyHashService _hashService;
-    private readonly ILogger<SubtitleMatcher>_logger;
+    private readonly ILogger<SubtitleMatcher> _logger;
     private readonly IAppConfigService _configService;
 
     public SubtitleMatcher(FuzzyHashService hashService, ILogger<SubtitleMatcher> logger, IAppConfigService configService)

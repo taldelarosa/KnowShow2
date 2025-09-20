@@ -10,7 +10,7 @@ namespace EpisodeIdentifier.Tests.Unit;
 public class ConfigurationValidationTests
 {
     private readonly ConfigurationValidator _validator = new();
-    private readonly FilenamesPatternsValidator_filenameValidator = new();
+    private readonly FilenamesPatternsValidator _filenameValidator = new();
 
     #region Version Validation Tests
 

@@ -9,7 +9,7 @@ namespace EpisodeIdentifier.Core.Services;
 public class VideoFormatValidator
 {
     private readonly ILogger<VideoFormatValidator> _logger;
-    private readonly IFileSystem_fileSystem;
+    private readonly IFileSystem _fileSystem;
 
     public VideoFormatValidator(ILogger<VideoFormatValidator> logger, IFileSystem fileSystem)
     {

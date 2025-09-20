@@ -24,9 +24,9 @@ public static class BulkProcessingOptionsFactory
 
             // Create options with configuration-based concurrency
             // The configService.MaxConcurrency property already handles validation and fallback
-            return new BulkProcessingOptions 
-            { 
-                MaxConcurrency = configService.MaxConcurrency 
+            return new BulkProcessingOptions
+            {
+                MaxConcurrency = configService.MaxConcurrency
             };
         }
         catch
@@ -61,7 +61,7 @@ public static class BulkProcessingOptionsFactory
     public static BulkProcessingOptions CreateWithConcurrency(int maxConcurrency)
     {
         var options = CreateDefault();
-        
+
         // Simple validation - clamp to safe range
         options.MaxConcurrency = maxConcurrency switch
         {
@@ -69,7 +69,7 @@ public static class BulkProcessingOptionsFactory
             > 100 => 100,  // Maximum concurrency  
             _ => maxConcurrency
         };
-        
+
         return options;
     }
 }

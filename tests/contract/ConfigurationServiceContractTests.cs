@@ -16,9 +16,9 @@ namespace EpisodeIdentifier.Tests.Contract;
 public class ConfigurationServiceContractTests
 {
     private readonly IConfigurationService _configurationService;
-    private readonly MockFileSystem_mockFileSystem;
+    private readonly MockFileSystem _mockFileSystem;
     private readonly ILogger<ConfigurationService> _logger;
-    private readonly string_configFilePath;
+    private readonly string _configFilePath;
     private readonly Configuration _validConfig;
 
     public ConfigurationServiceContractTests()
@@ -260,7 +260,7 @@ public class ConfigurationServiceContractTests
         // Assert
         result.Should().NotBeNull();
         result.IsValid.Should().Be(shouldBeValid);
-        
+
         if (shouldBeValid)
         {
             result.Errors.Should().BeEmpty();

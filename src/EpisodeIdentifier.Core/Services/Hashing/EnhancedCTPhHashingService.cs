@@ -18,9 +18,9 @@ namespace EpisodeIdentifier.Core.Services.Hashing
     public class EnhancedCTPhHashingService
     {
         private readonly ICTPhHashingService _ctphService;
-        private readonly FuzzyHashService_fuzzyHashService;
+        private readonly FuzzyHashService _fuzzyHashService;
         private readonly ILogger<EnhancedCTPhHashingService> _logger;
-        private readonly IConfigurationService_configService;
+        private readonly IConfigurationService _configService;
 
         public EnhancedCTPhHashingService(
             ICTPhHashingService ctphService,

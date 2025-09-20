@@ -12,9 +12,9 @@ namespace EpisodeIdentifier.Core.Services;
 public class ProgressTracker : IProgressTracker
 {
     private readonly ILogger<ProgressTracker> _logger;
-    private readonly ConcurrentDictionary<string, BulkProcessingProgress>_progressData = new();
+    private readonly ConcurrentDictionary<string, BulkProcessingProgress> _progressData = new();
     private readonly ConcurrentDictionary<string, BulkProcessingOptions> _options = new();
-    private readonly object_eventLock = new object();
+    private readonly object _eventLock = new object();
 
     /// <summary>
     /// Initializes a new instance of the ProgressTracker class.

@@ -15,9 +15,9 @@ namespace EpisodeIdentifier.Tests.Integration;
 public class ConfigurationIntegrationTests : IDisposable
 {
     private readonly MockFileSystem _fileSystem;
-    private readonly ILogger<ConfigurationService>_logger;
+    private readonly ILogger<ConfigurationService> _logger;
     private readonly ConfigurationService _configService;
-    private readonly string_configPath;
+    private readonly string _configPath;
 
     public ConfigurationIntegrationTests()
     {

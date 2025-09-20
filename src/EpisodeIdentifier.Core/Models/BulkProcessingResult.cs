@@ -9,7 +9,7 @@ namespace EpisodeIdentifier.Core.Models;
 public class BulkProcessingResult
 {
     private int _processedFiles = 0;
-    private int_failedFiles = 0;
+    private int _failedFiles = 0;
     private int _skippedFiles = 0;
 
     /// <summary>

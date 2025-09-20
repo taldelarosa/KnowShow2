@@ -16,7 +16,7 @@ namespace EpisodeIdentifier.Tests.Integration;
 public class DatabaseConcurrencyOptimizationTests : IDisposable
 {
     private readonly string _testDbPath;
-    private readonly ILogger<FuzzyHashService>_logger;
+    private readonly ILogger<FuzzyHashService> _logger;
     private readonly SubtitleNormalizationService _normalizationService;
 
     public DatabaseConcurrencyOptimizationTests()
@@ -48,7 +48,7 @@ public class DatabaseConcurrencyOptimizationTests : IDisposable
             await fuzzyHashService.StoreHash(new LabelledSubtitle
             {
                 Series = "TestSeries",
-                Season = "01", 
+                Season = "01",
                 Episode = "01",
                 SubtitleText = "Test subtitle for concurrency optimization"
             });

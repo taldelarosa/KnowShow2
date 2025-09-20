@@ -17,7 +17,7 @@ namespace EpisodeIdentifier.Tests.Integration;
 public class FileRenameIntegrationTests : IDisposable
 {
     private readonly ServiceProvider _serviceProvider;
-    private readonly ILogger<FileRenameIntegrationTests>_logger;
+    private readonly ILogger<FileRenameIntegrationTests> _logger;
     private readonly List<string> _testFilesToCleanup = new();
 
     public FileRenameIntegrationTests()

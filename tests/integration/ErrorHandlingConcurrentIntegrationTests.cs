@@ -27,7 +27,7 @@ namespace EpisodeIdentifier.Tests.Integration;
 public class ErrorHandlingConcurrentIntegrationTests
 {
     private readonly ITestOutputHelper _output;
-    private readonly MockFileSystem_fileSystem;
+    private readonly MockFileSystem _fileSystem;
 
     public ErrorHandlingConcurrentIntegrationTests(ITestOutputHelper output)
     {
@@ -38,9 +38,9 @@ public class ErrorHandlingConcurrentIntegrationTests
     private ServiceProvider CreateServiceProvider(string configPath)
     {
         var services = new ServiceCollection();
-        
+
         // Setup logging to capture test output
-        services.AddLogging(builder => 
+        services.AddLogging(builder =>
         {
             builder.AddProvider(new XunitLoggerProvider(_output));
             builder.SetMinimumLevel(LogLevel.Debug);
@@ -48,18 +48,18 @@ public class ErrorHandlingConcurrentIntegrationTests
 
         // Override file system with mock
         services.AddSingleton<System.IO.Abstractions.IFileSystem>(_fileSystem);
-        
+
         // Add all episode identification services using the extension method
         services.AddEpisodeIdentificationServices();
-        
+
         // Override the configuration service to use the test config path
-        services.AddScoped<IConfigurationService>(provider => 
+        services.AddScoped<IConfigurationService>(provider =>
             new ConfigurationService(
                 provider.GetRequiredService<ILogger<ConfigurationService>>(),
                 provider.GetRequiredService<System.IO.Abstractions.IFileSystem>(),
                 configPath
             ));
-        
+
         return services.BuildServiceProvider();
     }
 

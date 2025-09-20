@@ -20,7 +20,7 @@ namespace EpisodeIdentifier.Tests.Integration;
 public class DatabaseConnectionPoolingTests : IDisposable
 {
     private readonly string _testDbPath;
-    private readonly ILogger<FuzzyHashService>_logger;
+    private readonly ILogger<FuzzyHashService> _logger;
     private readonly SubtitleNormalizationService _normalizationService;
 
     public DatabaseConnectionPoolingTests()
@@ -36,7 +36,7 @@ public class DatabaseConnectionPoolingTests : IDisposable
     {
         // Arrange
         using var fuzzyHashService = new FuzzyHashService(_testDbPath, _logger, _normalizationService);
-        
+
         // Pre-populate with some test data
         var testEpisodes = new List<LabelledSubtitle>
         {
@@ -85,7 +85,7 @@ public class DatabaseConnectionPoolingTests : IDisposable
         stopwatch.Stop();
 
         // Assert
-        stopwatch.ElapsedMilliseconds.Should().BeLessThan(10000, 
+        stopwatch.ElapsedMilliseconds.Should().BeLessThan(10000,
             "Concurrent operations should complete within 10 seconds even with connection overhead");
 
         // Verify all search operations returned some results
@@ -101,14 +101,14 @@ public class DatabaseConnectionPoolingTests : IDisposable
     {
         // Arrange
         using var fuzzyHashService = new FuzzyHashService(_testDbPath, _logger, _normalizationService);
-        
+
         // Pre-populate database
-        await fuzzyHashService.StoreHash(new LabelledSubtitle 
-        { 
-            Series = "TestShow", 
-            Season = "01", 
-            Episode = "01", 
-            SubtitleText = "Sample episode content for testing" 
+        await fuzzyHashService.StoreHash(new LabelledSubtitle
+        {
+            Series = "TestShow",
+            Season = "01",
+            Episode = "01",
+            SubtitleText = "Sample episode content for testing"
         });
 
         const int operationCount = 10;
@@ -145,7 +145,7 @@ public class DatabaseConnectionPoolingTests : IDisposable
     {
         // Arrange
         using var fuzzyHashService = new FuzzyHashService(_testDbPath, _logger, _normalizationService);
-        
+
         // Pre-populate with substantial data to create memory pressure
         var largeBatch = Enumerable.Range(0, 50)
             .Select(i => new LabelledSubtitle

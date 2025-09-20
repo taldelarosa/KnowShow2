@@ -12,9 +12,8 @@ public class AppConfigService : IAppConfigService
 {
     private readonly ILogger<AppConfigService> _logger;
     private const string DefaultConfigFileName = "episodeidentifier.config.json";
-    private DateTime_lastConfigFileWriteTime = DateTime.MinValue;
+    private DateTime _lastConfigFileWriteTime = DateTime.MinValue;
     private int _lastKnownMaxConcurrency = 1; // Track MaxConcurrency for hot-reload change detection
-
     public AppConfig Config { get; private set; } = new();
     public Models.Configuration.ConfigurationResult? LastConfigurationResult { get; private set; }
 

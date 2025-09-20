@@ -170,9 +170,9 @@ public class BulkProcessingProgress
     /// <param name="averageOpTime">Average time per operation</param>
     /// <param name="currentlyProcessing">List of files currently being processed</param>
     public void UpdateConcurrencyMetrics(
-        int activeConcurrentOps, 
-        int queuedOps, 
-        int completedOps, 
+        int activeConcurrentOps,
+        int queuedOps,
+        int completedOps,
         TimeSpan averageOpTime,
         List<string>? currentlyProcessing = null)
     {

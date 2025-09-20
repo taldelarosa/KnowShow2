@@ -9,7 +9,7 @@ namespace EpisodeIdentifier.Tests.Unit;
 public class FileRenameServiceTests : IDisposable
 {
     private readonly FileRenameService _fileRenameService;
-    private readonly string_testDirectory;
+    private readonly string _testDirectory;
 
     public FileRenameServiceTests()
     {

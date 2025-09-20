@@ -35,19 +35,19 @@ public class FilenameServiceContractTests
 
         public Task LoadConfigurationAsync(string? configPath = null) => Task.CompletedTask;
         public Task SaveConfigurationAsync(string? configPath = null) => Task.CompletedTask;
-        
+
         public Task<ConfigurationResult> LoadConfiguration()
         {
             var config = new Configuration { MaxConcurrency = 4 };
             return Task.FromResult(ConfigurationResult.Success(config));
         }
-        
+
         public Task<bool> ReloadIfChanged()
         {
             return Task.FromResult(false);
         }
-        
-        public ConfigurationResult ValidateConfiguration(Configuration config) 
+
+        public ConfigurationResult ValidateConfiguration(Configuration config)
         {
             return ConfigurationResult.Success(config);
         }

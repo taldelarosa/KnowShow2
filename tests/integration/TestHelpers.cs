@@ -34,19 +34,19 @@ internal class TestAppConfigService : IAppConfigService
     {
         return Task.CompletedTask;
     }
-    
+
     public Task<ConfigurationResult> LoadConfiguration()
     {
         var config = new Configuration { MaxConcurrency = Config.MaxConcurrency };
         return Task.FromResult(ConfigurationResult.Success(config));
     }
-    
+
     public Task<bool> ReloadIfChanged()
     {
         return Task.FromResult(false);
     }
-    
-    public ConfigurationResult ValidateConfiguration(Configuration config) 
+
+    public ConfigurationResult ValidateConfiguration(Configuration config)
     {
         return ConfigurationResult.Success(config);
     }

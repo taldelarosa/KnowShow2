@@ -18,9 +18,9 @@ namespace EpisodeIdentifier.Tests.Integration;
 public class ConfigurationLoadingTests : IDisposable
 {
     private readonly ServiceProvider _serviceProvider;
-    private readonly ILogger<ConfigurationLoadingTests>_logger;
+    private readonly ILogger<ConfigurationLoadingTests> _logger;
     private readonly List<string> _testFilesToCleanup = new();
-    private readonly string_testConfigDirectory;
+    private readonly string _testConfigDirectory;
 
     public ConfigurationLoadingTests()
     {

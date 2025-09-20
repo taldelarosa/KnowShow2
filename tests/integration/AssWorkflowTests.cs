@@ -11,7 +11,7 @@ namespace EpisodeIdentifier.Tests.Integration;
 public class AssWorkflowTests
 {
     private readonly ITextSubtitleExtractor _extractor;
-    private readonly ISubtitleMatcher_matcher;
+    private readonly ISubtitleMatcher _matcher;
 
     public AssWorkflowTests()
     {

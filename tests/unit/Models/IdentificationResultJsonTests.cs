@@ -35,13 +35,13 @@ namespace EpisodeIdentifier.Tests.Unit.Models
             Assert.Contains("\"usedTextFallback\": true", json);
             Assert.Contains("\"hashSimilarityScore\": 75", json);
             Assert.Contains("\"textSimilarityScore\": 85", json);
-            
+
             // Ensure the JSON contains all expected fields
             var deserialized = JsonSerializer.Deserialize<IdentificationResult>(json, new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
-            
+
             Assert.Equal("TextFallback", deserialized?.MatchingMethod);
             Assert.True(deserialized?.UsedTextFallback);
             Assert.Equal(75, deserialized?.HashSimilarityScore);

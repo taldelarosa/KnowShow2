@@ -14,11 +14,11 @@ namespace EpisodeIdentifier.Core.Services;
 public class SqliteConnectionPool : IDisposable
 {
     private readonly string _connectionString;
-    private readonly ILogger<SqliteConnectionPool>_logger;
+    private readonly ILogger<SqliteConnectionPool> _logger;
     private readonly ConcurrentQueue<SqliteConnection> _availableConnections;
-    private readonly SemaphoreSlim_semaphore;
+    private readonly SemaphoreSlim _semaphore;
     private readonly int _maxPoolSize;
-    private int_currentConnections;
+    private int _currentConnections;
     private bool _disposed;
 
     /// <summary>
@@ -78,7 +78,7 @@ public class SqliteConnectionPool : IDisposable
             Interlocked.Increment(ref _currentConnections);
 
             _logger.LogDebug("Created new pooled connection. Current pool size: {CurrentConnections}", _currentConnections);
-            
+
             return new PooledSqliteConnection(connection, this);
         }
         catch
@@ -123,11 +123,11 @@ public class SqliteConnectionPool : IDisposable
         {
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
-            
+
             using var command = connection.CreateCommand();
             command.CommandText = "PRAGMA journal_mode=WAL;";
             var result = command.ExecuteScalar()?.ToString();
-            
+
             _logger.LogInformation("SQLite WAL mode enabled for better concurrent performance: {Result}", result);
         }
         catch (Exception ex)
@@ -169,7 +169,7 @@ public class SqliteConnectionPool : IDisposable
 public class PooledSqliteConnection : IDisposable
 {
     private readonly SqliteConnection _connection;
-    private readonly SqliteConnectionPool_pool;
+    private readonly SqliteConnectionPool _pool;
     private bool _disposed;
 
     internal PooledSqliteConnection(SqliteConnection connection, SqliteConnectionPool pool)

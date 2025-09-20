@@ -13,11 +13,11 @@ namespace EpisodeIdentifier.Core.Services;
 public class BulkProcessorService : IBulkProcessor
 {
     private readonly ILogger<BulkProcessorService> _logger;
-    private readonly IFileDiscoveryService_fileDiscoveryService;
+    private readonly IFileDiscoveryService _fileDiscoveryService;
     private readonly IProgressTracker _progressTracker;
-    private readonly IVideoFileProcessingService_videoFileProcessingService;
+    private readonly IVideoFileProcessingService _videoFileProcessingService;
     private readonly IFileSystem _fileSystem;
-    private readonly ConcurrentDictionary<string, CancellationTokenSource>_activeCancellationTokens = new();
+    private readonly ConcurrentDictionary<string, CancellationTokenSource> _activeCancellationTokens = new ConcurrentDictionary<string, CancellationTokenSource>();
 
     // Centralized set of supported video file extensions for validation and discovery logic
     private static readonly HashSet<string> SupportedVideoExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)

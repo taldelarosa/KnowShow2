@@ -18,17 +18,17 @@ namespace EpisodeIdentifier.Tests.Contract;
 public class ConfigurationHotReloadContractTests
 {
     private readonly MockFileSystem _fileSystem;
-    private readonly IServiceProvider_serviceProvider;
+    private readonly IServiceProvider _serviceProvider;
 
     public ConfigurationHotReloadContractTests()
     {
         _fileSystem = new MockFileSystem();
-        
+
         var services = new ServiceCollection();
         services.AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Debug));
         services.AddSingleton<System.IO.Abstractions.IFileSystem>(_fileSystem);
         services.AddSingleton<IConfigurationService, ConfigurationService>();
-        
+
         _serviceProvider = services.BuildServiceProvider();
     }
 
@@ -56,7 +56,7 @@ public class ConfigurationHotReloadContractTests
 
         var configService = _serviceProvider.GetRequiredService<IConfigurationService>();
         var originalResult = await configService.LoadConfiguration();
-        
+
         // Create updated config with different MaxConcurrency
         var updatedConfig = new Configuration
         {
@@ -80,7 +80,7 @@ public class ConfigurationHotReloadContractTests
         // Assert
         originalResult.IsValid.Should().BeTrue("original config should load successfully");
         originalResult.Configuration!.MaxConcurrency.Should().Be(1);
-        
+
         reloadedResult.IsValid.Should().BeTrue("reloaded config should load successfully");
         reloadedResult.Configuration!.MaxConcurrency.Should().Be(10);
         reloadedResult.Configuration.MaxConcurrency.Should().NotBe(originalResult.Configuration.MaxConcurrency);
@@ -110,7 +110,7 @@ public class ConfigurationHotReloadContractTests
         // Assert
         originalResult.IsValid.Should().BeTrue("original config should load successfully");
         originalResult.Configuration!.MaxConcurrency.Should().Be(initialConcurrency);
-        
+
         reloadedResult.IsValid.Should().BeTrue("reloaded config should load successfully");
         reloadedResult.Configuration!.MaxConcurrency.Should().Be(newConcurrency);
     }
@@ -138,11 +138,11 @@ public class ConfigurationHotReloadContractTests
         // Assert
         originalResult.IsValid.Should().BeTrue("original config should load successfully");
         originalResult.Configuration!.MaxConcurrency.Should().Be(initialConcurrency);
-        
+
         // Invalid config should either fail validation or fallback gracefully
         if (reloadedResult.IsValid)
         {
-            reloadedResult.Configuration!.MaxConcurrency.Should().Be(expectedFallback, 
+            reloadedResult.Configuration!.MaxConcurrency.Should().Be(expectedFallback,
                 $"invalid value {invalidNewConcurrency} should fallback to {expectedFallback}");
         }
         else
@@ -198,10 +198,10 @@ public class ConfigurationHotReloadContractTests
         // Assert
         originalResult.IsValid.Should().BeTrue("original config should load successfully");
         reloadedResult.IsValid.Should().BeTrue("reloaded config should load successfully");
-        
+
         var originalConfig = originalResult.Configuration!;
         var reloadedConfig = reloadedResult.Configuration!;
-        
+
         reloadedConfig.MaxConcurrency.Should().Be(15);
         reloadedConfig.Version.Should().Be(originalConfig.Version);
         reloadedConfig.MatchConfidenceThreshold.Should().Be(originalConfig.MatchConfidenceThreshold);
@@ -212,7 +212,7 @@ public class ConfigurationHotReloadContractTests
         reloadedConfig.FilenameTemplate.Should().Be(originalConfig.FilenameTemplate);
     }
 
-    [Fact] 
+    [Fact]
     public async Task ConfigurationService_CorruptedConfigDuringHotReload_ShouldHandleGracefully()
     {
         // Arrange
@@ -233,11 +233,11 @@ public class ConfigurationHotReloadContractTests
         };
 
         await action.Should().NotThrowAsync("corrupted config file should be handled gracefully");
-        
+
         var result = await action();
         // Should either return the original config or a default config, not null
         result.Should().NotBeNull("should return a valid configuration result even when file is corrupted");
-        
+
         // The result should either be valid with a fallback config, or invalid with errors
         if (result.IsValid)
         {
@@ -256,7 +256,7 @@ public class ConfigurationHotReloadContractTests
         // Arrange
         var configPath = Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
         var initialConfig = CreateTestConfiguration(10);
-        
+
         // Config without MaxConcurrency property
         var configWithoutMaxConcurrency = new
         {
@@ -281,7 +281,7 @@ public class ConfigurationHotReloadContractTests
         // Assert
         originalResult.IsValid.Should().BeTrue("original config should load successfully");
         originalResult.Configuration!.MaxConcurrency.Should().Be(10);
-        
+
         reloadedResult.IsValid.Should().BeTrue("reloaded config should load successfully");
         reloadedResult.Configuration!.MaxConcurrency.Should().Be(1, "missing MaxConcurrency should default to 1");
     }

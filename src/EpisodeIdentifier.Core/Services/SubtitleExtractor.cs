@@ -8,7 +8,7 @@ namespace EpisodeIdentifier.Core.Services;
 public class SubtitleExtractor : ISubtitleExtractor
 {
     private readonly ILogger<SubtitleExtractor> _logger;
-    private readonly VideoFormatValidator_validator;
+    private readonly VideoFormatValidator _validator;
 
     public SubtitleExtractor(ILogger<SubtitleExtractor> logger, VideoFormatValidator validator)
     {

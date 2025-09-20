@@ -22,8 +22,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddEpisodeIdentificationServices(this IServiceCollection services)
     {
         // Core infrastructure services
-    // Only add default file system if none provided (tests may override with MockFileSystem)
-    services.TryAddSingleton<IFileSystem, FileSystem>();
+        // Only add default file system if none provided (tests may override with MockFileSystem)
+        services.TryAddSingleton<IFileSystem, FileSystem>();
         services.AddConsoleLogging();
 
         // Configuration services (modern + legacy compatibility)
@@ -31,10 +31,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAppConfigService, ConfigurationService>();
 
         // Filename and file operations
-    services.AddScoped<IFilenameService, FilenameService>();
-    services.AddScoped<FilenameService>(); // concrete for ctor injection
-    services.AddScoped<IFileRenameService, FileRenameService>();
-    services.AddScoped<FileRenameService>(); // concrete for ctor injection
+        services.AddScoped<IFilenameService, FilenameService>();
+        services.AddScoped<FilenameService>(); // concrete for ctor injection
+        services.AddScoped<IFileRenameService, FileRenameService>();
+        services.AddScoped<FileRenameService>(); // concrete for ctor injection
         services.AddScoped<IProgressTracker, ProgressTracker>();
         services.AddScoped<IFileDiscoveryService, FileDiscoveryService>();
 

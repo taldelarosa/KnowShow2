@@ -1,3 +1,4 @@
+using System;
 using Xunit;
 using Microsoft.Extensions.Logging.Abstractions;
 using EpisodeIdentifier.Core.Services;
@@ -11,7 +12,7 @@ namespace EpisodeIdentifier.Tests.Unit;
 public class ConfigurationValidationUnitTests : IDisposable
 {
     private readonly ConfigurationService _configService;
-    private readonly string_tempConfigPath;
+    private readonly string _tempConfigPath;
 
     public ConfigurationValidationUnitTests()
     {

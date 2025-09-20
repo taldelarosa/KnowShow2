@@ -15,7 +15,7 @@ namespace EpisodeIdentifier.Tests.Contract;
 public class BulkProcessorContractTests
 {
     private readonly MockFileSystem _mockFileSystem;
-    private readonly ILogger<object>_logger;
+    private readonly ILogger<object> _logger;
 
     public BulkProcessorContractTests()
     {

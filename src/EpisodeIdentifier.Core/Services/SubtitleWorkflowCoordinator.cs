@@ -11,11 +11,11 @@ namespace EpisodeIdentifier.Core.Services;
 public class SubtitleWorkflowCoordinator
 {
     private readonly ILogger<SubtitleWorkflowCoordinator> _logger;
-    private readonly VideoFormatValidator_validator;
+    private readonly VideoFormatValidator _validator;
     private readonly SubtitleExtractor _pgsExtractor;
-    private readonly ITextSubtitleExtractor_textExtractor;
+    private readonly ITextSubtitleExtractor _textExtractor;
     private readonly EnhancedPgsToTextConverter _pgsConverter;
-    private readonly SubtitleMatcher_matcher;
+    private readonly SubtitleMatcher _matcher;
 
     public SubtitleWorkflowCoordinator(
         ILogger<SubtitleWorkflowCoordinator> logger,
