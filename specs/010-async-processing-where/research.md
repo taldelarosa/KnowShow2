@@ -48,12 +48,14 @@ Research focused on integrating configurable concurrency into existing episode i
 **Decision**: Implement validation with range 1-100, default value 1 for backward compatibility
 
 **Rationale**:
+
 - Range 1-100 matches existing BulkProcessingOptions validation pattern
 - Default value 1 ensures conservative behavior and no breaking changes
 - Upper bound prevents resource exhaustion
 - Validation follows existing patterns in the codebase
 
 **Alternatives considered**:
+
 - No upper limit: Rejected due to potential resource exhaustion
 - Default to Environment.ProcessorCount: Rejected to avoid breaking existing single-file workflows
 - Different range: 1-100 aligns with existing validation patterns
@@ -63,12 +65,14 @@ Research focused on integrating configurable concurrency into existing episode i
 **Decision**: Utilize existing configuration service hot-reload mechanism
 
 **Rationale**:
+
 - No additional hot-reload infrastructure needed
 - Consistent with existing configuration change behavior
 - Runtime adjustment without restart already proven
 - Maintains existing configuration service patterns
 
 **Alternatives considered**:
+
 - Custom hot-reload for concurrency: Rejected due to code duplication
 - No hot-reload support: Rejected due to user experience degradation
 - File system watcher: Rejected as existing service already provides this
@@ -78,12 +82,14 @@ Research focused on integrating configurable concurrency into existing episode i
 **Decision**: Extend existing JSON result aggregation to handle concurrent operation results
 
 **Rationale**:
+
 - Preserves existing error reporting format and user expectations
 - Concurrent operations already report to common result collector
 - JSON output format already handles success/failure aggregation
 - No breaking changes to output format
 
 **Alternatives considered**:
+
 - New concurrent-specific error format: Rejected due to breaking changes
 - Individual file error reporting: Rejected as batch reporting is more useful
 - Real-time error streaming: Rejected due to complexity and limited value
@@ -93,6 +99,7 @@ Research focused on integrating configurable concurrency into existing episode i
 ### Configuration Schema Extension
 
 Add to existing `episodeidentifier.config.json`:
+
 ```json
 {
   "version": "2.0",
@@ -128,13 +135,15 @@ Minimal changes approach leveraging existing infrastructure:
 
 ## Risk Assessment
 
-**Low Risk**: 
+**Low Risk**:
+
 - Uses existing proven infrastructure
 - Minimal code changes
 - Backward compatible
 - Well-defined scope
 
 **Mitigation**:
+
 - Comprehensive test coverage including edge cases
 - Default conservative behavior (concurrency = 1)
 - Validation prevents invalid configurations

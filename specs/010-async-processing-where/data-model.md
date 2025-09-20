@@ -14,22 +14,26 @@ This feature extends existing entities rather than creating new ones, focusing o
 **Purpose**: Stores configurable concurrency settings within existing application configuration
 
 **Fields**:
+
 - `maxConcurrency`: int (1-100, default: 1)
-  - Maximum number of concurrent episode identification operations
-  - Range validation prevents resource exhaustion
-  - Default value maintains backward compatibility
+    - Maximum number of concurrent episode identification operations
+    - Range validation prevents resource exhaustion
+    - Default value maintains backward compatibility
 
 **Validation Rules**:
+
 - Range: 1 ≤ maxConcurrency ≤ 100
 - Required: false (defaults to 1 if not specified)
 - Type: positive integer
 
 **Relationships**:
+
 - Embedded within existing `AppConfiguration` model
 - Used by `BulkProcessingOptions` during initialization
 - Subject to hot-reload configuration monitoring
 
 **State Transitions**:
+
 - Configuration loading: default → validated value
 - Hot-reload trigger: old value → new validated value → processing pool adjustment
 - Validation failure: invalid value → default value (1) with warning
@@ -39,12 +43,14 @@ This feature extends existing entities rather than creating new ones, focusing o
 **Purpose**: Represents individual file processing operation within concurrent execution pool
 
 **Key Fields (existing)**:
+
 - File path and metadata
 - Processing stage status (ripping, hashing, DB checking, renaming)
 - Result status (success, failure, error details)
 - Progress information
 
 **Concurrency Considerations**:
+
 - Multiple instances run simultaneously up to maxConcurrency limit
 - Independent execution - failure of one doesn't affect others
 - Results aggregated into common JSON output at completion
@@ -54,6 +60,7 @@ This feature extends existing entities rather than creating new ones, focusing o
 **Purpose**: Manages files awaiting processing when demand exceeds concurrency limit
 
 **Behavior**:
+
 - FIFO queue for pending files
 - Automatic dequeue when concurrent slot becomes available
 - Thread-safe operations for concurrent access
@@ -65,6 +72,7 @@ This feature extends existing entities rather than creating new ones, focusing o
 **Purpose**: Manages active concurrent operations and resource allocation
 
 **Key Responsibilities**:
+
 - Maintain count of active operations ≤ maxConcurrency
 - Coordinate resource allocation for subtitle ripping and hashing
 - Handle completion events and queue management
@@ -92,6 +100,7 @@ This feature extends existing entities rather than creating new ones, focusing o
 ```
 
 **New Field**: `maxConcurrency`
+
 - Type: integer
 - Range: 1-100
 - Default: 1
@@ -100,6 +109,7 @@ This feature extends existing entities rather than creating new ones, focusing o
 ## Data Flow
 
 ### Configuration Flow
+
 1. Application start/hot-reload trigger
 2. Load episodeidentifier.config.json
 3. Validate maxConcurrency value (default to 1 if invalid)
@@ -107,6 +117,7 @@ This feature extends existing entities rather than creating new ones, focusing o
 5. Apply to active processing (if running)
 
 ### Processing Flow
+
 1. User initiates bulk processing
 2. System reads maxConcurrency from configuration
 3. Creates processing pool with specified concurrency limit
@@ -117,6 +128,7 @@ This feature extends existing entities rather than creating new ones, focusing o
 8. Outputs comprehensive JSON results
 
 ### Hot-Reload Flow
+
 1. Configuration file change detected
 2. New maxConcurrency value loaded and validated
 3. Active processing pool adjusted (if processing active)
@@ -126,11 +138,13 @@ This feature extends existing entities rather than creating new ones, focusing o
 ## Error Handling
 
 ### Configuration Errors
+
 - Invalid maxConcurrency value → default to 1, log warning
 - Missing maxConcurrency field → default to 1
 - Malformed configuration → use all defaults, log error
 
 ### Processing Errors
+
 - Individual file failures → continue processing others, collect in results
 - Resource exhaustion → existing error handling with backpressure
 - Database connectivity → retry logic for concurrent operations
@@ -153,17 +167,20 @@ This feature extends existing entities rather than creating new ones, focusing o
 ## Integration Points
 
 ### Existing Services Integration
+
 - **IAppConfigService**: Extended to include maxConcurrency property
 - **BulkProcessingService**: Modified to use config-based concurrency
 - **Configuration validation**: Enhanced with concurrency range checking
 - **Hot-reload service**: Monitors maxConcurrency changes
 
 ### Database Coordination
+
 - Shared SQLite connection pool for concurrent hash lookups
 - Connection limiting to prevent database lock contention
 - Efficient query batching for concurrent operations
 
 ### File System Coordination
+
 - Directory-level locking for concurrent rename operations
 - Atomic file operations to prevent conflicts
 - Temporary file handling for concurrent subtitle extraction

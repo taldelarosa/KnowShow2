@@ -2,6 +2,7 @@ using Xunit;
 using FluentAssertions;
 using EpisodeIdentifier.Core.Interfaces;
 using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Models.Configuration;
 using EpisodeIdentifier.Core.Services;
 
 namespace EpisodeIdentifier.Tests.Contract;
@@ -25,11 +26,31 @@ public class FilenameServiceContractTests
     {
         public AppConfig Config => new AppConfig
         {
-            RenameConfidenceThreshold = 0.9
+            RenameConfidenceThreshold = 0.9,
+            MaxConcurrency = 4  // Default test value
         };
+
+        public int MaxConcurrency => Config.MaxConcurrency;
+        public ConfigurationResult? LastConfigurationResult => ConfigurationResult.Success(new Configuration { MaxConcurrency = MaxConcurrency });
 
         public Task LoadConfigurationAsync(string? configPath = null) => Task.CompletedTask;
         public Task SaveConfigurationAsync(string? configPath = null) => Task.CompletedTask;
+        
+        public Task<ConfigurationResult> LoadConfiguration()
+        {
+            var config = new Configuration { MaxConcurrency = 4 };
+            return Task.FromResult(ConfigurationResult.Success(config));
+        }
+        
+        public Task<bool> ReloadIfChanged()
+        {
+            return Task.FromResult(false);
+        }
+        
+        public ConfigurationResult ValidateConfiguration(Configuration config) 
+        {
+            return ConfigurationResult.Success(config);
+        }
     }
 
     [Fact]

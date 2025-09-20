@@ -2,16 +2,25 @@ using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Text.Json;
 using EpisodeIdentifier.Core.Models;
+using System.IO.Abstractions;
 
 namespace EpisodeIdentifier.Core.Services;
 
 public class VideoFormatValidator
 {
     private readonly ILogger<VideoFormatValidator> _logger;
+    private readonly IFileSystem _fileSystem;
 
-    public VideoFormatValidator(ILogger<VideoFormatValidator> logger)
+    public VideoFormatValidator(ILogger<VideoFormatValidator> logger, IFileSystem fileSystem)
     {
         _logger = logger;
+        _fileSystem = fileSystem;
+    }
+
+    // Backward-compatible constructor for callers not using DI or IFileSystem
+    public VideoFormatValidator(ILogger<VideoFormatValidator> logger)
+        : this(logger, new FileSystem())
+    {
     }
 
     public async Task<bool> IsAV1Encoded(string videoPath)
@@ -19,7 +28,7 @@ public class VideoFormatValidator
         _logger.LogInformation("Validating AV1 encoding for {VideoPath}", videoPath);
 
         // Check if file exists first
-        if (!File.Exists(videoPath))
+        if (!_fileSystem.File.Exists(videoPath))
         {
             _logger.LogWarning("Video file not found: {VideoPath}", videoPath);
             return false;
@@ -84,7 +93,7 @@ public class VideoFormatValidator
         _logger.LogInformation("Getting subtitle tracks for {VideoPath}", videoPath);
 
         // Check if file exists first
-        if (!File.Exists(videoPath))
+        if (!_fileSystem.File.Exists(videoPath))
         {
             _logger.LogWarning("Video file not found: {VideoPath}", videoPath);
             return new List<SubtitleTrackInfo>();

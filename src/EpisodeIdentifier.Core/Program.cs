@@ -364,18 +364,19 @@ public class Program
                     loggerFactory.CreateLogger<BulkProcessorService>(),
                     fileDiscoveryService,
                     progressTracker,
-                    videoFileProcessingService);
+                    videoFileProcessingService,
+                    localFileSystem);
+
+                // Create BulkProcessingOptions with config-based concurrency
+                var bulkProcessingOptions = await BulkProcessingOptions.CreateFromConfigurationAsync(legacyConfigService);
+                bulkProcessingOptions.Recursive = true;
+                bulkProcessingOptions.IncludeExtensions = new List<string> { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v" };
+                bulkProcessingOptions.ContinueOnError = true;
 
                 var request = new BulkProcessingRequest
                 {
                     Paths = new List<string> { bulkIdentifyDirectory.FullName },
-                    Options = new BulkProcessingOptions
-                    {
-                        Recursive = true,
-                        IncludeExtensions = new List<string> { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v" },
-                        MaxConcurrency = Environment.ProcessorCount,
-                        ContinueOnError = true
-                    }
+                    Options = bulkProcessingOptions
                 };
 
                 // Set up progress reporting
@@ -406,7 +407,7 @@ public class Program
                             skippedFiles = result.SkippedFiles,
                             processingTime = result.Duration.ToString(@"mm\:ss")
                         },
-                        results = result.FileResults.Select(fr => new
+                        results = result.GetFileResultsAsList().Select(fr => new
                         {
                             file = Path.GetFileName(fr.FilePath),
                             status = fr.Status.ToString(),

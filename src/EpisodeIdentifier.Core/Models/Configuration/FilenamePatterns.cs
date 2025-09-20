@@ -93,11 +93,20 @@ public class FilenamePatterns
             if (string.IsNullOrEmpty(PrimaryPattern))
                 return false;
 
-            var regex = new Regex(PrimaryPattern, RegexOptions.Compiled);
-            var groupNames = regex.GetGroupNames();
+            var regex = new Regex(PrimaryPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            var groupNames = regex.GetGroupNames().Select(n => n.ToLowerInvariant()).ToHashSet();
 
-            var requiredGroups = new[] { "SeriesName", "Season", "Episode" };
-            return requiredGroups.All(group => groupNames.Contains(group));
+            // Accept common legacy aliases for compatibility
+            var requiredGroups = new[]
+            {
+                new[] { "seriesname", "series" },
+                new[] { "season" },
+                new[] { "episode" }
+            };
+
+            bool HasAny(string[] candidates) => candidates.Any(c => groupNames.Contains(c));
+
+            return requiredGroups.All(HasAny);
         }
         catch (ArgumentException)
         {

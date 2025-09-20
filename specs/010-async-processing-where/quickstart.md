@@ -21,11 +21,13 @@ This quickstart validates the configurable concurrency feature for episode ident
 **Objective**: Verify backward compatibility with default concurrency setting
 
 **Setup**:
+
 1. Ensure `episodeidentifier.config.json` has `maxConcurrency: 1` or omit the field entirely
 2. Prepare directory with 5 test video files
 3. Start episode identifier with bulk processing
 
 **Commands**:
+
 ```bash
 # Ensure default configuration
 cat episodeidentifier.config.json | grep maxConcurrency || echo "Using default (1)"
@@ -35,12 +37,14 @@ cat episodeidentifier.config.json | grep maxConcurrency || echo "Using default (
 ```
 
 **Expected Results**:
+
 - Files processed sequentially (one at a time)
 - Progress reports show `ActiveOperations: 1` at any time
 - All files processed successfully
 - JSON output contains all results
 
 **Validation**:
+
 ```bash
 # Check results
 jq '.summary.totalFiles' results.json  # Should equal number of test files
@@ -53,11 +57,13 @@ jq '.results | length' results.json  # Should equal number of files
 **Objective**: Verify concurrent processing with moderate concurrency
 
 **Setup**:
+
 1. Update `episodeidentifier.config.json` to set `maxConcurrency: 3`
 2. Prepare directory with 10 test video files
 3. Monitor processing behavior
 
 **Commands**:
+
 ```bash
 # Update configuration
 jq '.maxConcurrency = 3' episodeidentifier.config.json > temp.json && mv temp.json episodeidentifier.config.json
@@ -77,6 +83,7 @@ wait $PID
 ```
 
 **Expected Results**:
+
 - Up to 3 files processed simultaneously
 - Progress reports show `ActiveOperations` ≤ 3
 - `QueuedFiles` count decreases as processing completes
@@ -84,6 +91,7 @@ wait $PID
 - Processing time reduced compared to sequential
 
 **Validation**:
+
 ```bash
 # Check for concurrent processing evidence in logs
 grep "ActiveOperations: [2-3]" progress.log
@@ -100,11 +108,13 @@ jq '.errors | length' results.json  # Should be 0
 **Objective**: Verify configuration hot-reload without interrupting active operations
 
 **Setup**:
+
 1. Start with `maxConcurrency: 2`
 2. Begin processing large batch of files
 3. Update configuration to `maxConcurrency: 5` during processing
 
 **Commands**:
+
 ```bash
 # Set initial configuration
 jq '.maxConcurrency = 2' episodeidentifier.config.json > temp.json && mv temp.json episodeidentifier.config.json
@@ -127,12 +137,14 @@ wait $PID
 ```
 
 **Expected Results**:
+
 - Initial processing shows up to 2 concurrent operations
 - After configuration change, new operations use concurrency of 5
 - No interruption to active operations
 - Hot-reload detected and applied
 
 **Validation**:
+
 ```bash
 # Check for configuration change evidence
 grep "ActiveOperations: [3-5]" progress.log
@@ -146,11 +158,13 @@ jq '.summary.processedFiles == .summary.totalFiles' results.json
 **Objective**: Verify individual failures don't stop concurrent operations
 
 **Setup**:
+
 1. Set `maxConcurrency: 4`
 2. Include problematic files (corrupted, wrong format) in test batch
 3. Mix with valid video files
 
 **Commands**:
+
 ```bash
 # Set concurrency
 jq '.maxConcurrency = 4' episodeidentifier.config.json > temp.json && mv temp.json episodeidentifier.config.json
@@ -166,12 +180,14 @@ touch ./mixed-test-batch/empty.mkv  # Empty file
 ```
 
 **Expected Results**:
+
 - Valid files processed successfully
 - Invalid files fail gracefully
 - Concurrent operations continue despite individual failures
 - All results (success and failure) in JSON output
 
 **Validation**:
+
 ```bash
 # Check mixed results
 jq '.summary.successfulFiles' results.json  # Should be > 0
@@ -188,10 +204,12 @@ jq '.results[] | select(.status == "failure") | .inputFile' results.json
 **Objective**: Verify invalid configuration handling
 
 **Setup**:
+
 1. Test various invalid `maxConcurrency` values
 2. Verify fallback to default behavior
 
 **Commands**:
+
 ```bash
 # Test invalid values
 echo "Testing negative value"
@@ -212,12 +230,14 @@ jq '.maxConcurrency = "invalid"' episodeidentifier.config.json > temp.json && mv
 ```
 
 **Expected Results**:
+
 - All invalid configurations fall back to `maxConcurrency = 1`
 - Warning messages logged for invalid values
 - Processing continues with single-file behavior
 - No application crashes or errors
 
 **Validation**:
+
 ```bash
 # Check for warnings in logs
 grep -i "warning\|invalid\|default" log-*.txt
@@ -237,6 +257,7 @@ done
 ### Processing Time Comparison
 
 **Commands**:
+
 ```bash
 # Test different concurrency levels with same file set
 for concurrency in 1 2 4 8; do

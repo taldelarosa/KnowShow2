@@ -280,6 +280,8 @@ dotnet run -- --input subtitle.txt --hash-db hashes.sqlite --store --series "Sho
 |--------|-------------|----------|---------|
 | `--input` | Path to AV1 video file or subtitle file | ✅ | - |
 | `--hash-db` | Path to SQLite hash database | ✅ | - |
+| `--bulk-identify` | Process all video files from a directory | ❌ | - |
+| `--bulk-store` | Store all subtitle files from a directory | ❌ | - |
 | `--store` | Store mode instead of identify | ❌ | false |
 | `--series` | Series name (store mode only) | ✅** | - |
 | `--season` | Season number (store mode only) | ✅** | - |
@@ -290,6 +292,91 @@ dotnet run -- --input subtitle.txt --hash-db hashes.sqlite --store --series "Sho
 
 *Required for identification mode
 **Required when using `--store`
+
+### Bulk Processing
+
+Process multiple files efficiently with concurrent operations:
+
+```bash
+# Identify all videos in a directory
+dotnet run -- --bulk-identify /path/to/videos --hash-db hashes.sqlite
+
+# Store all subtitles from a directory (extracts series/season/episode from filenames)
+dotnet run -- --bulk-store /path/to/subtitles --hash-db hashes.sqlite
+
+# Bulk identify with automatic renaming
+dotnet run -- --bulk-identify /path/to/videos --hash-db hashes.sqlite --rename
+```
+
+## Configuration
+
+The application uses `episodeidentifier.config.json` for advanced settings and performance tuning. Configuration changes are automatically detected and applied during runtime (hot-reload).
+
+### Configuration File Location
+
+The application looks for the configuration file in this order:
+
+1. `episodeidentifier.config.json` (current directory)
+2. Default built-in configuration if file not found
+
+### Sample Configuration
+
+```json
+{
+  "version": "2.0",
+  "maxConcurrency": 3,
+  "matchConfidenceThreshold": 0.6,
+  "renameConfidenceThreshold": 0.7,
+  "fuzzyHashThreshold": 75,
+  "hashingAlgorithm": "CTPH",
+  "filenameTemplate": "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}"
+}
+```
+
+### Concurrency Configuration
+
+The `maxConcurrency` setting controls how many files are processed simultaneously during bulk operations:
+
+| Value | Behavior | Use Case |
+|-------|----------|----------|
+| `1` | Sequential processing | Single-core systems, debugging, or when minimizing system load |
+| `2-3` | Light concurrency | Most desktop systems, balanced performance and stability |
+| `4-8` | Moderate concurrency | Multi-core systems with good I/O performance |
+| `9-20` | High concurrency | Powerful systems with fast SSDs and plenty of RAM |
+| `21-100` | Maximum concurrency | Server-grade hardware with exceptional I/O capabilities |
+
+**Performance Guidelines:**
+
+- **Start with 3-5** for most systems
+- **Monitor system resources** (CPU, memory, disk I/O) during bulk processing
+- **Increase gradually** if system handles load well
+- **Reduce if experiencing** slow performance, high memory usage, or I/O bottlenecks
+
+**Hot-Reload:** Changes to `maxConcurrency` apply to new bulk operations immediately - no restart required.
+
+**Validation:** Invalid values are automatically clamped to the valid range (1-100) with fallback to 1.
+
+### Other Configuration Options
+
+| Setting | Description | Valid Range | Default |
+|---------|-------------|-------------|---------|
+| `matchConfidenceThreshold` | Minimum confidence for episode matches | 0.0 - 1.0 | 0.6 |
+| `renameConfidenceThreshold` | Minimum confidence for automatic renaming | 0.0 - 1.0 | 0.7 |
+| `fuzzyHashThreshold` | Subtitle content similarity threshold | 0 - 100 | 75 |
+| `hashingAlgorithm` | Content hashing method | "CTPH" | "CTPH" |
+
+**Example Configurations:**
+
+```bash
+# Conservative (safe, slower)
+echo '{"maxConcurrency": 1, "matchConfidenceThreshold": 0.8}' > episodeidentifier.config.json
+
+# Balanced (recommended for most users)  
+echo '{"maxConcurrency": 3, "matchConfidenceThreshold": 0.6}' > episodeidentifier.config.json
+
+# Aggressive (fast, requires good hardware)
+echo '{"maxConcurrency": 10, "matchConfidenceThreshold": 0.5}' > episodeidentifier.config.json
+```
 
 ## Supported Languages
 

@@ -1,0 +1,52 @@
+{
+  // EpisodeIdentifier Configuration File
+  // This file controls the behavior of episode identification and bulk processing operations
+  
+  "version": "2.0",
+  
+  // Concurrency Configuration
+  // maxConcurrency: Maximum number of concurrent operations during bulk processing
+  // Valid range: 1-100
+  // - 1: Sequential processing (safest, slower)
+  // - 3-5: Moderate concurrency (good balance for most systems)
+  // - 10+: High concurrency (faster on powerful systems, may strain I/O)
+  // Default: 1 (if not specified or invalid)
+  // Hot-reloadable: Configuration changes apply to new bulk operations
+  "maxConcurrency": 3,
+  
+  // Matching Configuration
+  // matchConfidenceThreshold: Minimum confidence score (0.0-1.0) for episode matches
+  "matchConfidenceThreshold": 0.6,
+  
+  // renameConfidenceThreshold: Minimum confidence score for automatic file renaming
+  // Must be >= matchConfidenceThreshold for safety
+  "renameConfidenceThreshold": 0.7,
+  
+  // Fuzzy Hash Configuration
+  // fuzzyHashThreshold: Similarity threshold (0-100) for subtitle content matching
+  // Higher values = more strict matching, Lower values = more lenient matching
+  "fuzzyHashThreshold": 75,
+  
+  // hashingAlgorithm: Algorithm used for content hashing (CTPH recommended)
+  "hashingAlgorithm": "CTPH",
+  
+  // Filename Pattern Matching
+  // Regex patterns for extracting series/season/episode information from filenames
+  // Patterns are tried in order: primary -> secondary -> tertiary
+  "filenamePatterns": {
+    // Standard format: "Series Name S01E01 Episode Name"
+    "primaryPattern": "^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
+    
+    // Alternative format: "Series Name 1x01 Episode Name" 
+    "secondaryPattern": "^(?<SeriesName>.+?)\\s(?<Season>\\d+)x(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
+    
+    // Dotted format: "Series.Name.S01.E01.Episode.Name"
+    "tertiaryPattern": "^(?<SeriesName>.+?)\\.S(?<Season>\\d+)\\.E(?<Episode>\\d+)(?:\\.(?<EpisodeName>.+?))?$"
+  },
+  
+  // Filename Template for Renaming
+  // Template used when --rename option generates new filenames
+  // Available placeholders: {SeriesName}, {Season}, {Episode}, {EpisodeName}, {FileExtension}
+  // Format specifiers: {Season:D2} = zero-padded 2 digits, {Episode:D2} = zero-padded 2 digits
+  "filenameTemplate": "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}"
+}

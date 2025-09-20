@@ -69,12 +69,14 @@
 **Command**: `--bulk-identify <directory>`
 
 **Behavior Changes**:
+
 - Reads `maxConcurrency` from `episodeidentifier.config.json`
 - Processes up to `maxConcurrency` files simultaneously
 - Maintains existing command-line interface (no breaking changes)
 - Supports hot-reload of concurrency settings during processing
 
 **Input Contract**:
+
 ```
 Required:
 - directory: string (path to directory containing video files)
@@ -89,6 +91,7 @@ Configuration (from episodeidentifier.config.json):
 ```
 
 **Output Contract** (unchanged):
+
 ```json
 {
   "requestId": "string",
@@ -135,16 +138,19 @@ Configuration (from episodeidentifier.config.json):
 ### IAppConfigService Enhancement
 
 **New Property**:
+
 ```csharp
 public int MaxConcurrency { get; }
 ```
 
 **Validation Contract**:
+
 - Value range: 1 ≤ MaxConcurrency ≤ 100
 - Default value: 1 (if not specified or invalid)
 - Validation occurs during configuration loading
 
 **Hot-Reload Contract**:
+
 - Configuration changes trigger property update
 - Existing processing operations continue with previous settings
 - New processing operations use updated settings
@@ -155,16 +161,19 @@ public int MaxConcurrency { get; }
 ### BulkProcessingOptions Enhancement
 
 **Modified Property**:
+
 ```csharp
 public int MaxConcurrency { get; set; }
 ```
 
 **Initialization Contract**:
+
 - Read from IAppConfigService.MaxConcurrency instead of Environment.ProcessorCount
 - Maintain validation range 1-100
 - Preserve existing validation attributes
 
 **Behavior Contract**:
+
 - Process files concurrently up to MaxConcurrency limit
 - Queue additional files when limit reached
 - Maintain FIFO processing order for queued files
@@ -175,6 +184,7 @@ public int MaxConcurrency { get; set; }
 ### Concurrent Progress Updates
 
 **Enhanced Progress Reports**:
+
 ```csharp
 public class BulkProcessingProgress
 {
@@ -192,6 +202,7 @@ public class BulkProcessingProgress
 ```
 
 **Progress Reporting Behavior**:
+
 - Reports progress from all concurrent operations
 - Updates `ActiveOperations` count as operations start/complete
 - Updates `QueuedFiles` count as queue length changes
@@ -202,12 +213,14 @@ public class BulkProcessingProgress
 ### Concurrent Error Collection
 
 **Error Aggregation**:
+
 - Individual file failures collected from all concurrent operations
 - Error details include source operation identification
 - Failed operations don't stop other concurrent operations
 - All errors included in final JSON output
 
 **Error Recovery**:
+
 - Configuration validation errors → default to maxConcurrency = 1
 - Resource exhaustion → existing backpressure handling
 - Individual processing failures → continue with other operations
@@ -215,16 +228,19 @@ public class BulkProcessingProgress
 ## Testing Contracts
 
 ### Configuration Testing
+
 - Validate config loading with various maxConcurrency values
 - Test hot-reload behavior and timing
 - Verify validation and default value handling
 
 ### Concurrency Testing
+
 - Test processing with different concurrency levels (1, 5, 10, max)
 - Verify queue management and FIFO ordering
 - Test concurrent operation independence (failure isolation)
 
 ### Integration Testing
+
 - Test full workflow with concurrent processing
 - Verify JSON output format with concurrent results
 - Test hot-reload during active processing
@@ -232,12 +248,14 @@ public class BulkProcessingProgress
 ## Backward Compatibility
 
 ### Existing Behavior Preservation
+
 - Default maxConcurrency = 1 maintains single-file processing
 - Existing configurations without maxConcurrency work unchanged
 - All existing command-line options and behavior preserved
 - JSON output format remains identical
 
 ### Migration Path
+
 - No migration required for existing users
 - Optional configuration enhancement
 - Graceful degradation for invalid configurations
