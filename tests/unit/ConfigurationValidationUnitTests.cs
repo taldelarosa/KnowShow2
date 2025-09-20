@@ -57,7 +57,7 @@ public class ConfigurationValidationUnitTests : IDisposable
         // Arrange
         var config = CreateValidMinimalConfiguration();
         config.MaxConcurrency = invalidValue;
-        
+
         var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(_tempConfigPath, json);
 
@@ -80,7 +80,7 @@ public class ConfigurationValidationUnitTests : IDisposable
         // Arrange
         var config = CreateValidMinimalConfiguration();
         config.MaxConcurrency = validValue;
-        
+
         var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(_tempConfigPath, json);
 
@@ -220,7 +220,7 @@ public class ConfigurationValidationUnitTests : IDisposable
         // Arrange - Create a large corrupted JSON file  
         var largeConfig = CreateValidMinimalConfiguration();
         largeConfig.MaxConcurrency = 10;
-        
+
         // Create valid JSON then corrupt it to test error handling with large files
         var json = JsonSerializer.Serialize(largeConfig, new JsonSerializerOptions { WriteIndented = true });
         var corruptedJson = json + new string(' ', 10000) + "invalid_json_content"; // Add corruption
@@ -246,7 +246,7 @@ public class ConfigurationValidationUnitTests : IDisposable
         // Arrange
         var config = CreateValidMinimalConfiguration();
         config.MaxConcurrency = inputValue;
-        
+
         var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(_tempConfigPath, json);
 

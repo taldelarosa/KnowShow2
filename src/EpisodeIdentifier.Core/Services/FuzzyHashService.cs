@@ -407,8 +407,8 @@ public class FuzzyHashService : IDisposable
     }
 
     private async Task<List<(LabelledSubtitle Subtitle, double Confidence)>> FindMatchesWithConnection(
-        SqliteConnection connection, 
-        dynamic inputHashes, 
+        SqliteConnection connection,
+        dynamic inputHashes,
         double threshold)
     {
         var results = new List<(LabelledSubtitle, double)>();

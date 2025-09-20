@@ -250,7 +250,7 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
                     }
                 }
             }
-            
+
             // Perform explicit MaxConcurrency handling
             // Treat any value outside [1,100] as invalid and DEFAULT to 1 for safety.
             // This matches unit/contract tests that expect a valid configuration with fallback.
@@ -327,7 +327,7 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
         }
     }
 
-    
+
 
     /// <summary>
     /// Loads configuration from a specific file path with comprehensive validation.
@@ -416,7 +416,7 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
             // Perform explicit maxConcurrency validation with fallback to default (1)
             var originalMaxConcurrency = config.MaxConcurrency;
             var fallbackApplied = false;
-            
+
             if (config.MaxConcurrency < 1 || config.MaxConcurrency > 100)
             {
                 _logger.LogWarning("MaxConcurrency value {Value} is outside valid range (1-100), falling back to default (1) - Operation: {OperationId}",
@@ -424,7 +424,7 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
                 config.MaxConcurrency = 1; // Default to 1
                 fallbackApplied = true;
             }
-            
+
             if (fallbackApplied)
             {
                 _logger.LogInformation("MaxConcurrency fallback applied from {Original} to default (1) - Operation: {OperationId}",
@@ -660,14 +660,14 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
     }
 
     // IAppConfigService implementation for backward compatibility and concurrent processing
-    
+
     /// <summary>
     /// Legacy configuration property for backward compatibility.
     /// Returns a legacy AppConfig based on the current modern configuration.
     /// </summary>
-    public AppConfig Config 
-    { 
-        get 
+    public AppConfig Config
+    {
+        get
         {
             // Create a legacy AppConfig from the current modern configuration
             if (_lastLoadedConfig?.IsValid == true)
@@ -687,9 +687,9 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
     /// Gets the maximum number of concurrent operations allowed from the configuration.
     /// Validated to be within range 1-100, defaults to 1 if not specified or invalid.
     /// </summary>
-    public int MaxConcurrency 
-    { 
-        get 
+    public int MaxConcurrency
+    {
+        get
         {
             if (_lastLoadedConfig?.IsValid == true && _lastLoadedConfig.Configuration != null)
             {
@@ -707,13 +707,13 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
     public async Task LoadConfigurationAsync(string? configPath = null)
     {
         // If a specific path is provided, temporarily use it
-        var result = configPath != null 
+        var result = configPath != null
             ? await LoadConfigurationFromPath(configPath)
             : await LoadConfiguration();
-        
+
         if (!result.IsValid)
         {
-            _logger.LogError("Failed to load configuration via legacy method: {Errors}", 
+            _logger.LogError("Failed to load configuration via legacy method: {Errors}",
                 string.Join(", ", result.Errors));
         }
     }

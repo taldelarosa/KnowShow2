@@ -46,11 +46,11 @@ public class AppConfigService : IAppConfigService
             if (config != null)
             {
                 Config = config;
-                
+
                 // Track file timestamp and MaxConcurrency for hot-reload detection
                 _lastConfigFileWriteTime = File.GetLastWriteTimeUtc(configPath);
                 _lastKnownMaxConcurrency = Config.MaxConcurrency;
-                
+
                 _logger.LogInformation("Configuration loaded from '{ConfigPath}'", configPath);
                 LogCurrentSettings();
             }
@@ -62,7 +62,7 @@ public class AppConfigService : IAppConfigService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading configuration from '{ConfigPath}', using defaults", configPath);
-            
+
             // Enhanced configuration validation error logging
             LogConfigurationValidationError("Configuration Load", ex, configPath);
         }
@@ -114,11 +114,11 @@ public class AppConfigService : IAppConfigService
         _logger.LogError("Configuration validation error during {Operation}", operation);
         _logger.LogError("Error Type: {ExceptionType}", exception.GetType().Name);
         _logger.LogError("Error Message: {Message}", exception.Message);
-        
+
         if (!string.IsNullOrEmpty(configPath))
         {
             _logger.LogError("Configuration Path: {ConfigPath}", configPath);
-            
+
             // Log file existence and basic info for troubleshooting
             try
             {
@@ -138,13 +138,13 @@ public class AppConfigService : IAppConfigService
                 _logger.LogError(fileEx, "Unable to get file information for troubleshooting");
             }
         }
-        
+
         // Log specific validation error details based on exception type
         if (exception is JsonException jsonEx)
         {
-            _logger.LogError("JSON Parsing Error - Line: {Line}, Position: {Position}", 
+            _logger.LogError("JSON Parsing Error - Line: {Line}, Position: {Position}",
                 jsonEx.LineNumber, jsonEx.BytePositionInLine);
-            
+
             // Suggest common fixes for JSON errors
             _logger.LogWarning("Common JSON validation issues:");
             _logger.LogWarning("  - Check for missing commas between properties");
@@ -160,7 +160,7 @@ public class AppConfigService : IAppConfigService
             _logger.LogWarning("  - matchConfidenceThreshold: 0.0-1.0");
             _logger.LogWarning("  - renameConfidenceThreshold: 0.0-1.0");
         }
-        
+
         _logger.LogInformation("Using default configuration values due to validation errors");
         _logger.LogInformation("To resolve: Fix the configuration file or delete it to regenerate defaults");
     }
@@ -171,19 +171,19 @@ public class AppConfigService : IAppConfigService
     /// Gets the maximum number of concurrent operations allowed.
     /// Reads from the legacy configuration with validation and fallback to default (1).
     /// </summary>
-    public int MaxConcurrency 
-    { 
-        get 
+    public int MaxConcurrency
+    {
+        get
         {
             var value = Config.MaxConcurrency;
-            
+
             // Validate range 1-100 as per specification
             if (value < 1 || value > 100)
             {
                 _logger.LogWarning("Invalid MaxConcurrency value {Value} in legacy configuration, using default (1)", value);
                 return 1;
             }
-            
+
             return value;
         }
     }
@@ -200,12 +200,12 @@ public class AppConfigService : IAppConfigService
         {
             // Always load configuration fresh to ensure tests and hot-reload scenarios work correctly
             await LoadConfigurationAsync();
-            
+
             // Perform maxConcurrency validation after loading configuration
             var validationErrors = new List<string>();
             var originalMaxConcurrency = Config.MaxConcurrency;
             var validatedMaxConcurrency = originalMaxConcurrency;
-            
+
             // Validate MaxConcurrency range (1-100) with fallback to default (1)
             if (originalMaxConcurrency < 1 || originalMaxConcurrency > 100)
             {
@@ -213,7 +213,7 @@ public class AppConfigService : IAppConfigService
                 validatedMaxConcurrency = 1; // Fallback to default
                 _logger.LogWarning("MaxConcurrency value {Value} is outside valid range, falling back to default (1)", originalMaxConcurrency);
             }
-            
+
             // Apply fallback if validation found issues
             if (validatedMaxConcurrency != originalMaxConcurrency)
             {
@@ -227,13 +227,13 @@ public class AppConfigService : IAppConfigService
 
             // Update tracking for hot-reload detection
             _lastKnownMaxConcurrency = validatedMaxConcurrency;
-            
+
             // Create modern configuration with validated values
             var modernConfig = new Models.Configuration.Configuration
             {
                 MaxConcurrency = validatedMaxConcurrency // Use validated MaxConcurrency
             };
-            
+
             var result = Models.Configuration.ConfigurationResult.Success(modernConfig);
             // Populate metadata so consumers can apply fallback behavior consistently
             result.OriginalMaxConcurrency = originalMaxConcurrency;
@@ -242,24 +242,24 @@ public class AppConfigService : IAppConfigService
             result.WasMaxConcurrencyClamped = false; // legacy path defaults directly to 1 when invalid
             result.WasLenientParse = false;
             result.WasReloadOperation = false;
-            
+
             // Add validation warnings to result if any corrections were made
             if (validationErrors.Any())
             {
                 result.Errors.AddRange(validationErrors);
                 _logger.LogInformation("Configuration loaded with {WarningCount} validation corrections", validationErrors.Count);
             }
-            
+
             LastConfigurationResult = result;
             return result;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load configuration via legacy service");
-            
+
             // Enhanced validation error logging for modern configuration interface
             LogConfigurationValidationError("Modern Configuration Load", ex);
-            
+
             var failure = Models.Configuration.ConfigurationResult.Failure($"Legacy configuration load failed: {ex.Message}");
             LastConfigurationResult = failure;
             return failure;
@@ -274,7 +274,7 @@ public class AppConfigService : IAppConfigService
     public async Task<bool> ReloadIfChanged()
     {
         const string configPath = DefaultConfigFileName;
-        
+
         try
         {
             if (!File.Exists(configPath))
@@ -284,7 +284,7 @@ public class AppConfigService : IAppConfigService
             }
 
             var currentWriteTime = File.GetLastWriteTimeUtc(configPath);
-            
+
             // Check if file has been modified since last load
             if (currentWriteTime <= _lastConfigFileWriteTime)
             {
@@ -331,7 +331,7 @@ public class AppConfigService : IAppConfigService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during legacy configuration reload check - Path: {ConfigPath}", configPath);
-            
+
             // Enhanced validation error logging for hot-reload failures
             LogConfigurationValidationError("Hot-Reload", ex, configPath);
             return false;
@@ -350,7 +350,7 @@ public class AppConfigService : IAppConfigService
         {
             var nullError = "Configuration cannot be null";
             _logger.LogError("Configuration validation failed: {Error}", nullError);
-            LogConfigurationValidationError("Null Configuration Validation", 
+            LogConfigurationValidationError("Null Configuration Validation",
                 new ArgumentNullException(nameof(config), nullError));
             return Models.Configuration.ConfigurationResult.Failure(nullError);
         }
@@ -363,7 +363,7 @@ public class AppConfigService : IAppConfigService
             var error = $"MaxConcurrency must be between 1 and 100, but was {config.MaxConcurrency}";
             errors.Add(error);
             _logger.LogWarning("Configuration validation error: {Error}", error);
-            
+
             // Log suggested correction
             var suggestedValue = config.MaxConcurrency < 1 ? 1 : 100;
             _logger.LogInformation("Suggested correction: Set maxConcurrency to {SuggestedValue}", suggestedValue);
@@ -379,10 +379,10 @@ public class AppConfigService : IAppConfigService
             {
                 _logger.LogError("  - {ValidationError}", error);
             }
-            
-            LogConfigurationValidationError("Configuration Property Validation", 
+
+            LogConfigurationValidationError("Configuration Property Validation",
                 new InvalidOperationException($"Validation failed with {errors.Count} error(s)"));
-            
+
             return Models.Configuration.ConfigurationResult.Failure(errors);
         }
 
