@@ -252,11 +252,10 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
             }
             
             // Perform explicit MaxConcurrency handling
-            // - On initial loads or lenient legacy parses: FALL BACK to default (1) when out of range
-            //   (treat any value <1 or >100 as invalid and default to 1)
-            // - On reloads with strict parse (after at least one prior load): do NOT modify; allow validator to catch and mark invalid
+            // Treat any value outside [1,100] as invalid and DEFAULT to 1 for safety.
+            // This matches unit/contract tests that expect a valid configuration with fallback.
             var originalMaxConcurrency = config.MaxConcurrency;
-            var clamped = false;
+            var clamped = false; // we default rather than clamp to 100 per current spec/tests
             var outOfRange = config.MaxConcurrency < 1 || config.MaxConcurrency > 100;
 
             // Track metadata about original/concurrency handling
@@ -264,31 +263,12 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
             var wasDefaulted = false;
             if (outOfRange)
             {
-                // Treat any detected reload (including the first explicit load after construction
-                // when the file has changed) as a strict reload: do NOT modify the value and allow
-                // validation to fail. Only default on initial loads or lenient parse paths when no
-                // reload was detected.
-                var changedSinceConstruction = _constructionFileWriteTime != DateTime.MinValue &&
-                                              currentWriteTime != DateTime.MinValue &&
-                                              currentWriteTime > _constructionFileWriteTime;
-                var isTrueReload = !usedLenientParser && (isReloadCandidate || (isFirstLoad && changedSinceConstruction));
-                if (isTrueReload)
-                {
-                    _logger.LogWarning("MaxConcurrency value {Value} is outside valid range (1-100) during reload; will fail validation - Operation: {OperationId}",
-                        config.MaxConcurrency, operationId);
-                }
-                else
-                {
-                    // Initial load or lenient parse path without a detected reload: default to 1
-                    _logger.LogWarning("MaxConcurrency value {Value} is outside valid range (1-100), falling back to default (1) - Operation: {OperationId}",
-                        config.MaxConcurrency, operationId);
-                    config.MaxConcurrency = 1;
-                    wasDefaulted = true;
-                    clamped = false;
-                }
+                _logger.LogWarning("MaxConcurrency value {Value} is outside valid range (1-100), falling back to default (1) - Operation: {OperationId}",
+                    config.MaxConcurrency, operationId);
+                config.MaxConcurrency = 1;
+                wasDefaulted = true;
             }
-
-            if (!outOfRange)
+            else
             {
                 _logger.LogDebug("MaxConcurrency value {Value} is within valid range - Operation: {OperationId}",
                     config.MaxConcurrency, operationId);
