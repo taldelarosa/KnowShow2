@@ -4,6 +4,8 @@ using EpisodeIdentifier.Core.Models;
 using FuzzySharp;
 using System.Security.Cryptography;
 using System.Text;
+using System.Collections.Concurrent;
+using System.Threading;
 
 namespace EpisodeIdentifier.Core.Services;
 
@@ -13,6 +15,10 @@ public class FuzzyHashService : IDisposable
     private readonly ILogger<FuzzyHashService> _logger;
     private readonly SubtitleNormalizationService _normalizationService;
     private readonly SqliteConnection? _sharedConnection; // For in-memory databases
+    private readonly string _connectionString = string.Empty; // Cached for file-based dbs
+    private readonly ConcurrentBag<SqliteConnection> _readConnections = new();
+    private readonly SemaphoreSlim? _readConnSemaphore; // gate pooled read connections
+    private readonly int _maxReadConnections = 0;
 
     public FuzzyHashService(string dbPath, ILogger<FuzzyHashService> logger, SubtitleNormalizationService normalizationService)
     {
@@ -29,14 +35,26 @@ public class FuzzyHashService : IDisposable
         }
         else
         {
+            // Optimize database for concurrent operations
+            SqliteConcurrencyOptimizer.OptimizeForConcurrency(_dbPath, _logger);
+            _connectionString = SqliteConcurrencyOptimizer.GetOptimizedConnectionString(_dbPath);
+
+            // Initialize a small pool of read-only connections to reduce open/close overhead under concurrency
+            _maxReadConnections = Math.Min(8, Math.Max(2, Environment.ProcessorCount));
+            _readConnSemaphore = new SemaphoreSlim(_maxReadConnections, _maxReadConnections);
+
             InitializeDatabase();
         }
     }
 
     private void InitializeDatabase()
     {
-        using var connection = new SqliteConnection($"Data Source={_dbPath}");
+        var connectionString = string.IsNullOrEmpty(_connectionString)
+            ? SqliteConcurrencyOptimizer.GetOptimizedConnectionString(_dbPath)
+            : _connectionString;
+        using var connection = new SqliteConnection(connectionString);
         connection.Open();
+        ApplyConnectionPragmas(connection);
         InitializeDatabaseWithConnection(connection);
     }
 
@@ -295,15 +313,19 @@ public class FuzzyHashService : IDisposable
         // Create normalized versions
         var normalized = _normalizationService.CreateNormalizedVersions(subtitle.SubtitleText);
 
-        // Use shared connection for in-memory databases, or create new connection for file databases
+        // Use shared connection for in-memory databases, or optimized connection for file databases
         if (_sharedConnection != null)
         {
             await StoreHashWithConnection(_sharedConnection, subtitle, normalized);
         }
         else
         {
-            using var connection = new SqliteConnection($"Data Source={_dbPath}");
+            var connectionString = string.IsNullOrEmpty(_connectionString)
+                ? SqliteConcurrencyOptimizer.GetOptimizedConnectionString(_dbPath)
+                : _connectionString;
+            using var connection = new SqliteConnection(connectionString);
             await connection.OpenAsync();
+            ApplyConnectionPragmas(connection);
             await StoreHashWithConnection(connection, subtitle, normalized);
         }
     }
@@ -364,8 +386,32 @@ public class FuzzyHashService : IDisposable
             CleanHash = GenerateFuzzyHash(inputNormalized.NoHtmlAndTimecodes)
         };
 
-        using var connection = new SqliteConnection($"Data Source={_dbPath}");
-        await connection.OpenAsync();
+        // Use shared connection for in-memory databases, or optimized connection for file databases
+        if (_sharedConnection != null)
+        {
+            return await FindMatchesWithConnection(_sharedConnection, inputHashes, threshold);
+        }
+        else
+        {
+            // Rent from connection pool to minimize open/close overhead under concurrency
+            var connection = await RentReadConnectionAsync();
+            try
+            {
+                return await FindMatchesWithConnection(connection, inputHashes, threshold);
+            }
+            finally
+            {
+                ReturnReadConnection(connection);
+            }
+        }
+    }
+
+    private async Task<List<(LabelledSubtitle Subtitle, double Confidence)>> FindMatchesWithConnection(
+        SqliteConnection connection, 
+        dynamic inputHashes, 
+        double threshold)
+    {
+        var results = new List<(LabelledSubtitle, double)>();
 
         using var command = connection.CreateCommand();
         command.CommandText = @"
@@ -452,6 +498,57 @@ public class FuzzyHashService : IDisposable
             sortedResults.Count, threshold);
 
         return sortedResults;
+    }
+
+    private async Task<SqliteConnection> RentReadConnectionAsync()
+    {
+        if (_readConnSemaphore == null)
+        {
+            // Fallback if semaphore not initialized (shouldn't happen for file-based DB)
+            var conn = new SqliteConnection(string.IsNullOrEmpty(_connectionString)
+                ? SqliteConcurrencyOptimizer.GetOptimizedConnectionString(_dbPath)
+                : _connectionString);
+            await conn.OpenAsync();
+            ApplyConnectionPragmas(conn);
+            return conn;
+        }
+
+        await _readConnSemaphore.WaitAsync();
+        if (_readConnections.TryTake(out var pooled) && pooled.State == System.Data.ConnectionState.Open)
+        {
+            return pooled;
+        }
+
+        var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        ApplyConnectionPragmas(connection);
+        return connection;
+    }
+
+    private void ReturnReadConnection(SqliteConnection connection)
+    {
+        // If connection is broken/closed, dispose it and don't return to pool
+        if (connection.State != System.Data.ConnectionState.Open || _readConnSemaphore == null)
+        {
+            try { connection.Dispose(); } catch { /* ignore */ }
+            return;
+        }
+        _readConnections.Add(connection);
+        _readConnSemaphore.Release();
+    }
+
+    private void ApplyConnectionPragmas(SqliteConnection connection)
+    {
+        try
+        {
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "PRAGMA busy_timeout=5000;";
+            cmd.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Best-effort; ignore if PRAGMA not applied
+        }
     }
 
     /// <summary>
@@ -792,5 +889,12 @@ public class FuzzyHashService : IDisposable
     public void Dispose()
     {
         _sharedConnection?.Dispose();
+
+        while (_readConnections.TryTake(out var conn))
+        {
+            try { conn.Dispose(); } catch { /* ignore */ }
+        }
+
+        _readConnSemaphore?.Dispose();
     }
 }
