@@ -12,13 +12,13 @@ namespace EpisodeIdentifier.Core.Services;
 public class VideoFileProcessingService : IVideoFileProcessingService
 {
     private readonly ILogger<VideoFileProcessingService> _logger;
-    private readonly VideoFormatValidator _videoFormatValidator;
+    private readonly VideoFormatValidator_videoFormatValidator;
     private readonly SubtitleExtractor _subtitleExtractor;
-    private readonly EnhancedPgsToTextConverter _pgsConverter;
+    private readonly EnhancedPgsToTextConverter_pgsConverter;
     private readonly VideoTextSubtitleExtractor _textExtractor;
-    private readonly EpisodeIdentificationService _episodeIdentificationService;
+    private readonly EpisodeIdentificationService_episodeIdentificationService;
     private readonly FilenameService _filenameService;
-    private readonly FileRenameService _fileRenameService;
+    private readonly FileRenameService_fileRenameService;
     private readonly IAppConfigService _configService;
 
     public VideoFileProcessingService(

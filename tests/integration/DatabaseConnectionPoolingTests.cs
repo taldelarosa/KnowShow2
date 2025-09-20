@@ -20,7 +20,7 @@ namespace EpisodeIdentifier.Tests.Integration;
 public class DatabaseConnectionPoolingTests : IDisposable
 {
     private readonly string _testDbPath;
-    private readonly ILogger<FuzzyHashService> _logger;
+    private readonly ILogger<FuzzyHashService>_logger;
     private readonly SubtitleNormalizationService _normalizationService;
 
     public DatabaseConnectionPoolingTests()

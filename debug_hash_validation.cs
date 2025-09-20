@@ -10,7 +10,7 @@ class Program {
         for (int i = 0; i < parts.Length; i++) {
             Console.WriteLine($"Part {i}: '{parts[i]}' (length: {parts[i].Length})");
         }
-        
+
         bool blockSizeValid = int.TryParse(parts[0], out _);
         Console.WriteLine($"Block size valid: {blockSizeValid}");
         

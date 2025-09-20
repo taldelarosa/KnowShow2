@@ -11,7 +11,7 @@ namespace EpisodeIdentifier.Core.Services;
 public class PgsRipService
 {
     private readonly ILogger<PgsRipService> _logger;
-    private bool? _isAvailable;
+    private bool?_isAvailable;
 
     public PgsRipService(ILogger<PgsRipService> logger)
     {

@@ -16,7 +16,7 @@ namespace EpisodeIdentifier.Tests.Performance;
 public class ConcurrencyPerformanceTests : IDisposable
 {
     private readonly string _tempDirectory;
-    private readonly List<string> _testFiles;
+    private readonly List<string>_testFiles;
     private readonly Mock<IAppConfigService> _mockConfigService;
 
     public ConcurrencyPerformanceTests()

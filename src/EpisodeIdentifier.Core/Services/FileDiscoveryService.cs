@@ -13,7 +13,7 @@ namespace EpisodeIdentifier.Core.Services;
 public class FileDiscoveryService : IFileDiscoveryService
 {
     private readonly IFileSystem _fileSystem;
-    private readonly ILogger<FileDiscoveryService> _logger;
+    private readonly ILogger<FileDiscoveryService>_logger;
 
     /// <summary>
     /// Initializes a new instance of the FileDiscoveryService class.

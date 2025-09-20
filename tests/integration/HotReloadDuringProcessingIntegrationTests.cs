@@ -20,14 +20,14 @@ namespace EpisodeIdentifier.Tests.Integration;
 /// Integration tests for configuration hot-reload during active processing.
 /// These tests verify that configuration changes are properly handled while
 /// bulk processing operations are in progress.
-/// 
+///
 /// T010: Integration test for hot-reload during active processing
 /// Tests hot-reload behavior during concurrent operations
 /// </summary>
 public class HotReloadDuringProcessingIntegrationTests
 {
     private readonly ITestOutputHelper _output;
-    private readonly MockFileSystem _fileSystem;
+    private readonly MockFileSystem_fileSystem;
 
     public HotReloadDuringProcessingIntegrationTests(ITestOutputHelper output)
     {

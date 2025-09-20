@@ -9,7 +9,7 @@ namespace EpisodeIdentifier.Tests.Unit;
 public class FilenameServiceTests
 {
     private readonly FilenameService _filenameService;
-    private readonly IAppConfigService _mockConfigService;
+    private readonly IAppConfigService_mockConfigService;
 
     public FilenameServiceTests()
     {

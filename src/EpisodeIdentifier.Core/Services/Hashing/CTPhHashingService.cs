@@ -20,7 +20,7 @@ namespace EpisodeIdentifier.Core.Services.Hashing
     public class CTPhHashingService : ICTPhHashingService
     {
         private readonly ILogger<CTPhHashingService> _logger;
-        private readonly IFileSystem _fileSystem;
+        private readonly IFileSystem_fileSystem;
         private const int DEFAULT_SIMILARITY_THRESHOLD = 50;
         private readonly int _similarityThreshold;
 

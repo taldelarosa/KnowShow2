@@ -9,7 +9,7 @@ class Program
         var filename = DebugFilenameGeneration();
         Console.WriteLine($"Generated filename: '{filename}'");
         Console.WriteLine($"Length: {filename.Length}");
-        
+
         // Test basic validation rules
         Console.WriteLine($"Not null/empty: {!string.IsNullOrWhiteSpace(filename)}");
         Console.WriteLine($"Has extension: {!string.IsNullOrEmpty(Path.GetExtension(filename))}");

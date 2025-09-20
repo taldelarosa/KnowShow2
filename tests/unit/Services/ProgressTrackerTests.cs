@@ -14,7 +14,7 @@ namespace EpisodeIdentifier.Tests.Unit.Services;
 public class ProgressTrackerTests
 {
     private readonly ILogger<ProgressTracker> _logger;
-    private readonly ProgressTracker _progressTracker;
+    private readonly ProgressTracker_progressTracker;
 
     public ProgressTrackerTests()
     {

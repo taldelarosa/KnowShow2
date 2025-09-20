@@ -18,7 +18,7 @@ namespace EpisodeIdentifier.Tests.Contract;
 public class ConfigurationHotReloadContractTests
 {
     private readonly MockFileSystem _fileSystem;
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IServiceProvider_serviceProvider;
 
     public ConfigurationHotReloadContractTests()
     {

@@ -11,11 +11,11 @@ namespace EpisodeIdentifier.Core.Services;
 public class ConsoleProgressReporter : IConsoleProgressReporter, IDisposable
 {
     private readonly ILogger<ConsoleProgressReporter> _logger;
-    private readonly object _consoleLock = new();
+    private readonly object_consoleLock = new();
     private DateTime _lastUpdate = DateTime.MinValue;
-    private readonly TimeSpan _minUpdateInterval = TimeSpan.FromMilliseconds(500);
+    private readonly TimeSpan_minUpdateInterval = TimeSpan.FromMilliseconds(500);
     private int _lastProgressBarLength = 0;
-    private bool _disposed = false;
+    private bool_disposed = false;
 
     /// <summary>
     /// Initializes a new instance of the ConsoleProgressReporter class.

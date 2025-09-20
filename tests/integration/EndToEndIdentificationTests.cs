@@ -14,7 +14,7 @@ namespace EpisodeIdentifier.Tests.Integration;
 public class EndToEndIdentificationTests : IDisposable
 {
     private readonly SubtitleWorkflowCoordinator _coordinator;
-    private readonly string _testDataPath;
+    private readonly string_testDataPath;
 
     public EndToEndIdentificationTests()
     {

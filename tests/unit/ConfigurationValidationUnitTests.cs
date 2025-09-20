@@ -11,7 +11,7 @@ namespace EpisodeIdentifier.Tests.Unit;
 public class ConfigurationValidationUnitTests : IDisposable
 {
     private readonly ConfigurationService _configService;
-    private readonly string _tempConfigPath;
+    private readonly string_tempConfigPath;
 
     public ConfigurationValidationUnitTests()
     {

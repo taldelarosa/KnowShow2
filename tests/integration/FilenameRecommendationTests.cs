@@ -16,7 +16,7 @@ namespace EpisodeIdentifier.Tests.Integration;
 public class FilenameRecommendationTests : IDisposable
 {
     private readonly ServiceProvider _serviceProvider;
-    private readonly ILogger<FilenameRecommendationTests> _logger;
+    private readonly ILogger<FilenameRecommendationTests>_logger;
 
     public FilenameRecommendationTests()
     {

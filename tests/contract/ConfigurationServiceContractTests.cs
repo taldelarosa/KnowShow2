@@ -16,9 +16,9 @@ namespace EpisodeIdentifier.Tests.Contract;
 public class ConfigurationServiceContractTests
 {
     private readonly IConfigurationService _configurationService;
-    private readonly MockFileSystem _mockFileSystem;
+    private readonly MockFileSystem_mockFileSystem;
     private readonly ILogger<ConfigurationService> _logger;
-    private readonly string _configFilePath;
+    private readonly string_configFilePath;
     private readonly Configuration _validConfig;
 
     public ConfigurationServiceContractTests()

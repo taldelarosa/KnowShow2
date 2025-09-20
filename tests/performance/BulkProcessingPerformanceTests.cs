@@ -16,9 +16,9 @@ namespace EpisodeIdentifier.Tests.Performance;
 public class BulkProcessingPerformanceTests : IDisposable
 {
     private readonly MockFileSystem _fileSystem;
-    private readonly ILogger<BulkProcessorService> _logger;
+    private readonly ILogger<BulkProcessorService>_logger;
     private readonly BulkProcessorService _bulkProcessor;
-    private readonly Stopwatch _stopwatch;
+    private readonly Stopwatch_stopwatch;
 
     public BulkProcessingPerformanceTests()
     {

@@ -11,7 +11,7 @@ namespace EpisodeIdentifier.Core.Services;
 public class EnhancedPgsToTextConverter
 {
     private readonly ILogger<EnhancedPgsToTextConverter> _logger;
-    private readonly PgsRipService _pgsRipService;
+    private readonly PgsRipService_pgsRipService;
     private readonly PgsToTextConverter _fallbackConverter;
 
     public EnhancedPgsToTextConverter(

@@ -8,7 +8,7 @@ namespace EpisodeIdentifier.Core.Services;
 public class SubtitleFilenameParser
 {
     private readonly ILogger<SubtitleFilenameParser> _logger;
-    private readonly IAppConfigService _configService;
+    private readonly IAppConfigService_configService;
 
     public SubtitleFilenameParser(ILogger<SubtitleFilenameParser> logger, IAppConfigService configService)
     {

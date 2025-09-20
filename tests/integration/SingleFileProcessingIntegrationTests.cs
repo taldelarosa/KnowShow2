@@ -16,16 +16,16 @@ namespace EpisodeIdentifier.Tests.Integration;
 
 /// <summary>
 /// Integration tests for single file processing with maxConcurrency=1.
-/// These tests verify the complete pipeline from configuration loading through 
+/// These tests verify the complete pipeline from configuration loading through
 /// episode identification with concurrent processing disabled.
-/// 
+///
 /// T008: Integration test for single file processing (maxConcurrency=1)
 /// Tests the full workflow: Configuration → BulkProcessingOptions → Single File Processing
 /// </summary>
 public class SingleFileProcessingIntegrationTests
 {
     private readonly ITestOutputHelper _output;
-    private readonly MockFileSystem _fileSystem;
+    private readonly MockFileSystem_fileSystem;
 
     public SingleFileProcessingIntegrationTests(ITestOutputHelper output)
     {
@@ -351,7 +351,7 @@ public class XunitLoggerProvider : ILoggerProvider
 public class XunitLogger : ILogger
 {
     private readonly ITestOutputHelper _output;
-    private readonly string _categoryName;
+    private readonly string_categoryName;
 
     public XunitLogger(ITestOutputHelper output, string categoryName)
     {

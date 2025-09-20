@@ -20,14 +20,14 @@ namespace EpisodeIdentifier.Tests.Integration;
 /// Integration tests for error handling during concurrent operations.
 /// These tests verify that various error conditions are properly handled
 /// during concurrent bulk processing while maintaining system stability.
-/// 
+///
 /// T011: Integration test for error handling with concurrent operations
 /// Tests error resilience during concurrent processing
 /// </summary>
 public class ErrorHandlingConcurrentIntegrationTests
 {
     private readonly ITestOutputHelper _output;
-    private readonly MockFileSystem _fileSystem;
+    private readonly MockFileSystem_fileSystem;
 
     public ErrorHandlingConcurrentIntegrationTests(ITestOutputHelper output)
     {

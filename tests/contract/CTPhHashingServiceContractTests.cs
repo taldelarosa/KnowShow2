@@ -16,11 +16,11 @@ namespace EpisodeIdentifier.Tests.Contract;
 public class CTPhHashingServiceContractTests
 {
     private readonly ICTPhHashingService _hashingService;
-    private readonly MockFileSystem _mockFileSystem;
+    private readonly MockFileSystem_mockFileSystem;
     private readonly ILogger<CTPhHashingService> _logger;
-    private readonly string _testFilePath;
+    private readonly string_testFilePath;
     private readonly string _testFile2Path;
-    private readonly string _validHashExample = "3:AXGBicFlgVNhBGcL6wCrFQEv:AXGHsNhxLsr2C";
+    private readonly string_validHashExample = "3:AXGBicFlgVNhBGcL6wCrFQEv:AXGHsNhxLsr2C";
 
     public CTPhHashingServiceContractTests()
     {

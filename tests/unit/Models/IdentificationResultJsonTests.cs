@@ -14,7 +14,7 @@ namespace EpisodeIdentifier.Tests.Unit.Models
             {
                 Series = "Test Series",
                 Season = "01",
-                Episode = "01", 
+                Episode = "01",
                 EpisodeName = "Test Episode",
                 MatchConfidence = 0.85,
                 MatchingMethod = "TextFallback",

@@ -16,19 +16,19 @@ namespace EpisodeIdentifier.Core.Services;
 public partial class ConfigurationService : IConfigurationService, IAppConfigService, IDisposable
 {
     private readonly ILogger<ConfigurationService> _logger;
-    private readonly IFileSystem _fileSystem;
+    private readonly IFileSystem_fileSystem;
     private readonly ConfigurationValidator _validator;
-    private readonly string _configFilePath;
+    private readonly string_configFilePath;
     private ConfigurationResult? _lastLoadedConfig;
-    private DateTime _lastFileWriteTime = DateTime.MinValue;
+    private DateTime_lastFileWriteTime = DateTime.MinValue;
     private int _lastKnownMaxConcurrency = 1; // Track MaxConcurrency for hot-reload change detection
-    private readonly DateTime _constructionFileWriteTime = DateTime.MinValue; // Track write time at construction for change detection
+    private readonly DateTime_constructionFileWriteTime = DateTime.MinValue; // Track write time at construction for change detection
     private decimal _lastObservedMatchConfidenceThreshold = 0m; // Track highest observed match threshold across reloads
-    private decimal _initialObservedMatchConfidenceThreshold = 0m; // Baseline at service construction/first load
+    private decimal_initialObservedMatchConfidenceThreshold = 0m; // Baseline at service construction/first load
     private volatile bool _hasObservedIncrease = false; // Indicates if any increase over initial baseline has been seen
-    private readonly CancellationTokenSource _monitorCts = new();
+    private readonly CancellationTokenSource_monitorCts = new();
     private Task? _monitorTask;
-    public ConfigurationResult? LastConfigurationResult => _lastLoadedConfig;
+    public ConfigurationResult? LastConfigurationResult =>_lastLoadedConfig;
 
     public ConfigurationService(
         ILogger<ConfigurationService> logger,
@@ -756,7 +756,7 @@ public partial class ConfigurationService
         // best-known match threshold. Keep overhead low (tiny file, short runs in tests).
         _monitorTask = Task.Run(async () =>
         {
-            var lastSeenWriteTime = _constructionFileWriteTime;
+            var lastSeenWriteTime =_constructionFileWriteTime;
             var ct = _monitorCts.Token;
 
             while (!ct.IsCancellationRequested)

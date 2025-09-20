@@ -13,7 +13,7 @@ public interface IAppConfigService
     /// Legacy configuration property for backward compatibility.
     /// </summary>
     AppConfig Config { get; }
-    
+
     /// <summary>
     /// Gets the maximum number of concurrent operations allowed.
     /// This value is read from the configuration and validated to be within the range 1-100.

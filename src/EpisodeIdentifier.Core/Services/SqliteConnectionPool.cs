@@ -14,11 +14,11 @@ namespace EpisodeIdentifier.Core.Services;
 public class SqliteConnectionPool : IDisposable
 {
     private readonly string _connectionString;
-    private readonly ILogger<SqliteConnectionPool> _logger;
+    private readonly ILogger<SqliteConnectionPool>_logger;
     private readonly ConcurrentQueue<SqliteConnection> _availableConnections;
-    private readonly SemaphoreSlim _semaphore;
+    private readonly SemaphoreSlim_semaphore;
     private readonly int _maxPoolSize;
-    private int _currentConnections;
+    private int_currentConnections;
     private bool _disposed;
 
     /// <summary>
@@ -169,7 +169,7 @@ public class SqliteConnectionPool : IDisposable
 public class PooledSqliteConnection : IDisposable
 {
     private readonly SqliteConnection _connection;
-    private readonly SqliteConnectionPool _pool;
+    private readonly SqliteConnectionPool_pool;
     private bool _disposed;
 
     internal PooledSqliteConnection(SqliteConnection connection, SqliteConnectionPool pool)

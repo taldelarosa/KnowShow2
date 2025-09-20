@@ -15,9 +15,9 @@ namespace EpisodeIdentifier.Tests.Integration.Services;
 public class FileDiscoveryServiceIntegrationTests : IDisposable
 {
     private readonly ILogger<FileDiscoveryService> _logger;
-    private readonly FileDiscoveryService _service;
+    private readonly FileDiscoveryService_service;
     private readonly string _testDirectory;
-    private readonly List<string> _createdDirectories = new();
+    private readonly List<string>_createdDirectories = new();
     private readonly List<string> _createdFiles = new();
 
     public FileDiscoveryServiceIntegrationTests()

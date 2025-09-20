@@ -15,9 +15,9 @@ namespace EpisodeIdentifier.Core.Services;
 public class EpisodeIdentificationService : IEpisodeIdentificationService
 {
     private readonly ILogger<EpisodeIdentificationService> _logger;
-    private readonly ISubtitleMatcher _legacyMatcher;
+    private readonly ISubtitleMatcher_legacyMatcher;
     private readonly CTPhHashingService _ctphHashingService;
-    private readonly IFileSystem _fileSystem;
+    private readonly IFileSystem_fileSystem;
     private readonly EnhancedCTPhHashingService? _enhancedCtphService;
 
     public EpisodeIdentificationService(

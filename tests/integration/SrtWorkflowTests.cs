@@ -15,7 +15,7 @@ namespace EpisodeIdentifier.Tests.Integration;
 public class SrtWorkflowTests
 {
     private readonly TextSubtitleExtractor _textExtractor;
-    private readonly SubtitleMatcher _matcher;
+    private readonly SubtitleMatcher_matcher;
 
     public SrtWorkflowTests()
     {

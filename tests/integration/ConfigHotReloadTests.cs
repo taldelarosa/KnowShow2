@@ -18,11 +18,11 @@ namespace EpisodeIdentifier.Tests.Integration;
 public class ConfigHotReloadTests : IDisposable
 {
     private readonly ServiceProvider _serviceProvider;
-    private readonly ILogger<ConfigHotReloadTests> _logger;
+    private readonly ILogger<ConfigHotReloadTests>_logger;
     private readonly List<string> _testFilesToCleanup = new();
-    private readonly string _testConfigDirectory;
+    private readonly string_testConfigDirectory;
     private readonly string _testConfigPath;
-    private DateTime _nextTimestamp = DateTime.UtcNow;
+    private DateTime_nextTimestamp = DateTime.UtcNow;
 
     public ConfigHotReloadTests()
     {

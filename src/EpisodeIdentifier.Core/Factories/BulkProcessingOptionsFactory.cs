@@ -21,7 +21,7 @@ public static class BulkProcessingOptionsFactory
         {
             // Load configuration to ensure fresh settings
             await configService.LoadConfiguration();
-            
+
             // Create options with configuration-based concurrency
             // The configService.MaxConcurrency property already handles validation and fallback
             return new BulkProcessingOptions 

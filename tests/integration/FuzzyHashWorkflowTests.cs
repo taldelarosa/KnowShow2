@@ -19,9 +19,9 @@ namespace EpisodeIdentifier.Tests.Integration;
 public class FuzzyHashWorkflowTests : IDisposable
 {
     private readonly ServiceProvider _serviceProvider;
-    private readonly ILogger<FuzzyHashWorkflowTests> _logger;
+    private readonly ILogger<FuzzyHashWorkflowTests>_logger;
     private readonly List<string> _testFilesToCleanup = new();
-    private readonly string _testFilesDirectory;
+    private readonly string_testFilesDirectory;
 
     public FuzzyHashWorkflowTests()
     {

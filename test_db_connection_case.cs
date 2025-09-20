@@ -12,9 +12,9 @@ namespace EpisodeIdentifier.Debug
         static async Task Main(string[] args)
         {
             // Setup basic logging
-            using var loggerFactory = LoggerFactory.Create(builder => 
+            using var loggerFactory = LoggerFactory.Create(builder =>
                 builder.AddConsole().SetMinimumLevel(LogLevel.Information));
-            
+
             var logger = loggerFactory.CreateLogger<FuzzyHashService>();
             var normalizationLogger = loggerFactory.CreateLogger<SubtitleNormalizationService>();
             var normalizationService = new SubtitleNormalizationService(normalizationLogger);

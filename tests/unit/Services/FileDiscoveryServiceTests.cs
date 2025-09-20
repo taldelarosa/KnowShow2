@@ -15,7 +15,7 @@ namespace EpisodeIdentifier.Tests.Unit.Services;
 public class FileDiscoveryServiceTests
 {
     private readonly MockFileSystem _mockFileSystem;
-    private readonly ILogger<FileDiscoveryService> _logger;
+    private readonly ILogger<FileDiscoveryService>_logger;
     private readonly FileDiscoveryService _service;
 
     public FileDiscoveryServiceTests()
