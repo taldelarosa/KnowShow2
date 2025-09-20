@@ -48,9 +48,9 @@ public class ConfigurationValidationUnitTests : IDisposable
     [InlineData(0, 1)] // Below minimum should default to 1
     [InlineData(-1, 1)] // Negative should default to 1
     [InlineData(-100, 1)] // Very negative should default to 1
-    [InlineData(101, 100)] // Above maximum should cap to 100
-    [InlineData(1000, 100)] // Very high should cap to 100
-    [InlineData(int.MaxValue, 100)] // Extreme value should cap to 100
+    [InlineData(101, 1)] // Above maximum should default to 1 (per spec)
+    [InlineData(1000, 1)] // Very high should default to 1 (per spec)
+    [InlineData(int.MaxValue, 1)] // Extreme value should default to 1 (per spec)
     public async Task LoadConfiguration_InvalidMaxConcurrency_ShouldClampToValidRange(int invalidValue, int expectedValue)
     {
         // Arrange
