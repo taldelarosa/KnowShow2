@@ -131,22 +131,22 @@ The YAML configuration (`.github/repository-config.yml`) defines:
 
 - ✅ **Restrict pushes that create files**: Enabled
 - ✅ **Require a pull request before merging**: Enabled
-  - ✅ **Require approvals**: 1 required reviewer
-  - ✅ **Dismiss stale reviews when new commits are pushed**: Enabled
-  - ✅ **Require review from code owners**: Enabled (when CODEOWNERS file is present)
-  - ✅ **Restrict reviews to users with write access**: Enabled
-  - ✅ **Allow specified actors to bypass required pull requests**: Disabled
+    - ✅ **Require approvals**: 1 required reviewer
+    - ✅ **Dismiss stale reviews when new commits are pushed**: Enabled
+    - ✅ **Require review from code owners**: Enabled (when CODEOWNERS file is present)
+    - ✅ **Restrict reviews to users with write access**: Enabled
+    - ✅ **Allow specified actors to bypass required pull requests**: Disabled
 
 ### Status Check Requirements
 
 - ✅ **Require status checks to pass before merging**: Enabled
 - ✅ **Require branches to be up to date before merging**: Enabled
 - ✅ **Status checks that are required**:
-  - `build-and-test`
-  - `verify-setup`
-  - `security-scan`
-  - `lint-and-format`
-  - `docs-check`
+    - `build-and-test`
+    - `verify-setup`
+    - `security-scan`
+    - `lint-and-format`
+    - `docs-check`
 
 ### Additional Restrictions
 
@@ -165,9 +165,9 @@ The YAML configuration (`.github/repository-config.yml`) defines:
 
 - **Default branch**: `main`
 - **Merge button options**:
-  - ✅ **Allow merge commits**: Disabled
-  - ✅ **Allow squash merging**: Enabled (recommended)
-  - ✅ **Allow rebase merging**: Enabled
+    - ✅ **Allow merge commits**: Disabled
+    - ✅ **Allow squash merging**: Enabled (recommended)
+    - ✅ **Allow rebase merging**: Enabled
 - **Automatically delete head branches**: Enabled
 
 ### Collaborator Permissions

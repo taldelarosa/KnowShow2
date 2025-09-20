@@ -8,9 +8,9 @@ namespace EpisodeIdentifier.Tests.Performance;
 public class SubtitleWorkflowPerformanceTests : IDisposable
 {
     private readonly ServiceProvider _serviceProvider;
-    private readonly SubtitleWorkflowCoordinator _coordinator;
+    private readonly SubtitleWorkflowCoordinator_coordinator;
     private readonly VideoFormatValidator _validator;
-    private readonly ITextSubtitleExtractor _textExtractor;
+    private readonly ITextSubtitleExtractor_textExtractor;
     private readonly string _testVideoPath;
 
     public SubtitleWorkflowPerformanceTests()
