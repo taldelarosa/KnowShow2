@@ -256,9 +256,9 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
             }
             
             // Perform explicit MaxConcurrency handling
-            // - On initial loads or lenient legacy parses: FALL BACK to default (1) when out of range
-            //   (contract requires defaulting, not upper-bound clamping)
-            // - On reloads with strict parse: do NOT modify; allow validator to catch and mark invalid
+            // - On initial loads or lenient legacy parses: CLAMP to [1,100] when out of range
+            //   (unit/contract require below-min -> 1, above-max -> 100)
+            // - On reloads with strict parse (after at least one prior load): do NOT modify; allow validator to catch and mark invalid
             var originalMaxConcurrency = config.MaxConcurrency;
             var clamped = false;
             var outOfRange = config.MaxConcurrency < 1 || config.MaxConcurrency > 100;
@@ -268,7 +268,9 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
             var wasDefaulted = false;
             if (outOfRange)
             {
-                if (isReloadCandidate && !usedLenientParser)
+                // Only treat as a reload if we've previously loaded a configuration
+                var isTrueReload = isReloadCandidate && !usedLenientParser && _lastLoadedConfig != null;
+                if (isTrueReload)
                 {
                     // Treat any reload (including first explicit load after construction when the file changed)
                     // as a strict reload: leave out-of-range value as-is and let validation fail
@@ -277,12 +279,13 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
                 }
                 else
                 {
-                    // Initial load or lenient parse path: fall back to default (1)
-                    _logger.LogWarning("MaxConcurrency value {Value} is outside valid range (1-100), falling back to default (1) - Operation: {OperationId}",
-                        config.MaxConcurrency, operationId);
-                    config.MaxConcurrency = 1;
-                    wasDefaulted = true;
-                    clamped = false;
+                    // Initial load or lenient parse path: clamp to [1,100]
+                    var clampedValue = Math.Clamp(config.MaxConcurrency, 1, 100);
+                    _logger.LogWarning("MaxConcurrency value {Value} is outside valid range (1-100), clamping to {Clamped} - Operation: {OperationId}",
+                        config.MaxConcurrency, clampedValue, operationId);
+                    config.MaxConcurrency = clampedValue;
+                    wasDefaulted = false;
+                    clamped = true;
                 }
             }
 
@@ -429,22 +432,23 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
             config.SourceFilePath = configPath;
             config.LastLoaded = DateTime.UtcNow;
 
-            // Perform explicit maxConcurrency validation with fallback to default (1)
+            // Perform explicit maxConcurrency validation with clamping to [1,100]
             var originalMaxConcurrency = config.MaxConcurrency;
-            var fallbackApplied = false;
+            var clampedApplied = false;
             
             if (config.MaxConcurrency < 1 || config.MaxConcurrency > 100)
             {
-                _logger.LogWarning("MaxConcurrency value {Value} is outside valid range (1-100), falling back to default (1) - Operation: {OperationId}",
-                    config.MaxConcurrency, operationId);
-                config.MaxConcurrency = 1; // Fallback to default
-                fallbackApplied = true;
+                var clampedValue = Math.Clamp(config.MaxConcurrency, 1, 100);
+                _logger.LogWarning("MaxConcurrency value {Value} is outside valid range (1-100), clamping to {Clamped} - Operation: {OperationId}",
+                    config.MaxConcurrency, clampedValue, operationId);
+                config.MaxConcurrency = clampedValue; // Clamp to range
+                clampedApplied = true;
             }
             
-            if (fallbackApplied)
+            if (clampedApplied)
             {
-                _logger.LogInformation("MaxConcurrency fallback applied from {Original} to default (1) - Operation: {OperationId}",
-                    originalMaxConcurrency, operationId);
+                _logger.LogInformation("MaxConcurrency clamped from {Original} to {Clamped} - Operation: {OperationId}",
+                    originalMaxConcurrency, config.MaxConcurrency, operationId);
             }
             else
             {
@@ -459,8 +463,8 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
             // Populate metadata on the result for downstream consumers
             validationResult.OriginalMaxConcurrency = originalMaxConcurrency;
             validationResult.OriginalMaxConcurrencyOutOfRange = originalMaxConcurrency < 1 || originalMaxConcurrency > 100;
-            validationResult.WasMaxConcurrencyClamped = false;
-            validationResult.WasMaxConcurrencyDefaulted = fallbackApplied;
+            validationResult.WasMaxConcurrencyClamped = clampedApplied;
+            validationResult.WasMaxConcurrencyDefaulted = false;
             validationResult.WasLenientParse = false; // This code path only uses strict parse first, then lenient above if needed
             validationResult.WasReloadOperation = false;
 
