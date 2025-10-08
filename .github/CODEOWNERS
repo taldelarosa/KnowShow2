@@ -1,0 +1,39 @@
+# Code Owners for KnowShow2
+# This file defines who owns what parts of the codebase for review purposes.
+# Order is important - last matching pattern takes precedence.
+
+# Global fallback - repository owner reviews everything by default
+* @taldelarosa
+
+# Documentation
+*.md @taldelarosa
+docs/ @taldelarosa
+specs/ @taldelarosa
+
+# Core application code
+src/ @taldelarosa
+tests/ @taldelarosa
+
+# Configuration and infrastructure
+.github/ @taldelarosa
+scripts/ @taldelarosa
+*.yml @taldelarosa
+*.yaml @taldelarosa
+
+# Project files
+*.sln @taldelarosa
+*.csproj @taldelarosa
+
+# Database and migration files
+*.sql @taldelarosa
+*.db @taldelarosa
+
+# Critical configuration files (require extra scrutiny)
+constitution.md @taldelarosa
+memory/ @taldelarosa
+.gitignore @taldelarosa
+
+# Setup and deployment
+scripts/setup-prerequisites.sh @taldelarosa
+DEPLOYMENT_GUIDE.md @taldelarosa
+SETUP.md @taldelarosa

@@ -1,0 +1,766 @@
+using System.CommandLine;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Services;
+using EpisodeIdentifier.Core.Interfaces;
+using System.IO.Abstractions;
+
+namespace EpisodeIdentifier.Core;
+
+public class Program
+{
+    // Static properties to make configuration services available throughout the application
+    public static IConfigurationService? FuzzyHashConfigurationService { get; private set; }
+    public static IAppConfigService? LegacyConfigurationService { get; private set; }
+
+    /// <summary>
+    /// Gets the fuzzy hash configuration if available and valid, otherwise returns null.
+    /// Services can use this to check if fuzzy hashing is enabled and get configuration values.
+    /// </summary>
+    public static async Task<Models.Configuration.Configuration?> GetFuzzyHashConfigurationAsync()
+    {
+        if (FuzzyHashConfigurationService == null) return null;
+
+        var result = await FuzzyHashConfigurationService.LoadConfiguration();
+        return result.IsValid ? result.Configuration : null;
+    }
+
+    /// <summary>
+    /// Checks if fuzzy hashing is available and properly configured.
+    /// </summary>
+    public static async Task<bool> IsFuzzyHashingEnabledAsync()
+    {
+        var config = await GetFuzzyHashConfigurationAsync();
+        return config?.HashingAlgorithm == Models.Configuration.HashingAlgorithm.CTPH;
+    }
+
+    public static async Task<int> Main(string[] args)
+    {
+        var rootCommand = new RootCommand("Identify Season and Episode from video files via PGS or text subtitle comparison. Optionally rename files with standardized naming.");
+
+        var inputOption = new Option<FileInfo>(
+            "--input",
+            "Path to video file for identification, or subtitle file for storage (when using --store)");
+        rootCommand.Add(inputOption);
+
+        var hashDbOption = new Option<FileInfo>(
+            "--hash-db",
+            "Path to SQLite database for fuzzy hashes");
+        rootCommand.Add(hashDbOption);
+
+        var storeOption = new Option<bool>(
+            "--store",
+            "Store subtitle information in the hash database instead of identifying a video");
+        rootCommand.Add(storeOption);
+
+        var bulkStoreOption = new Option<DirectoryInfo>(
+            "--bulk-store",
+            "Store all subtitle files from a directory, parsing series/season/episode from filenames");
+        rootCommand.Add(bulkStoreOption);
+
+        var bulkIdentifyOption = new Option<DirectoryInfo>(
+            "--bulk-identify",
+            "Process all video files from a directory for episode identification. " +
+            "Recursively searches for video files (.mkv, .mp4, .avi, etc.) and identifies each one. " +
+            "Provides progress feedback and summary results.");
+        rootCommand.Add(bulkIdentifyOption);
+
+        var seriesOption = new Option<string>(
+            "--series",
+            "Series name when storing subtitle information")
+        { IsRequired = false };
+        rootCommand.Add(seriesOption);
+
+        var seasonOption = new Option<string>(
+            "--season",
+            "Season number when storing subtitle information")
+        { IsRequired = false };
+        rootCommand.Add(seasonOption);
+
+        var episodeOption = new Option<string>(
+            "--episode",
+            "Episode number when storing subtitle information")
+        { IsRequired = false };
+        rootCommand.Add(episodeOption);
+
+        var languageOption = new Option<string>(
+            "--language",
+            "Preferred subtitle language (default: English)")
+        { IsRequired = false };
+        rootCommand.Add(languageOption);
+
+        var renameOption = new Option<bool>(
+            "--rename",
+            "Automatically rename the video file when episode identification is successful. " +
+            "Requires high confidence match (>= 90%). " +
+            "Filename format: 'SeriesName - S01E01 - EpisodeName.ext'. " +
+            "If rename fails, identification result will include error details and suggested filename.")
+        { IsRequired = false };
+        rootCommand.Add(renameOption);
+
+        var useOcrFallbackOption = new Option<bool>(
+            "--use-ocr-fallback",
+            "Enable OCR fallback (FFmpeg + Tesseract) when pgsrip is not available for PGS subtitle extraction. " +
+            "Without this flag, the application will fail if pgsrip is unavailable and PGS subtitles are encountered.")
+        { IsRequired = false };
+        rootCommand.Add(useOcrFallbackOption);
+
+        // Add configuration management commands
+        //         rootCommand.AddCommand(EpisodeIdentifier.Core.Commands.ConfigurationCommands.CreateConfigCommands());
+        rootCommand.AddCommand(EpisodeIdentifier.Core.Commands.ConfigurationCommands.CreateConfigCommands());
+
+        rootCommand.SetHandler(async (context) =>
+        {
+            var input = context.ParseResult.GetValueForOption(inputOption);
+            var hashDb = context.ParseResult.GetValueForOption(hashDbOption);
+            var store = context.ParseResult.GetValueForOption(storeOption);
+            var bulkStoreDirectory = context.ParseResult.GetValueForOption(bulkStoreOption);
+            var bulkIdentifyDirectory = context.ParseResult.GetValueForOption(bulkIdentifyOption);
+            var series = context.ParseResult.GetValueForOption(seriesOption);
+            var season = context.ParseResult.GetValueForOption(seasonOption);
+            var episode = context.ParseResult.GetValueForOption(episodeOption);
+            var language = context.ParseResult.GetValueForOption(languageOption);
+            var rename = context.ParseResult.GetValueForOption(renameOption);
+            var useOcrFallback = context.ParseResult.GetValueForOption(useOcrFallbackOption);
+
+            Environment.Exit(await HandleCommand(input, hashDb ?? new FileInfo("production_hashes.db"), store, bulkStoreDirectory, bulkIdentifyDirectory, series, season, episode, language, rename, useOcrFallback));
+        });
+
+        return await rootCommand.InvokeAsync(args);
+    }
+
+    private static async Task<int> HandleCommand(
+        FileInfo? input,
+        FileInfo hashDb,
+        bool store,
+        DirectoryInfo? bulkStoreDirectory,
+        DirectoryInfo? bulkIdentifyDirectory,
+        string? series,
+        string? season,
+        string? episode,
+        string? language,
+        bool rename,
+        bool useOcrFallback)
+    {
+        // Configure JSON serialization with camelCase for consistent API
+        var jsonSerializationOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+        // Validate input parameters
+        var bulkOptions = new[] { bulkStoreDirectory != null, bulkIdentifyDirectory != null }.Count(x => x);
+        var hasInput = input != null;
+        var totalInputOptions = bulkOptions + (hasInput ? 1 : 0);
+
+        if (totalInputOptions > 1)
+        {
+            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "CONFLICTING_OPTIONS", message = "Cannot specify multiple input options. Use either --input, --bulk-store, or --bulk-identify." } }, jsonSerializationOptions));
+            return 1;
+        }
+
+        if (totalInputOptions == 0)
+        {
+            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "MISSING_INPUT", message = "Must specify either --input, --bulk-store, or --bulk-identify option" } }, jsonSerializationOptions));
+            return 1;
+        }
+
+        if (input != null && !input.Exists)
+        {
+            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "INVALID_INPUT", message = "Input file not found" } }, jsonSerializationOptions));
+            return 1;
+        }
+
+        using var loggerFactory = LoggerFactory.Create(builder =>
+        {
+            builder.AddConsole();
+        });
+
+        // Load legacy configuration (backward compatibility)
+        var legacyConfigService = new AppConfigService(loggerFactory.CreateLogger<AppConfigService>());
+        await legacyConfigService.LoadConfigurationAsync();
+        LegacyConfigurationService = legacyConfigService; // Make available to other services
+
+        // Load new fuzzy hashing configuration
+        var fuzzyHashConfigService = new ConfigurationService(loggerFactory.CreateLogger<ConfigurationService>());
+        var fuzzyConfigResult = await fuzzyHashConfigService.LoadConfiguration();
+        FuzzyHashConfigurationService = fuzzyHashConfigService; // Make available to other services
+
+        // Log configuration loading results
+        if (fuzzyConfigResult.IsValid)
+        {
+            loggerFactory.CreateLogger<Program>().LogInformation("Fuzzy hashing configuration loaded successfully");
+        }
+        else
+        {
+            loggerFactory.CreateLogger<Program>().LogWarning("Fuzzy hashing configuration failed to load: {Errors}. Falling back to legacy configuration.",
+                string.Join(", ", fuzzyConfigResult.Errors));
+        }
+
+        var validator = new VideoFormatValidator(loggerFactory.CreateLogger<VideoFormatValidator>());
+        var extractor = new SubtitleExtractor(loggerFactory.CreateLogger<SubtitleExtractor>(), validator);
+        var pgsRipService = new PgsRipService(loggerFactory.CreateLogger<PgsRipService>());
+        var fallbackConverter = new PgsToTextConverter(loggerFactory.CreateLogger<PgsToTextConverter>());
+        var pgsConverter = new EnhancedPgsToTextConverter(loggerFactory.CreateLogger<EnhancedPgsToTextConverter>(), pgsRipService, fallbackConverter, useOcrFallback);
+        var normalizationService = new SubtitleNormalizationService(loggerFactory.CreateLogger<SubtitleNormalizationService>());
+        var hashService = new FuzzyHashService(hashDb.FullName, loggerFactory.CreateLogger<FuzzyHashService>(), normalizationService);
+        var matcher = new SubtitleMatcher(hashService, loggerFactory.CreateLogger<SubtitleMatcher>(), legacyConfigService);
+        var filenameParser = new SubtitleFilenameParser(loggerFactory.CreateLogger<SubtitleFilenameParser>(), legacyConfigService);
+        var textExtractor = new VideoTextSubtitleExtractor(loggerFactory.CreateLogger<VideoTextSubtitleExtractor>());
+        var filenameService = new FilenameService(legacyConfigService);
+        var fileRenameService = new FileRenameService();
+
+        // Create new episode identification service that supports both legacy and CTPH fuzzy hashing
+        var episodeIdentificationService = new EpisodeIdentificationService(
+            loggerFactory.CreateLogger<EpisodeIdentificationService>(),
+            matcher);
+
+        try
+        {
+            if (store)
+            {
+                if (string.IsNullOrEmpty(series) || string.IsNullOrEmpty(season) || string.IsNullOrEmpty(episode))
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "MISSING_METADATA", message = "Series, season, and episode are required when storing subtitles" } }));
+                    return 1;
+                }
+
+                // Validate that the input file is a subtitle file, not a video file
+                var videoExtensions = new[] { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v" };
+                var inputExtension = input!.Extension.ToLowerInvariant();
+
+                if (videoExtensions.Contains(inputExtension))
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "INVALID_FILE_TYPE", message = $"Cannot store video files in database. Only subtitle files (.srt, .vtt, .ass, etc.) are allowed for storage. Got: {inputExtension}" } }));
+                    return 1;
+                }
+
+                // For storing, we expect a subtitle file directly
+                var subtitleText = await File.ReadAllTextAsync(input!.FullName);
+                var subtitle = new LabelledSubtitle
+                {
+                    Series = series,
+                    Season = season,
+                    Episode = episode,
+                    SubtitleText = subtitleText
+                };
+
+                await hashService.StoreHash(subtitle);
+                Console.WriteLine(JsonSerializer.Serialize(new
+                {
+                    message = "Subtitle stored successfully",
+                    details = new
+                    {
+                        series,
+                        season,
+                        episode,
+                        file = input!.Name
+                    }
+                }));
+                return 0;
+            }
+            else if (bulkStoreDirectory != null)
+            {
+                if (!bulkStoreDirectory.Exists)
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "DIRECTORY_NOT_FOUND", message = $"Directory not found: {bulkStoreDirectory.FullName}" } }));
+                    return 1;
+                }
+
+                // Scan directory for subtitle files and parse their information
+                var subtitleFiles = await filenameParser.ScanDirectory(bulkStoreDirectory.FullName);
+
+                if (!subtitleFiles.Any())
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLE_FILES", message = "No parseable subtitle files found in the directory" } }));
+                    return 1;
+                }
+
+                var successCount = 0;
+                var failureCount = 0;
+                var results = new List<object>();
+
+                foreach (var subtitleFile in subtitleFiles)
+                {
+                    try
+                    {
+                        var subtitleText = await File.ReadAllTextAsync(subtitleFile.FilePath);
+                        var subtitle = new LabelledSubtitle
+                        {
+                            Series = subtitleFile.Series,
+                            Season = subtitleFile.Season,
+                            Episode = subtitleFile.Episode,
+                            EpisodeName = subtitleFile.EpisodeName,
+                            SubtitleText = subtitleText
+                        };
+
+                        await hashService.StoreHash(subtitle);
+                        successCount++;
+                        results.Add(new
+                        {
+                            status = "success",
+                            file = Path.GetFileName(subtitleFile.FilePath),
+                            series = subtitleFile.Series,
+                            season = subtitleFile.Season,
+                            episode = subtitleFile.Episode
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        failureCount++;
+                        results.Add(new
+                        {
+                            status = "failed",
+                            file = Path.GetFileName(subtitleFile.FilePath),
+                            error = ex.Message
+                        });
+                    }
+                }
+
+                Console.WriteLine(JsonSerializer.Serialize(new
+                {
+                    message = "Bulk ingestion completed",
+                    summary = new
+                    {
+                        totalFiles = subtitleFiles.Count,
+                        successful = successCount,
+                        failed = failureCount
+                    },
+                    results
+                }));
+                return failureCount > 0 ? 1 : 0;
+            }
+            else if (bulkIdentifyDirectory != null)
+            {
+                if (!bulkIdentifyDirectory.Exists)
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "DIRECTORY_NOT_FOUND", message = $"Directory not found: {bulkIdentifyDirectory.FullName}" } }));
+                    return 1;
+                }
+
+                // Use bulk processor service for video file identification
+                var fileSystem = new FileSystem();
+                var fileDiscoveryService = new FileDiscoveryService(fileSystem, loggerFactory.CreateLogger<FileDiscoveryService>());
+                var progressTracker = new ProgressTracker(loggerFactory.CreateLogger<ProgressTracker>());
+
+                // Create the complete video file processing service
+                var videoFileProcessingService = new VideoFileProcessingService(
+                    loggerFactory.CreateLogger<VideoFileProcessingService>(),
+                    validator,
+                    extractor,
+                    pgsConverter,
+                    textExtractor,
+                    episodeIdentificationService,
+                    filenameService,
+                    fileRenameService,
+                    legacyConfigService);
+
+                var bulkProcessor = new BulkProcessorService(
+                    loggerFactory.CreateLogger<BulkProcessorService>(),
+                    fileDiscoveryService,
+                    progressTracker,
+                    videoFileProcessingService);
+
+                var request = new BulkProcessingRequest
+                {
+                    Paths = new List<string> { bulkIdentifyDirectory.FullName },
+                    Options = new BulkProcessingOptions
+                    {
+                        Recursive = true,
+                        IncludeExtensions = new List<string> { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v" },
+                        MaxConcurrency = Environment.ProcessorCount,
+                        ContinueOnError = true
+                    }
+                };
+
+                // Set up progress reporting
+                var progressReporter = new Progress<BulkProcessingProgress>(progress =>
+                {
+                    Console.Error.WriteLine($"Progress: {progress.ProcessedFiles}/{progress.TotalFiles} files " +
+                                          $"({progress.PercentComplete:F1}%) - {progress.CurrentPhase}");
+                    if (!string.IsNullOrEmpty(progress.CurrentFile))
+                    {
+                        Console.Error.WriteLine($"  Processing: {Path.GetFileName(progress.CurrentFile)}");
+                    }
+                });
+
+                try
+                {
+                    var result = await bulkProcessor.ProcessAsync(request, progressReporter);
+
+                    // Output JSON results
+                    var jsonResult = new
+                    {
+                        message = "Bulk identification completed",
+                        status = result.Status.ToString(),
+                        summary = new
+                        {
+                            totalFiles = result.TotalFiles,
+                            processedFiles = result.ProcessedFiles,
+                            failedFiles = result.FailedFiles,
+                            skippedFiles = result.SkippedFiles,
+                            processingTime = result.Duration.ToString(@"mm\:ss")
+                        },
+                        results = result.FileResults.Select(fr => new
+                        {
+                            file = Path.GetFileName(fr.FilePath),
+                            status = fr.Status.ToString(),
+                            error = fr.Error?.Message,
+                            processingTime = fr.ProcessingDuration.ToString(@"ss\.fff"),
+                            // For now, we'll handle identification results as generic objects
+                            // until the actual identification service integration is complete
+                            identificationResults = fr.IdentificationResults.Count > 0 ? fr.IdentificationResults : null
+                        }).ToList()
+                    };
+
+                    Console.WriteLine(JsonSerializer.Serialize(jsonResult, jsonSerializationOptions));
+                    return result.FailedFiles > 0 ? 1 : 0;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "BULK_PROCESSING_FAILED", message = ex.Message } }, jsonSerializationOptions));
+                    return 1;
+                }
+            }
+            else
+            {
+                // Validate that the file is a proper video file (MKV preferred, but allow other formats)
+                var videoExtensions = new[] { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v" };
+                var inputExtension = input!.Extension.ToLowerInvariant();
+                
+                if (!videoExtensions.Contains(inputExtension))
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new
+                    {
+                        error = new
+                        {
+                            code = "UNSUPPORTED_FILE_TYPE",
+                            message = $"The provided file format '{inputExtension}' is not supported. Supported formats: {string.Join(", ", videoExtensions)}"
+                        }
+                    }));
+                    return 1;
+                }
+
+                // Get subtitle track information for direct video processing
+                var subtitleTracks = await validator.GetSubtitleTracks(input.FullName);
+
+                if (!subtitleTracks.Any())
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLES_FOUND", message = "No PGS or text subtitles could be found in the video file" } }, jsonSerializationOptions));
+                    return 1;
+                }
+
+                // Check if there are any actual PGS tracks first
+                var pgsTracks = subtitleTracks.Where(t =>
+                    t.CodecName == "hdmv_pgs_subtitle" ||
+                    t.CodecName == "dvd_subtitle").ToList();
+
+                // Check if OCR tools are available for PGS processing (only if PGS tracks exist)
+                if (pgsTracks.Any() && !pgsConverter.IsOcrAvailable())
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new
+                    {
+                        error = new
+                        {
+                            code = "MISSING_DEPENDENCY",
+                            message = "PGS subtitles detected but no suitable converter is available. Either install 'pgsrip' or use --use-ocr-fallback flag to enable FFmpeg+Tesseract fallback."
+                        }
+                    }));
+                    return 1;
+                }
+
+                if (!pgsTracks.Any())
+                {
+                    // No PGS tracks found, try text subtitle processing
+                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, episodeIdentificationService, rename, filenameService, fileRenameService, legacyConfigService);
+                    if (textSubtitleResult != null)
+                    {
+                        Console.WriteLine(JsonSerializer.Serialize(textSubtitleResult, jsonSerializationOptions));
+                        return textSubtitleResult.HasError ? 1 : 0;
+                    }
+
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_PGS_TRACKS_FOUND", message = "No PGS subtitle tracks found. Only text subtitle tracks are available." } }, jsonSerializationOptions));
+                    return 1;
+                }
+
+                var pgsTrack = PgsTrackSelector.SelectBestTrack(pgsTracks, language);
+
+                // Extract and OCR subtitle images directly from video file
+                var ocrLanguage = GetOcrLanguageCode(language);
+                var subtitleText = await pgsConverter.ConvertPgsFromVideoToText(input.FullName, pgsTrack.Index, ocrLanguage);
+
+                if (string.IsNullOrWhiteSpace(subtitleText))
+                {
+                    // PGS extraction failed, try text subtitle fallback
+                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, episodeIdentificationService, rename, filenameService, fileRenameService, legacyConfigService);
+                    if (textSubtitleResult != null)
+                    {
+                        Console.WriteLine(JsonSerializer.Serialize(textSubtitleResult, jsonSerializationOptions));
+                        return textSubtitleResult.HasError ? 1 : 0;
+                    }
+
+                    Console.WriteLine(JsonSerializer.Serialize(new
+                    {
+                        error = new
+                        {
+                            code = "OCR_FAILED",
+                            message = "Failed to extract readable text from PGS subtitles using OCR and no text subtitle fallback available"
+                        }
+                    }));
+                    return 1;
+                }
+
+                // Use the episode identification service that supports both legacy and CTPH fuzzy hashing
+                var result = await episodeIdentificationService.IdentifyEpisodeAsync(subtitleText, input.FullName);
+
+                // Handle file renaming if --rename flag is specified
+                if (rename && !result.HasError && result.MatchConfidence >= legacyConfigService.Config.RenameConfidenceThreshold)
+                {
+                    try
+                    {
+                        // Generate filename using FilenameService
+                        var filenameRequest = new FilenameGenerationRequest
+                        {
+                            Series = result.Series ?? "",
+                            Season = result.Season ?? "",
+                            Episode = result.Episode ?? "",
+                            EpisodeName = result.EpisodeName ?? "",
+                            FileExtension = Path.GetExtension(input!.FullName),
+                            MatchConfidence = result.MatchConfidence
+                        };
+
+                        var filenameResult = filenameService.GenerateFilename(filenameRequest);
+
+                        if (filenameResult.IsValid && !string.IsNullOrEmpty(filenameResult.SuggestedFilename))
+                        {
+                            // Prepare file rename request
+                            var renameRequest = new FileRenameRequest
+                            {
+                                OriginalPath = input.FullName,
+                                SuggestedFilename = filenameResult.SuggestedFilename
+                            };
+
+                            try
+                            {
+                                // Attempt to rename the file
+                                var renameResult = await fileRenameService.RenameFileAsync(renameRequest);
+
+                                if (renameResult.Success)
+                                {
+                                    // Update identification result with rename success
+                                    result.SuggestedFilename = filenameResult.SuggestedFilename;
+                                    result.FileRenamed = true;
+                                    result.OriginalFilename = Path.GetFileName(input.FullName);
+                                }
+                                else
+                                {
+                                    // Include filename suggestion but set error for rename failure
+                                    result.SuggestedFilename = filenameResult.SuggestedFilename;
+                                    result.FileRenamed = false;
+
+                                    // Set appropriate error based on rename failure type
+                                    if (renameResult.ErrorType.HasValue)
+                                    {
+                                        result.Error = IdentificationError.FromFileRenameError(renameResult.ErrorType.Value, renameResult.ErrorMessage);
+                                    }
+                                    else
+                                    {
+                                        result.Error = IdentificationError.RenameFailedUnknown(renameResult.ErrorMessage ?? "Unknown rename error");
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                // Handle unexpected exceptions during rename operation
+                                result.SuggestedFilename = filenameResult.SuggestedFilename;
+                                result.FileRenamed = false;
+                                result.Error = IdentificationError.RenameFailedUnknown($"Unexpected error during file rename: {ex.Message}");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine(JsonSerializer.Serialize(new
+                            {
+                                warning = new
+                                {
+                                    code = "FILENAME_GENERATION_FAILED",
+                                    message = "File identification successful but filename generation failed"
+                                }
+                            }));
+                        }
+                    }
+                    catch (Exception renameEx)
+                    {
+                        Console.WriteLine(JsonSerializer.Serialize(new
+                        {
+                            warning = new
+                            {
+                                code = "RENAME_ERROR",
+                                message = $"File identification successful but rename operation encountered an error: {renameEx.Message}"
+                            }
+                        }));
+                    }
+                }
+                else if (rename && !result.HasError && result.MatchConfidence < 0.9)
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new
+                    {
+                        warning = new
+                        {
+                            code = "LOW_CONFIDENCE_RENAME",
+                            message = $"File rename skipped due to low confidence match ({result.MatchConfidence:F2}). Requires confidence >= 0.9 for automatic renaming."
+                        }
+                    }));
+                }
+
+                Console.WriteLine(JsonSerializer.Serialize(result, jsonSerializationOptions));
+
+                return result.HasError ? 1 : 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "PROCESSING_ERROR", message = ex.Message } }, jsonSerializationOptions));
+            return 1;
+        }
+    }
+
+    private static string GetOcrLanguageCode(string? language)
+    {
+        if (string.IsNullOrEmpty(language))
+            return "eng"; // Default to English
+
+        // Map common language names/codes to Tesseract language codes
+        return language.ToLowerInvariant() switch
+        {
+            "en" or "eng" or "english" => "eng",
+            "es" or "spa" or "spanish" => "spa",
+            "fr" or "fra" or "french" => "fra",
+            "de" or "deu" or "german" => "deu",
+            "it" or "ita" or "italian" => "ita",
+            "pt" or "por" or "portuguese" => "por",
+            "ru" or "rus" or "russian" => "rus",
+            "ja" or "jpn" or "japanese" => "jpn",
+            "ko" or "kor" or "korean" => "kor",
+            "zh" or "chi" or "chinese" => "chi_sim",
+            "ar" or "ara" or "arabic" => "ara",
+            _ => "eng" // Default to English for unknown languages
+        };
+    }
+
+    /// <summary>
+    /// Attempts to extract text subtitles from the video when PGS subtitles are not available.
+    /// </summary>
+    private static async Task<IdentificationResult?> TryExtractTextSubtitle(
+        string videoFilePath,
+        string? language,
+        VideoFormatValidator validator,
+        VideoTextSubtitleExtractor textExtractor,
+        EpisodeIdentificationService episodeIdentificationService,
+        bool rename,
+        FilenameService filenameService,
+        FileRenameService fileRenameService,
+        IAppConfigService legacyConfigService)
+    {
+        try
+        {
+            // Get all subtitle tracks from the video
+            var subtitleTracks = await validator.GetSubtitleTracks(videoFilePath);
+
+            // Look for text-based subtitle tracks (non-PGS)
+            var textTracks = subtitleTracks.Where(t =>
+                t.CodecName != "hdmv_pgs_subtitle" &&
+                (t.CodecName == "subrip" || t.CodecName == "ass" || t.CodecName == "webvtt" || t.CodecName == "mov_text" || t.CodecName == "srt"))
+                .ToList();
+
+            if (!textTracks.Any())
+            {
+                return null; // No text subtitle tracks found
+            }
+
+            // Select the best text track based on language preference
+            var selectedTrack = textTracks.FirstOrDefault(t =>
+                string.IsNullOrEmpty(language) ||
+                (t.Language?.Contains(language, StringComparison.OrdinalIgnoreCase) == true)) ?? textTracks.First();
+
+            // Extract text subtitle content
+            var subtitleText = await textExtractor.ExtractTextSubtitleFromVideo(videoFilePath, selectedTrack.Index, language);
+
+            if (string.IsNullOrWhiteSpace(subtitleText))
+            {
+                return null; // Failed to extract text content
+            }
+
+            // Match against database using the episode identification service
+            var result = await episodeIdentificationService.IdentifyEpisodeAsync(subtitleText, videoFilePath);
+
+            // Handle file renaming if --rename flag is specified
+            if (rename && !result.HasError && result.MatchConfidence >= legacyConfigService.Config.RenameConfidenceThreshold)
+            {
+                // Generate filename using FilenameService
+                var filenameRequest = new FilenameGenerationRequest
+                {
+                    Series = result.Series ?? "",
+                    Season = result.Season ?? "",
+                    Episode = result.Episode ?? "",
+                    EpisodeName = result.EpisodeName ?? "",
+                    FileExtension = Path.GetExtension(videoFilePath),
+                    MatchConfidence = result.MatchConfidence
+                };
+
+                var filenameResult = filenameService.GenerateFilename(filenameRequest);
+
+                if (filenameResult.IsValid && !string.IsNullOrEmpty(filenameResult.SuggestedFilename))
+                {
+                    // Prepare file rename request
+                    var renameRequest = new FileRenameRequest
+                    {
+                        OriginalPath = videoFilePath,
+                        SuggestedFilename = filenameResult.SuggestedFilename
+                    };
+
+                    try
+                    {
+                        // Attempt to rename the file
+                        var renameResult = await fileRenameService.RenameFileAsync(renameRequest);
+
+                        if (renameResult.Success)
+                        {
+                            // Update identification result with rename success
+                            result.SuggestedFilename = filenameResult.SuggestedFilename;
+                            result.FileRenamed = true;
+                            result.OriginalFilename = Path.GetFileName(videoFilePath);
+                        }
+                        else
+                        {
+                            // Include filename suggestion but set error for rename failure
+                            result.SuggestedFilename = filenameResult.SuggestedFilename;
+                            result.FileRenamed = false;
+
+                            // Set appropriate error based on rename failure type
+                            if (renameResult.ErrorType.HasValue)
+                            {
+                                result.Error = IdentificationError.FromFileRenameError(renameResult.ErrorType.Value, renameResult.ErrorMessage);
+                            }
+                            else
+                            {
+                                result.Error = IdentificationError.RenameFailedUnknown(renameResult.ErrorMessage ?? "Unknown rename error");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Handle unexpected exceptions during rename operation
+                        result.SuggestedFilename = filenameResult.SuggestedFilename;
+                        result.FileRenamed = false;
+                        result.Error = IdentificationError.RenameFailedUnknown($"Unexpected error during file rename: {ex.Message}");
+                    }
+                }
+            }
+
+            return result;
+        }
+        catch (Exception)
+        {
+            return null; // Text subtitle extraction failed
+        }
+    }
+}

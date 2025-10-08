@@ -1,0 +1,13 @@
+{
+  "version": "2.0",
+  "matchConfidenceThreshold": 0.8,
+  "renameConfidenceThreshold": 0.85,
+  "fuzzyHashThreshold": 75,
+  "hashingAlgorithm": "CTPH",
+  "filenamePatterns": {
+    "primaryPattern": "^(.+?)\\sS(\\d+)E(\\d+)(?:[\\s\\.\\-]+(.+?))?$",
+    "secondaryPattern": "^(.+?)\\s(\\d+)x(\\d+)(?:[\\s\\.\\-]+(.+?))?$", 
+    "tertiaryPattern": "^(.+?)\\.S(\\d+)\\.E(\\d+)(?:\\.(.+?))?$"
+  },
+  "filenameTemplate": "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}"
+}
