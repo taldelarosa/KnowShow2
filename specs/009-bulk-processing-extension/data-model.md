@@ -1,12 +1,15 @@
 # Data Model: Bulk Processing Extension for Episode Identification
 
+
 **Date**: September 13, 2025
 **Feature**: 009-bulk-processing-extension
 **Purpose**: Define data structures and models for bulk processing functionality
 
 ## Core Entities
 
+
 ### BulkProcessingRequest
+
 
 Primary request object for bulk operations.
 
@@ -19,6 +22,7 @@ public class BulkProcessingRequest
     public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
 }
 ```
+
 
 **Properties**:
 
@@ -35,6 +39,7 @@ public class BulkProcessingRequest
 
 ### BulkProcessingOptions
 
+
 Configuration object for bulk processing behavior.
 
 ```csharp
@@ -50,6 +55,7 @@ public class BulkProcessingOptions
     public int MaxConcurrentFiles { get; set; } = 1;
 }
 ```
+
 
 **Properties**:
 
@@ -72,6 +78,7 @@ public class BulkProcessingOptions
 
 ### BulkProcessingResult
 
+
 Complete result object for bulk processing operations.
 
 ```csharp
@@ -87,6 +94,7 @@ public class BulkProcessingResult
     public BulkProcessingStatus Status { get; set; }
 }
 ```
+
 
 **Properties**:
 
@@ -107,6 +115,7 @@ public class BulkProcessingResult
 
 ### FileProcessingResult
 
+
 Result for individual file processing.
 
 ```csharp
@@ -122,6 +131,7 @@ public class FileProcessingResult
 }
 ```
 
+
 **Properties**:
 
 - `FilePath`: Absolute path to processed file
@@ -133,6 +143,7 @@ public class FileProcessingResult
 - `IdentificationResult`: Episode identification result (if successful)
 
 ### BulkProcessingProgress
+
 
 Progress information for long-running bulk operations.
 
@@ -149,6 +160,7 @@ public class BulkProcessingProgress
     public BulkProcessingPhase CurrentPhase { get; set; }
 }
 ```
+
 
 **Properties**:
 
@@ -168,6 +180,7 @@ public class BulkProcessingProgress
 
 ### BulkProcessingError
 
+
 Detailed error information for bulk processing failures.
 
 ```csharp
@@ -182,6 +195,7 @@ public class BulkProcessingError
 }
 ```
 
+
 **Properties**:
 
 - `FilePath`: Path of file that caused error
@@ -193,7 +207,9 @@ public class BulkProcessingError
 
 ## Enumerations
 
+
 ### BulkProcessingStatus
+
 
 Overall status of bulk processing operation.
 
@@ -209,7 +225,9 @@ public enum BulkProcessingStatus
 }
 ```
 
+
 ### FileProcessingStatus
+
 
 Status of individual file processing.
 
@@ -225,7 +243,9 @@ public enum FileProcessingStatus
 }
 ```
 
+
 ### BulkProcessingPhase
+
 
 Current phase of bulk processing operation.
 
@@ -241,7 +261,9 @@ public enum BulkProcessingPhase
 }
 ```
 
+
 ### BulkProcessingErrorType
+
 
 Categories of errors that can occur during bulk processing.
 
@@ -258,9 +280,12 @@ public enum BulkProcessingErrorType
 }
 ```
 
+
 ## Service Interfaces
 
+
 ### IBulkProcessor
+
 
 Primary service interface for bulk processing operations.
 
@@ -278,7 +303,9 @@ public interface IBulkProcessor
 }
 ```
 
+
 ### IFileDiscoveryService
+
 
 Service interface for file discovery and validation.
 
@@ -297,7 +324,9 @@ public interface IFileDiscoveryService
 }
 ```
 
+
 ### IProgressTracker
+
 
 Service interface for progress tracking and reporting.
 
@@ -312,9 +341,12 @@ public interface IProgressTracker
 }
 ```
 
+
 ## Data Flow
 
+
 ### Input Processing Flow
+
 
 1. **Request Validation**: Validate `BulkProcessingRequest` parameters
 2. **File Discovery**: Use `IFileDiscoveryService` to enumerate target files
@@ -324,6 +356,7 @@ public interface IProgressTracker
 
 ### Error Handling Flow
 
+
 1. **Error Categorization**: Classify error into `BulkProcessingErrorType`
 2. **Error Collection**: Add to `BulkProcessingError` collection
 3. **Continue/Stop Decision**: Based on `MaxErrors` configuration
@@ -331,6 +364,7 @@ public interface IProgressTracker
 5. **Final Reporting**: Include all errors in final result
 
 ### Progress Reporting Flow
+
 
 1. **Phase Updates**: Report current `BulkProcessingPhase`
 2. **File Updates**: Report current file being processed
@@ -340,7 +374,9 @@ public interface IProgressTracker
 
 ## Configuration Integration
 
+
 ### Existing Configuration Extension
+
 
 The bulk processing configuration will extend the existing `episodeidentifier.config.json` structure:
 
@@ -365,9 +401,12 @@ The bulk processing configuration will extend the existing `episodeidentifier.co
 }
 ```
 
+
 ## Database Integration
 
+
 ### Existing Database Schema Usage
+
 
 Bulk processing will leverage existing database tables:
 
@@ -376,6 +415,7 @@ Bulk processing will leverage existing database tables:
 - **processing_metadata**: Track processing history
 
 ### Additional Tables (if needed)
+
 
 ```sql
 -- Bulk processing session tracking
@@ -404,9 +444,12 @@ CREATE TABLE IF NOT EXISTS bulk_file_processing (
 );
 ```
 
+
 ## Validation and Constraints
 
+
 ### Input Validation
+
 
 - All file paths must be validated for existence and accessibility
 - Supported extensions must be normalized (lowercase, with leading dot)
@@ -415,12 +458,14 @@ CREATE TABLE IF NOT EXISTS bulk_file_processing (
 
 ### Resource Constraints
 
+
 - Maximum batch size: 1000 files (to prevent excessive memory usage)
 - Maximum concurrent files: 10 (to prevent system overload)
 - Maximum directory depth: 100 levels (to prevent stack overflow)
 - Minimum progress update interval: 100ms (to prevent UI flooding)
 
 ### Error Handling Constraints
+
 
 - Maximum error collection: 10,000 errors (to prevent memory exhaustion)
 - Error message length: 1000 characters maximum

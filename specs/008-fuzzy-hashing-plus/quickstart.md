@@ -1,6 +1,8 @@
 # Quickstart: Fuzzy Hashing Plus Configuration System
 
+
 ## Prerequisites
+
 
 - .NET 8.0 SDK installed
 - Episode files for testing
@@ -8,7 +10,9 @@
 
 ## Test Scenario: Configure and Test Fuzzy Hashing
 
+
 ### Step 1: Create Configuration File
+
 
 Create `episodeidentifier.config.json`:
 
@@ -28,11 +32,14 @@ Create `episodeidentifier.config.json`:
 }
 ```
 
+
 ### Step 2: Validate Configuration
+
 
 ```bash
 dotnet run -- --config-validate
 ```
+
 
 **Expected Output**:
 
@@ -44,11 +51,14 @@ dotnet run -- --config-validate
 Configuration validation: PASSED
 ```
 
+
 ### Step 3: Test Fuzzy Hash Comparison
+
 
 ```bash
 dotnet run -- --hash-test file1.mkv file2.mkv
 ```
+
 
 **Expected Output**:
 
@@ -62,7 +72,9 @@ Result: MATCH (similarity exceeds threshold)
 Comparison time: 23ms
 ```
 
+
 ### Step 4: Test Configuration Hot-Reloading
+
 
 1. **Start file processing**:
 
@@ -88,9 +100,11 @@ Comparison time: 23ms
 
 ### Step 5: Test Backward Compatibility
 
+
 ```bash
 
 # Test with legacy config (no fuzzy hash settings)
+
 
 
 
@@ -102,6 +116,7 @@ cp episodeidentifier.config.json episodeidentifier.config.legacy.json
 dotnet run -- --config-file episodeidentifier.config.legacy.json --process /path/to/episodes/
 ```
 
+
 **Expected Output**:
 
 ```
@@ -110,7 +125,9 @@ dotnet run -- --config-file episodeidentifier.config.legacy.json --process /path
 ✓ Processing files with legacy algorithm
 ```
 
+
 ## Success Criteria
+
 
 - [ ] Configuration loads without errors
 - [ ] CTPH hashing produces similarity scores
@@ -120,18 +137,22 @@ dotnet run -- --config-file episodeidentifier.config.legacy.json --process /path
 
 ## Troubleshooting
 
+
 ### "CTPH library not found"
+
 
 - Ensure ssdeep-dotnet package is installed
 - Check .NET 8.0 compatibility
 
 ### "Configuration validation failed"
 
+
 - Verify JSON syntax
 - Check threshold ranges (0.0-1.0 for confidence, 0-100 for fuzzy hash)
 - Ensure required fields are present
 
 ### "Config reload not detected"
+
 
 - Verify file modification timestamp changes
 - Check file permissions

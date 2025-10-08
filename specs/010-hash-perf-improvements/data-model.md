@@ -1,27 +1,33 @@
 # Data Model: Hash Performance Improvements with Series/Season Filtering
 
+
 **Date**: October 7, 2025
 **Feature**: 010-hash-perf-improvements
 **Purpose**: Define data structures and models for filtered hash searching
 
 ## Core Entities
 
+
 ### Search Filter Parameters
+
 
 Represents optional filtering criteria provided by users to narrow database searches.
 
 **Properties**:
+
 - `SeriesFilter` (string?, optional): TV series name for filtering, case-insensitive matching
 - `SeasonFilter` (int?, optional): Season number for filtering, must be positive integer
 - `Threshold` (double, existing): Confidence threshold for matches (0.0-1.0)
 
 **Validation Rules**:
+
 - `SeasonFilter` cannot be provided without `SeriesFilter` (FR-011)
 - `SeriesFilter` is case-insensitive, matched using SQL LOWER()
 - `SeasonFilter` must be positive integer when provided
 - Empty string `SeriesFilter` treated as null (no filtering)
 
 **Usage Context**:
+
 ```csharp
 // No filtering (current behavior)
 var matches = await service.FindMatches(subtitleText, threshold: 0.8);
@@ -33,11 +39,14 @@ var matches = await service.FindMatches(subtitleText, threshold: 0.8, seriesFilt
 var matches = await service.FindMatches(subtitleText, threshold: 0.8, seriesFilter: "Bones", seasonFilter: 2);
 ```
 
+
 ### Labelled Subtitle (Existing Entity - No Changes)
+
 
 Existing entity representing a catalogued episode subtitle with metadata.
 
 **Properties** (no changes required):
+
 - `Series` (string): TV series name
 - `Season` (string): Season identifier
 - `Episode` (string): Episode identifier
@@ -48,7 +57,9 @@ Existing entity representing a catalogued episode subtitle with metadata.
 
 ## Data Flow
 
+
 ### Filtered Search Flow
+
 
 ```
 User Input (CLI)
@@ -76,39 +87,51 @@ JSON Response (Existing Format)
     → Faster response time due to fewer comparisons
 ```
 
+
 ### Performance Comparison Flow
 
+
 ```
+
 # Without Filtering (Current)
+
 Database: SELECT all 246 records
     → Compare 246 × 4 hash variants
     → ~984 hash comparisons maximum
 
 # With Series Filter ("Bones")
+
 Database: SELECT WHERE Series = "Bones" → 246 records
     → Compare 246 × 4 hash variants
     → ~984 hash comparisons
     → (For Bones: same count, but isolated to one series)
 
 # With Series + Season Filter ("Bones", Season 2)
+
 Database: SELECT WHERE Series = "Bones" AND Season = "02" → ~20 records
     → Compare 20 × 4 hash variants
     → ~80 hash comparisons maximum
     → **~92% reduction in comparisons!**
 ```
 
+
 ## Method Signature Changes
+
 
 ### FuzzyHashService.FindMatches (Modified)
 
+
 **Current Signature**:
+
 ```csharp
 public async Task<List<(LabelledSubtitle Subtitle, double Confidence)>> FindMatches(
     string subtitleText,
     double threshold = 0.8)
 ```
 
+
 **New Signature**:
+
 ```csharp
 public async Task<List<(LabelledSubtitle Subtitle, double Confidence)>> FindMatches(
     string subtitleText,
@@ -117,12 +140,15 @@ public async Task<List<(LabelledSubtitle Subtitle, double Confidence)>> FindMatc
     int? seasonFilter = null)
 ```
 
+
 **Changes**:
+
 - Added `seriesFilter` parameter (nullable string, default null)
 - Added `seasonFilter` parameter (nullable int, default null)
 - All new parameters optional for backwards compatibility
 
 **Validation Logic**:
+
 ```csharp
 // Validate parameter combination
 if (seasonFilter.HasValue && string.IsNullOrWhiteSpace(seriesFilter))
@@ -133,22 +159,28 @@ if (seasonFilter.HasValue && string.IsNullOrWhiteSpace(seriesFilter))
 }
 ```
 
+
 ## Database Query Construction
+
 
 ### Dynamic WHERE Clause Building
 
+
 **Current Query** (line ~376 in FuzzyHashService.cs):
+
 ```csharp
 command.CommandText = @"
-    SELECT Series, Season, Episode, OriginalText, OriginalHash, 
+    SELECT Series, Season, Episode, OriginalText, OriginalHash,
            NoTimecodesHash, NoHtmlHash, CleanHash, EpisodeName
     FROM SubtitleHashes;";
 ```
 
+
 **New Query with Optional Filtering**:
+
 ```csharp
 var baseQuery = @"
-    SELECT Series, Season, Episode, OriginalText, OriginalHash, 
+    SELECT Series, Season, Episode, OriginalText, OriginalHash,
            NoTimecodesHash, NoHtmlHash, CleanHash, EpisodeName
     FROM SubtitleHashes";
 
@@ -184,30 +216,40 @@ if (seasonFilter.HasValue)
 }
 ```
 
+
 **Index Utilization**:
+
 - Series filter only: Uses `idx_series_season` (partial match on first column)
 - Series + Season filter: Uses `idx_series_season` (exact match on both columns)
 - No filters: Full table scan (current behavior)
 
 ## CLI Command Structure
 
+
 ### Identify Command Extension (Existing Command)
 
+
 **Current Command**:
+
 ```bash
 dotnet run -- identify --input <file> --hash-db <database>
 ```
 
+
 **Extended Command**:
+
 ```bash
 dotnet run -- identify --input <file> --hash-db <database> [--series <name>] [--season <number>]
 ```
 
+
 **New Options**:
+
 - `--series <name>`: Optional series name for filtering (case-insensitive)
 - `--season <number>`: Optional season number for filtering (requires --series)
 
 **Option Definitions** (System.CommandLine):
+
 ```csharp
 var seriesOption = new Option<string?>(
     aliases: new[] { "--series", "-s" },
@@ -220,13 +262,17 @@ var seasonOption = new Option<int?>(
     getDefaultValue: () => null);
 ```
 
+
 ## Performance Metrics Model
 
+
 ### Performance Log Data
+
 
 Information logged to measure performance improvements.
 
 **Metrics Captured**:
+
 - `QueryExecutionTime` (TimeSpan): Time to execute database query
 - `RecordsScanned` (int): Number of database records returned by query
 - `RecordsFiltered` (int): Number of records after applying filters
@@ -234,6 +280,7 @@ Information logged to measure performance improvements.
 - `MatchesFound` (int): Number of matches above confidence threshold
 
 **Logging Format**:
+
 ```csharp
 _logger.LogInformation(
     "Search completed: {ElapsedMs}ms, scanned {Scanned} records, {Comparisons} comparisons, found {Matches} matches",
@@ -243,9 +290,12 @@ _logger.LogInformation(
     matchesFound);
 ```
 
+
 ## Validation and Constraints
 
+
 ### Parameter Validation Rules
+
 
 | Validation | Rule | Error Response |
 |------------|------|----------------|
@@ -258,7 +308,9 @@ _logger.LogInformation(
 
 ### Backwards Compatibility Validation
 
+
 **Existing Call Patterns** (must continue working):
+
 ```csharp
 // Pattern 1: Only subtitle text
 var matches = await service.FindMatches(text);
@@ -270,11 +322,14 @@ var matches = await service.FindMatches(text, 0.85);
 var matches = await service.FindMatches(text, threshold: 0.9);
 ```
 
+
 All patterns remain valid because new parameters have default null values.
 
 ## Error Handling
 
+
 ### Exception Types
+
 
 1. **ArgumentException**: Invalid parameter combination (season without series)
    - Thrown before database query
@@ -290,6 +345,7 @@ All patterns remain valid because new parameters have default null values.
 
 ### Error Messages
 
+
 ```csharp
 // Season without series
 throw new ArgumentException(
@@ -298,9 +354,12 @@ throw new ArgumentException(
     nameof(seasonFilter));
 ```
 
+
 ## Testing Considerations
 
+
 ### Test Scenarios
+
 
 1. **No filters provided**: Verify backwards compatibility, all records scanned
 2. **Series filter only**: Verify case-insensitive matching, correct filtering
@@ -311,6 +370,7 @@ throw new ArgumentException(
 7. **Performance measurement**: Verify filtered queries faster than full scan
 
 ### Test Data Requirements
+
 
 - Multiple series in test database (e.g., "Bones", "Breaking Bad", "The Office")
 - Multiple seasons per series (e.g., Bones S01, S02, S03)

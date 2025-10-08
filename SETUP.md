@@ -1,14 +1,17 @@
 # KnowShow2 - Complete Setup Guide
 
+
 This guide will help you set up KnowShow2 (Episode Identifier) on a fresh Linux system.
 
 ## Quick Start (Recommended)
+
 
 For most users, the automated setup script is the easiest way to get started:
 
 ```bash
 
 # 1. Clone the repository
+
 
 
 
@@ -27,6 +30,7 @@ cd KnowShow2
 
 
 
+
 ./scripts/setup-prerequisites.sh --check-only
 
 # 3. Install all dependencies automatically
@@ -37,9 +41,11 @@ cd KnowShow2
 
 
 
+
 ./scripts/setup-prerequisites.sh --install
 
 # 4. Build the project
+
 
 
 
@@ -58,6 +64,7 @@ dotnet build
 
 
 
+
 dotnet test
 
 # 6. Try a quick test (if you have a video file)
@@ -68,14 +75,18 @@ dotnet test
 
 
 
+
 dotnet run -- --help
 ```
 
+
 ## What Gets Installed
+
 
 The setup script will install and configure:
 
 ### System Packages
+
 
 - **ffmpeg** - Video processing and format validation
 - **mkvtoolnix** - MKV container manipulation (mkvextract)
@@ -88,26 +99,31 @@ The setup script will install and configure:
 
 ### Programming Environments
 
+
 - **.NET 8.0 SDK** - Required for building and running the application
 - **Python 3** - Required for pgsrip and advanced processing
 - **uv** - Fast Python package manager (alternative to pip)
 
 ### Specialized Tools
 
+
 - **pgsrip** - Advanced PGS subtitle processor (provides 90%+ OCR accuracy)
 - **Enhanced Tesseract training data** - Improved OCR models for better text recognition
 
 ## Manual Installation (Advanced Users)
 
+
 If you prefer to install dependencies manually or need to troubleshoot:
 
 ### 1. Install System Dependencies
+
 
 **Ubuntu/Debian:**
 
 ```bash
 
 # Update package list
+
 
 
 
@@ -125,9 +141,11 @@ sudo apt-get update
 
 
 
+
 sudo apt-get install -y curl wget git unzip ca-certificates
 
 # Video processing
+
 
 
 
@@ -145,8 +163,10 @@ sudo apt-get install -y ffmpeg mkvtoolnix
 
 
 
+
 sudo apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-spa tesseract-ocr-deu tesseract-ocr-fra sqlite3
 ```
+
 
 **Other Linux distributions:**
 
@@ -156,9 +176,11 @@ sudo apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-spa tesser
 
 ### 2. Install .NET 8.0 SDK
 
+
 ```bash
 
 # Download Microsoft package repository configuration
+
 
 
 
@@ -178,6 +200,7 @@ rm packages-microsoft-prod.deb
 
 
 
+
 sudo apt-get update
 sudo apt-get install -y dotnet-sdk-8.0
 
@@ -189,10 +212,13 @@ sudo apt-get install -y dotnet-sdk-8.0
 
 
 
+
 dotnet --version
 ```
 
+
 ### 3. Install Python and uv
+
 
 ```bash
 
@@ -204,9 +230,11 @@ dotnet --version
 
 
 
+
 sudo apt-get install -y python3 python3-pip python3-venv
 
 # Install uv (fast package manager)
+
 
 
 
@@ -225,15 +253,19 @@ source $HOME/.cargo/env
 
 
 
+
 python3 --version
 uv --version
 ```
 
+
 ### 4. Install pgsrip
+
 
 ```bash
 
 # Using uv (recommended - faster)
+
 
 
 
@@ -251,6 +283,7 @@ uv pip install --system pgsrip
 
 
 
+
 pip3 install pgsrip
 
 # Verify installation
@@ -261,14 +294,18 @@ pip3 install pgsrip
 
 
 
+
 pgsrip --version
 ```
 
+
 ### 5. Install Enhanced Tesseract Data (Optional but Recommended)
+
 
 ```bash
 
 # Clone enhanced training data
+
 
 
 
@@ -287,9 +324,11 @@ git clone --depth 1 https://github.com/tesseract-ocr/tessdata_best.git
 
 
 
+
 sudo mv tessdata_best /usr/share/tessdata_best
 
 # Set environment variable
+
 
 
 
@@ -301,13 +340,16 @@ echo 'export TESSDATA_PREFIX=/usr/share/tessdata_best' >> ~/.bashrc
 source ~/.bashrc
 ```
 
+
 ## Verification
+
 
 After installation, verify everything is working:
 
 ```bash
 
 # Check all tools are available
+
 
 
 
@@ -332,11 +374,13 @@ pgsrip --version
 
 
 
+
 cd src/EpisodeIdentifier.Core
 dotnet restore
 dotnet build
 
 # Run tests
+
 
 
 
@@ -350,9 +394,12 @@ dotnet test tests/integration/
 dotnet test tests/contract/
 ```
 
+
 ## Troubleshooting
 
+
 ### Setup Script Issues
+
 
 **Script not executable:**
 
@@ -360,11 +407,13 @@ dotnet test tests/contract/
 chmod +x scripts/setup-prerequisites.sh
 ```
 
+
 **Permission denied during installation:**
 
 ```bash
 
 # Make sure you can use sudo
+
 
 
 
@@ -382,16 +431,20 @@ sudo whoami
 
 
 
+
 ./scripts/setup-prerequisites.sh --install --verbose
 ```
 
+
 ### Common Dependency Issues
+
 
 **FFmpeg not found:**
 
 ```bash
 
 # Check if installed
+
 
 
 
@@ -410,14 +463,17 @@ ffmpeg -version
 
 
 
+
 sudo apt-get install ffmpeg
 ```
+
 
 **pgsrip installation fails:**
 
 ```bash
 
 # Try installing with pip instead of uv
+
 
 
 
@@ -435,14 +491,17 @@ pip3 install pgsrip
 
 
 
+
 python3 --version
 ```
+
 
 **.NET build fails:**
 
 ```bash
 
 # Check .NET SDK version
+
 
 
 
@@ -461,7 +520,9 @@ dotnet --version
 
 
 
+
 # See manual installation section above
+
 
 
 
@@ -471,11 +532,13 @@ dotnet --version
 
 ```
 
+
 **Tesseract OCR issues:**
 
 ```bash
 
 # Check tesseract installation
+
 
 
 
@@ -495,7 +558,9 @@ tesseract --list-langs
 
 
 
+
 # Install language packs if missing
+
 
 
 
@@ -506,13 +571,16 @@ tesseract --list-langs
 sudo apt-get install tesseract-ocr-eng
 ```
 
+
 ### Environment Variables
+
 
 Make sure these are set correctly:
 
 ```bash
 
 # Check environment variables
+
 
 
 
@@ -532,7 +600,9 @@ echo $PATH
 
 
 
+
 # - /usr/bin (for system tools)
+
 
 
 
@@ -550,7 +620,9 @@ echo $PATH
 
 
 
+
 # - ~/.cargo/bin (for uv)
+
 
 
 
@@ -560,13 +632,16 @@ echo $PATH
 
 ```
 
+
 ### Test Installation
+
 
 Run this simple test to verify everything works:
 
 ```bash
 
 # Test video processing
+
 
 
 
@@ -584,9 +659,11 @@ ffmpeg -f lavfi -i testsrc=duration=1:size=320x240:rate=1 -c:v libx264 test.mp4
 
 
 
+
 echo "Hello World" | tesseract stdin stdout
 
 # Test .NET
+
 
 
 
@@ -604,6 +681,7 @@ dotnet --info
 
 
 
+
 pgsrip --help
 
 # Clean up
@@ -614,10 +692,13 @@ pgsrip --help
 
 
 
+
 rm test.mp4
 ```
 
+
 ## Next Steps
+
 
 Once setup is complete:
 
@@ -628,12 +709,14 @@ Once setup is complete:
 
 ## Getting Help
 
+
 - **Setup issues:** Run `./scripts/setup-prerequisites.sh --check-only --verbose`
 - **Build issues:** Check the project documentation in `specs/`
 - **Runtime issues:** See troubleshooting section in main README.md
 - **Missing features:** Check the project roadmap and specifications
 
 ## Supported Platforms
+
 
 This application is primarily designed for Linux systems:
 

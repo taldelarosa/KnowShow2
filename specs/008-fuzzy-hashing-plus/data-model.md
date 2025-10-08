@@ -1,8 +1,11 @@
 # Data Model: Fuzzy Hashing Plus Configuration System
 
+
 ## Core Entities
 
+
 ### Configuration
+
 
 Primary configuration entity that encapsulates all system settings.
 
@@ -29,6 +32,7 @@ Primary configuration entity that encapsulates all system settings.
 
 ### FilenamePatterns
 
+
 Entity containing regex patterns for episode identification.
 
 **Fields**:
@@ -45,6 +49,7 @@ Entity containing regex patterns for episode identification.
 
 ### HashingAlgorithm
 
+
 Enumeration defining supported hashing methods.
 
 **Values**:
@@ -59,6 +64,7 @@ Enumeration defining supported hashing methods.
 - Determines which IHashingService implementation to use
 
 ### FuzzyHashResult
+
 
 Result of CTPH fuzzy hashing comparison.
 
@@ -77,7 +83,9 @@ Result of CTPH fuzzy hashing comparison.
 
 ## Validation Rules
 
+
 ### Configuration Validation
+
 
 - **Version**: Must be valid semantic version string
 - **MatchConfidenceThreshold**: Range 0.0-1.0, cannot exceed RenameConfidenceThreshold
@@ -88,13 +96,16 @@ Result of CTPH fuzzy hashing comparison.
 
 ### FilenamePatterns Validation
 
+
 - **All Patterns**: Must be valid regex patterns
 - **Named Groups**: Must contain capturing groups for series, season, episode
 - **Compilation**: All patterns must compile without errors
 
 ## Service Interfaces
 
+
 ### IConfigurationService
+
 
 Core configuration management interface.
 
@@ -107,6 +118,7 @@ Core configuration management interface.
 
 ### IHashingService
 
+
 Abstract hashing service interface.
 
 **Methods**:
@@ -116,6 +128,7 @@ Abstract hashing service interface.
 - `GetAlgorithmName()`: Return algorithm identifier
 
 ### ICTPhHashingService : IHashingService
+
 
 CTPH-specific hashing implementation.
 

@@ -1,18 +1,23 @@
 # CLI Contract: Identify Command with Filtering
 
+
 **Command**: `identify`
 **Purpose**: Identify episode from video file with optional series/season filtering
 **Version**: 0.10.0
 
 ## Command Syntax
 
+
 ```bash
 dotnet run -- identify --input <file> --hash-db <database> [--series <name>] [--season <number>] [--threshold <value>] [--rename] [--verbose]
 ```
 
+
 ## New Options (Feature 010)
 
+
 ### --series Option
+
 
 **Syntax**: `--series <name>` or `-s <name>`
 
@@ -21,17 +26,21 @@ dotnet run -- identify --input <file> --hash-db <database> [--series <name>] [--
 **Type**: String (optional)
 
 **Example**:
+
 ```bash
 dotnet run -- identify --input video.mkv --hash-db hashes.db --series "Bones"
 ```
 
+
 **Behavior**:
+
 - Case-insensitive matching against database Series column
 - Trims whitespace from input
 - Empty/whitespace-only values treated as no filter
 - Non-existent series names return empty results (not an error)
 
 ### --season Option
+
 
 **Syntax**: `--season <number>` or `-n <number>`
 
@@ -40,17 +49,21 @@ dotnet run -- identify --input video.mkv --hash-db hashes.db --series "Bones"
 **Type**: Integer (optional)
 
 **Example**:
+
 ```bash
 dotnet run -- identify --input video.mkv --hash-db hashes.db --series "Bones" --season 2
 ```
 
+
 **Behavior**:
+
 - Must be positive integer
 - Requires --series to be specified
 - Season numbers formatted with zero-padding for database matching (e.g., "02")
 - Invalid without --series (returns error)
 
 ## Existing Options (Unchanged)
+
 
 - `--input <file>`: Video file to identify (required)
 - `--hash-db <database>`: Database path (required)
@@ -59,6 +72,7 @@ dotnet run -- identify --input video.mkv --hash-db hashes.db --series "Bones" --
 - `--verbose`: Enable verbose logging (optional, default false)
 
 ## Parameter Validation
+
 
 | Validation | Error Message | Exit Code |
 |------------|---------------|-----------|
@@ -69,6 +83,7 @@ dotnet run -- identify --input video.mkv --hash-db hashes.db --series "Bones" --
 | Missing required --hash-db | "Option '--hash-db' is required" | 1 |
 
 ## Output Format (JSON)
+
 
 Output format remains unchanged from existing implementation:
 
@@ -83,7 +98,9 @@ Output format remains unchanged from existing implementation:
 }
 ```
 
+
 ## Exit Codes
+
 
 | Exit Code | Meaning |
 |-----------|---------|
@@ -93,31 +110,39 @@ Output format remains unchanged from existing implementation:
 
 ## Usage Examples
 
+
 ### Example 1: No Filtering (Existing Behavior)
+
 
 ```bash
 dotnet run -- identify --input video.mkv --hash-db hashes.db
 ```
 
+
 **Expected**: Searches entire database, returns best match
 
 ### Example 2: Series Filter Only
+
 
 ```bash
 dotnet run -- identify --input video.mkv --hash-db hashes.db --series "Bones"
 ```
 
+
 **Expected**: Searches only Bones episodes, faster than full database search
 
 ### Example 3: Series + Season Filter (Maximum Performance)
+
 
 ```bash
 dotnet run -- identify --input video.mkv --hash-db hashes.db --series "Bones" --season 2
 ```
 
+
 **Expected**: Searches only Bones Season 2, maximum performance optimization
 
 ### Example 4: Case-Insensitive Series Matching
+
 
 ```bash
 dotnet run -- identify --input video.mkv --hash-db hashes.db --series "BONES"
@@ -125,28 +150,36 @@ dotnet run -- identify --input video.mkv --hash-db hashes.db --series "bones"
 dotnet run -- identify --input video.mkv --hash-db hashes.db --series "Bones"
 ```
 
+
 **Expected**: All three commands produce identical results
 
 ### Example 5: Error - Season Without Series
+
 
 ```bash
 dotnet run -- identify --input video.mkv --hash-db hashes.db --season 2
 ```
 
+
 **Expected Output**:
+
 ```
 Error: Season parameter requires series parameter
 ```
+
 
 **Exit Code**: 1
 
 ### Example 6: Non-Existent Series
 
+
 ```bash
 dotnet run -- identify --input video.mkv --hash-db hashes.db --series "NonExistentShow"
 ```
 
+
 **Expected Output**:
+
 ```json
 {
   "series": null,
@@ -157,17 +190,21 @@ dotnet run -- identify --input video.mkv --hash-db hashes.db --series "NonExiste
 }
 ```
 
+
 **Exit Code**: 0 (not an error, just no matches)
 
 ### Example 7: With Rename Flag (Existing Feature)
+
 
 ```bash
 dotnet run -- identify --input video.mkv --hash-db hashes.db --series "Bones" --season 2 --rename
 ```
 
+
 **Expected**: Identifies episode from Bones Season 2, renames file if high confidence
 
 ## Performance Characteristics
+
 
 | Command Pattern | Expected Search Time |
 |-----------------|---------------------|
@@ -179,7 +216,9 @@ Actual performance depends on database size, number of series, and episodes per 
 
 ## Logging Output
 
+
 ### With Verbose Flag
+
 
 ```
 INFO: Search filter applied: Series='Bones', Season=2
@@ -190,13 +229,17 @@ INFO: Search completed: 15ms, scanned 20 records, 60 comparisons, found 1 matche
 INFO: Bones S02E13 confidence: 60.00%
 ```
 
+
 ### Without Verbose Flag
+
 
 ```
 INFO: Search completed: 15ms, scanned 20 records, found 1 matches
 ```
 
+
 ## Help Text
+
 
 ```
 Options:
@@ -210,24 +253,32 @@ Options:
   --help                     Display help information
 ```
 
+
 ## Backwards Compatibility
+
 
 All existing command patterns continue to work without modification:
 
 ```bash
+
 # Pattern 1: Minimum required parameters
+
 dotnet run -- identify --input video.mkv --hash-db hashes.db
 
 # Pattern 2: With threshold
+
 dotnet run -- identify --input video.mkv --hash-db hashes.db --threshold 0.9
 
 # Pattern 3: With rename
+
 dotnet run -- identify --input video.mkv --hash-db hashes.db --rename
 ```
+
 
 All produce identical results to previous versions.
 
 ## Test Contract Requirements
+
 
 CLI contract tests must verify:
 

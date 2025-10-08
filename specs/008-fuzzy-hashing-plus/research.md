@@ -1,8 +1,11 @@
 # Research: Fuzzy Hashing Plus Configuration System
 
+
 ## Research Tasks
 
+
 ### 1. CTPH (Context-triggered piecewise hashing) Library Selection
+
 
 **Decision**: Use ssdeep-dotnet library (C# port of ssdeep)
 
@@ -22,6 +25,7 @@
 
 ### 2. JSON Configuration Hot-Reloading Pattern
 
+
 **Decision**: FileSystemWatcher with debouncing + per-file validation
 
 **Rationale**:
@@ -40,6 +44,7 @@
 
 ### 3. Configuration Validation Strategy
 
+
 **Decision**: JSON Schema validation with fluent validation fallback
 
 **Rationale**:
@@ -56,6 +61,7 @@
 - Third-party validators: Unnecessary dependency
 
 ### 4. Backward Compatibility Approach
+
 
 **Decision**: Config versioning with automatic migration
 
@@ -74,6 +80,7 @@
 
 ### 5. Performance Optimization for Per-File Reload
 
+
 **Decision**: Lazy config reloading with change detection
 
 **Rationale**:
@@ -91,7 +98,9 @@
 
 ## Technical Integration Points
 
+
 ### Existing Codebase Integration
+
 
 - Replace existing hash comparisons in identification workflow
 - Extend current configuration structure (preserve existing fields)
@@ -100,13 +109,16 @@
 
 ### Dependencies to Add
 
+
 ```xml
 <PackageReference Include="ssdeep-dotnet" Version="2.0.0" />
 <PackageReference Include="FluentValidation" Version="11.8.0" />
 <PackageReference Include="System.IO.Abstractions" Version="19.2.69" />
 ```
 
+
 ### Configuration Schema Evolution
+
 
 ```json
 {
@@ -120,3 +132,4 @@
   "filenameTemplate": "/* existing */"
 }
 ```
+

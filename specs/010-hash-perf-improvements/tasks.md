@@ -1,20 +1,24 @@
 # Tasks: Hash Performance Improvements with Series/Season Filtering
 
+
 **Input**: Design documents from `/mnt/c/Users/Ragma/KnowShow2-charlie/specs/010-hash-perf-improvements/`
 **Prerequisites**: plan.md, research.md, data-model.md, contracts/, quickstart.md
 
 ## Overview
 
+
 This feature adds optional `--series` and `--season` parameters to the identify command for performance optimization through database query filtering. All changes are backwards compatible and follow strict TDD principles.
 
 **Tech Stack**: C# / .NET 8.0, SQLite, System.CommandLine, xUnit
 **Key Files**:
+
 - `/mnt/c/Users/Ragma/KnowShow2-charlie/src/EpisodeIdentifier.Core/Services/FuzzyHashService.cs`
 - `/mnt/c/Users/Ragma/KnowShow2-charlie/src/EpisodeIdentifier.Core/Commands/IdentifyCommands.cs` (to be created/modified)
 - `/mnt/c/Users/Ragma/KnowShow2-charlie/tests/contract/FilteredHashSearchTests.cs` (to be created)
 - `/mnt/c/Users/Ragma/KnowShow2-charlie/tests/integration/SeriesSeasonFilteringTests.cs` (to be created)
 
 ## Phase 3.1: Setup
+
 
 - [ ] **T001** Verify existing test infrastructure supports multi-series databases
   - Path: `/mnt/c/Users/Ragma/KnowShow2-charlie/tests/contract/TestDatabaseConfig.cs`
@@ -28,9 +32,11 @@ This feature adds optional `--series` and `--season` parameters to the identify 
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 
+
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
 ### Contract Tests (Parallel - Different Files)
+
 
 - [ ] **T003** [P] Contract test: FindMatches accepts optional seriesFilter parameter
   - Path: `/mnt/c/Users/Ragma/KnowShow2-charlie/tests/contract/FilteredHashSearchTests.cs`
@@ -70,6 +76,7 @@ This feature adds optional `--series` and `--season` parameters to the identify 
 
 ### Integration Tests (Parallel - Different Files)
 
+
 - [ ] **T009** [P] Integration test: Multi-series database filtering
   - Path: `/mnt/c/Users/Ragma/KnowShow2-charlie/tests/integration/SeriesSeasonFilteringTests.cs`
   - Setup: Database with Bones (246 eps), Breaking Bad (62 eps), The Office (201 eps)
@@ -98,6 +105,7 @@ This feature adds optional `--series` and `--season` parameters to the identify 
 
 ### Performance Tests
 
+
 - [ ] **T013** [P] Performance test: Measure search time improvements
   - Path: `/mnt/c/Users/Ragma/KnowShow2-charlie/tests/performance/FilteringPerformanceTests.cs`
   - Test: Compare execution times for no filter vs series vs series+season
@@ -108,7 +116,9 @@ This feature adds optional `--series` and `--season` parameters to the identify 
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
+
 ### FuzzyHashService Method Extension
+
 
 - [ ] **T014** Extend FindMatches method signature with optional parameters
   - Path: `/mnt/c/Users/Ragma/KnowShow2-charlie/src/EpisodeIdentifier.Core/Services/FuzzyHashService.cs`
@@ -141,6 +151,7 @@ This feature adds optional `--series` and `--season` parameters to the identify 
 
 ### CLI Command Extension
 
+
 - [ ] **T019** Add --series option to identify command
   - Path: `/mnt/c/Users/Ragma/KnowShow2-charlie/src/EpisodeIdentifier.Core/Commands/IdentifyCommands.cs` (or create if doesn't exist)
   - Action: Add Option<string?> for --series with alias -s
@@ -167,6 +178,7 @@ This feature adds optional `--series` and `--season` parameters to the identify 
 
 ## Phase 3.4: Integration & Refinement
 
+
 - [ ] **T023** Verify existing tests still pass (backwards compatibility)
   - Command: `cd /mnt/c/Users/Ragma/KnowShow2-charlie && dotnet test`
   - Assert: All existing tests pass without modification
@@ -183,6 +195,7 @@ This feature adds optional `--series` and `--season` parameters to the identify 
   - Document: Record timings in quickstart.md or new PERFORMANCE.md
 
 ## Phase 3.5: Polish & Documentation
+
 
 - [ ] **T026** [P] Add XML documentation comments to new parameters
   - Path: `/mnt/c/Users/Ragma/KnowShow2-charlie/src/EpisodeIdentifier.Core/Services/FuzzyHashService.cs`
@@ -211,6 +224,7 @@ This feature adds optional `--series` and `--season` parameters to the identify 
 
 ## Dependencies
 
+
 ```
 Setup (T001-T002)
     ↓
@@ -229,12 +243,17 @@ Integration & Refinement (T023-T025) [Sequential]
 Polish & Documentation (T026-T030) [Parallel possible]
 ```
 
+
 ## Parallel Execution Examples
+
 
 ### Parallel Block 1: Contract Tests (After Setup)
 
+
 ```bash
+
 # Can run simultaneously - different test files
+
 dotnet test --filter "FullyQualifiedName~FilteredHashSearchTests.AcceptsSeriesFilter"
 dotnet test --filter "FullyQualifiedName~FilteredHashSearchTests.AcceptsSeasonFilter"
 dotnet test --filter "FullyQualifiedName~FilteredHashSearchTests.SeasonWithoutSeriesThrows"
@@ -243,25 +262,41 @@ dotnet test --filter "FullyQualifiedName~CLIFilteringTests.SeriesOptionExists"
 dotnet test --filter "FullyQualifiedName~CLIFilteringTests.SeasonOptionRequiresSeries"
 ```
 
+
 ### Parallel Block 2: Integration Tests (After Contract Tests)
 
+
 ```bash
+
 # Can run simultaneously - different test files
+
 dotnet test --filter "FullyQualifiedName~SeriesSeasonFilteringTests"
 dotnet test --filter "FullyQualifiedName~BackwardsCompatibilityTests"
 dotnet test --filter "FullyQualifiedName~FilteringPerformanceTests"
 ```
 
+
 ### Parallel Block 3: Documentation (After Implementation)
 
+
 ```bash
+
 # Can work on simultaneously - different files
+
+
 # Task: Update README.md
+
+
 # Task: Add XML docs to FuzzyHashService.cs
+
+
 # Task: Run quickstart.md validation
+
 ```
 
+
 ## Success Criteria
+
 
 ✅ All contract tests pass
 ✅ All integration tests pass
@@ -273,6 +308,7 @@ dotnet test --filter "FullyQualifiedName~FilteringPerformanceTests"
 ✅ Zero breaking changes to API or CLI
 
 ## Notes
+
 
 - **TDD Enforcement**: Do NOT skip the RED phase. Tests must fail before implementation.
 - **Backwards Compatibility**: Critical requirement. All existing code must work unchanged.

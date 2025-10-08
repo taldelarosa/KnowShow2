@@ -1,12 +1,15 @@
 # Quickstart: Bulk Processing Extension for Episode Identification
 
+
 **Date**: September 13, 2025
 **Feature**: 009-bulk-processing-extension
 **Purpose**: Quick implementation scenarios and usage examples
 
 ## Implementation Quickstart
 
+
 ### Phase 1: Core Data Models (30 minutes)
+
 
 Create the essential data structures in `src/EpisodeIdentifier.Core/Models/`:
 
@@ -43,7 +46,9 @@ public class BulkProcessingResult
 }
 ```
 
+
 ### Phase 2: Service Interfaces (15 minutes)
+
 
 Create interfaces in `src/EpisodeIdentifier.Core/Interfaces/`:
 
@@ -62,7 +67,9 @@ public interface IBulkProcessor
 }
 ```
 
+
 ### Phase 3: CLI Commands (20 minutes)
+
 
 Extend `src/EpisodeIdentifier.Core/Commands/` with new commands:
 
@@ -96,13 +103,17 @@ public class ProcessDirectoryCommand : Command
 }
 ```
 
+
 ## Usage Quickstart
 
+
 ### Basic Single File Processing
+
 
 ```bash
 
 # Process a single video file
+
 
 
 
@@ -115,7 +126,9 @@ dotnet run -- process-file /path/to/video.mkv --progress
 
 
 
+
 # Processing: /path/to/video.mkv
+
 
 
 
@@ -127,18 +140,23 @@ dotnet run -- process-file /path/to/video.mkv --progress
 
 
 
+
 # Processed 1 file successfully
+
 
 
 
 
 ```
 
+
 ### Basic Directory Processing
+
 
 ```bash
 
 # Process all videos in a directory (non-recursive)
+
 
 
 
@@ -151,7 +169,9 @@ dotnet run -- process-directory /media/tv-shows --progress
 
 
 
+
 # Discovering files...
+
 
 
 
@@ -163,7 +183,9 @@ dotnet run -- process-directory /media/tv-shows --progress
 
 
 
+
 # Processing [1/15]: show-s01e01.mkv
+
 
 
 
@@ -175,7 +197,9 @@ dotnet run -- process-directory /media/tv-shows --progress
 
 
 
+
 # ...
+
 
 
 
@@ -186,13 +210,17 @@ dotnet run -- process-directory /media/tv-shows --progress
 
 
 
+
 ```
 
+
 ### Recursive Directory Processing
+
 
 ```bash
 
 # Process all videos recursively with error limits
+
 
 
 
@@ -205,7 +233,9 @@ dotnet run -- process-directory /media/tv-shows --recursive --max-errors 5 --pro
 
 
 
+
 # Discovering files recursively...
+
 
 
 
@@ -217,7 +247,9 @@ dotnet run -- process-directory /media/tv-shows --recursive --max-errors 5 --pro
 
 
 
+
 # Processing [1/247]: Season 1/episode-01.mkv
+
 
 
 
@@ -229,7 +261,9 @@ dotnet run -- process-directory /media/tv-shows --recursive --max-errors 5 --pro
 
 
 
+
 # ...
+
 
 
 
@@ -241,16 +275,21 @@ dotnet run -- process-directory /media/tv-shows --recursive --max-errors 5 --pro
 
 
 
+
 # Processing time: 00:08:32 (0.48 files/second)
+
 
 
 
 
 ```
 
+
 ## Configuration Quickstart
 
+
 ### Basic Configuration Setup
+
 
 Add to `episodeidentifier.config.json`:
 
@@ -269,7 +308,9 @@ Add to `episodeidentifier.config.json`:
 }
 ```
 
+
 ### Advanced Configuration
+
 
 ```json
 {
@@ -292,9 +333,12 @@ Add to `episodeidentifier.config.json`:
 }
 ```
 
+
 ## Testing Quickstart
 
+
 ### Unit Test Example
+
 
 ```csharp
 [Test]
@@ -318,7 +362,9 @@ public async Task ProcessAsync_WithSingleFile_ReturnsSuccessResult()
 }
 ```
 
+
 ### Integration Test Example
+
 
 ```csharp
 [Test]
@@ -342,9 +388,12 @@ public async Task ProcessAsync_WithTestDirectory_ProcessesAllFiles()
 }
 ```
 
+
 ## Development Scenarios
 
+
 ### Scenario 1: Add New Video Format Support
+
 
 **Goal**: Support `.webm` files in bulk processing
 **Time**: 5 minutes
@@ -360,6 +409,7 @@ public async Task ProcessAsync_WithTestDirectory_ProcessesAllFiles()
 3. Add test case with `.webm` file
 
 ### Scenario 2: Add Progress Callbacks
+
 
 **Goal**: Custom progress reporting for UI integration
 **Time**: 15 minutes
@@ -377,6 +427,7 @@ public async Task ProcessAsync_WithTestDirectory_ProcessesAllFiles()
 
 ### Scenario 3: Add Concurrency Control
 
+
 **Goal**: Process multiple files simultaneously
 **Time**: 30 minutes
 **Steps**:
@@ -388,7 +439,9 @@ public async Task ProcessAsync_WithTestDirectory_ProcessesAllFiles()
 
 ## Troubleshooting Quickstart
 
+
 ### Common Issues
+
 
 **Issue**: "Access denied" errors during directory processing
 **Solution**: Check directory permissions, use `--continue-on-error` flag
@@ -397,6 +450,7 @@ public async Task ProcessAsync_WithTestDirectory_ProcessesAllFiles()
 ```bash
 dotnet run -- process-directory /restricted/path --continue-on-error --max-errors 50
 ```
+
 
 **Issue**: Out of memory with very large directories
 **Solution**: Reduce batch size in configuration
@@ -412,6 +466,7 @@ dotnet run -- process-directory /restricted/path --continue-on-error --max-error
 }
 ```
 
+
 **Issue**: Slow processing on network drives
 **Solution**: Use local processing or adjust timeouts
 **Example**:
@@ -423,15 +478,19 @@ dotnet run -- process-directory /restricted/path --continue-on-error --max-error
 
 
 
+
 cp -r /network/share/videos /tmp/local-videos
 dotnet run -- process-directory /tmp/local-videos --recursive
 ```
 
+
 ### Debug Mode Usage
+
 
 ```bash
 
 # Enable verbose logging
+
 
 
 
@@ -445,7 +504,9 @@ dotnet run -- process-directory /media/test --progress --verbose
 
 
 
+
 # [DEBUG] Discovering files in: /media/test
+
 
 
 
@@ -457,7 +518,9 @@ dotnet run -- process-directory /media/test --progress --verbose
 
 
 
+
 # [DEBUG] Found file: video2.mp4 (89.7 MB)
+
 
 
 
@@ -469,7 +532,9 @@ dotnet run -- process-directory /media/test --progress --verbose
 
 
 
+
 # [DEBUG] Processing file 1/2: video1.mkv
+
 
 
 
@@ -480,11 +545,15 @@ dotnet run -- process-directory /media/test --progress --verbose
 
 
 
+
 ```
+
 
 ## Performance Optimization Quickstart
 
+
 ### For Large Directories (10,000+ files)
+
 
 ```json
 {
@@ -501,7 +570,9 @@ dotnet run -- process-directory /media/test --progress --verbose
 }
 ```
 
+
 ### For Network Storage
+
 
 ```json
 {
@@ -518,7 +589,9 @@ dotnet run -- process-directory /media/test --progress --verbose
 }
 ```
 
+
 ### For Memory-Constrained Systems
+
 
 ```json
 {
@@ -533,5 +606,6 @@ dotnet run -- process-directory /media/test --progress --verbose
   }
 }
 ```
+
 
 This quickstart guide provides practical examples for implementing and using the bulk processing extension, covering the most common scenarios developers and users will encounter.

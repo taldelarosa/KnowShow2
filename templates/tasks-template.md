@@ -1,9 +1,11 @@
 # Tasks: [FEATURE NAME]
 
+
 **Input**: Design documents from `/specs/[###-feature-name]/`
 **Prerequisites**: plan.md (required), research.md, data-model.md, contracts/
 
 ## Execution Flow (main)
+
 
 ```
 
@@ -16,10 +18,12 @@
 
 
 
+
    → Extract: tech stack, libraries, structure
 
 2. Load optional design documents:
    → data-model.md: Extract entities → model tasks
+
 
 
 
@@ -39,6 +43,7 @@
 
 
 
+
    → Tests: contract tests, integration tests
    → Core: models, services, CLI commands
    → Integration: DB, middleware, logging
@@ -46,6 +51,7 @@
 
 4. Apply task rules:
    → Different files = mark [P] for parallel
+
 
 
 
@@ -68,18 +74,22 @@
 
 
 
+
    → All entities have models?
    → All endpoints implemented?
 
 9. Return: SUCCESS (tasks ready for execution)
 ```
 
+
 ## Format: `[ID] [P?] Description`
+
 
 - **[P]**: Can run in parallel (different files, no dependencies)
 - Include exact file paths in descriptions
 
 ## Path Conventions
+
 
 - **Single project**: `src/`, `tests/` at repository root
 - **Web app**: `backend/src/`, `frontend/src/`
@@ -88,11 +98,13 @@
 
 ## Phase 3.1: Setup
 
+
 - [ ] T001 Create project structure per implementation plan
 - [ ] T002 Initialize [language] project with [framework] dependencies
 - [ ] T003 [P] Configure linting and formatting tools
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
+
 
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
@@ -102,6 +114,7 @@
 - [ ] T007 [P] Integration test auth flow in tests/integration/test_auth.py
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
+
 
 - [ ] T008 [P] User model in src/models/user.py
 - [ ] T009 [P] UserService CRUD in src/services/user_service.py
@@ -113,12 +126,14 @@
 
 ## Phase 3.4: Integration
 
+
 - [ ] T015 Connect UserService to DB
 - [ ] T016 Auth middleware
 - [ ] T017 Request/response logging
 - [ ] T018 CORS and security headers
 
 ## Phase 3.5: Polish
+
 
 - [ ] T019 [P] Unit tests for validation in tests/unit/test_validation.py
 - [ ] T020 Performance tests (<200ms)
@@ -128,6 +143,7 @@
 
 ## Dependencies
 
+
 - Tests (T004-T007) before implementation (T008-T014)
 - T008 blocks T009, T015
 - T016 blocks T018
@@ -135,9 +151,11 @@
 
 ## Parallel Example
 
+
 ```
 
 # Launch T004-T007 together:
+
 
 
 
@@ -151,7 +169,9 @@ Task: "Integration test registration in tests/integration/test_registration.py"
 Task: "Integration test auth in tests/integration/test_auth.py"
 ```
 
+
 ## Notes
+
 
 - [P] tasks = different files, no dependencies
 - Verify tests fail before implementing
@@ -159,6 +179,7 @@ Task: "Integration test auth in tests/integration/test_auth.py"
 - Avoid: vague tasks, same file conflicts
 
 ## Task Generation Rules
+
 
 *Applied during main() execution*
 
@@ -179,6 +200,7 @@ Task: "Integration test auth in tests/integration/test_auth.py"
    - Dependencies block parallel execution
 
 ## Validation Checklist
+
 
 *GATE: Checked by main() before returning*
 

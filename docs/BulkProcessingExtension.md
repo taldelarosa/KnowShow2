@@ -1,12 +1,16 @@
 # Bulk Processing Extension Documentation
 
+
 ## Overview
+
 
 The Bulk Processing Extension provides enterprise-grade batch processing capabilities for the Episode Identifier system. It enables efficient processing of large numbers of media files with comprehensive error handling, progress reporting, and configuration management.
 
 ## Features
 
+
 ### Core Capabilities
+
 
 - **Batch Processing**: Efficient processing of files in configurable batches
 - **Concurrent Processing**: Multi-threaded execution with configurable concurrency limits
@@ -17,6 +21,7 @@ The Bulk Processing Extension provides enterprise-grade batch processing capabil
 
 ### Performance Characteristics
 
+
 - **Throughput**: 5-15 files/second depending on file size and system resources
 - **Memory Usage**: < 200MB memory growth for 1000+ files
 - **Scalability**: Linear performance scaling with increased concurrency
@@ -24,7 +29,9 @@ The Bulk Processing Extension provides enterprise-grade batch processing capabil
 
 ## Architecture
 
+
 ### Core Components
+
 
 ```
 BulkProcessorService
@@ -34,7 +41,9 @@ BulkProcessorService
 └── ConfigurationService    # Configuration management
 ```
 
+
 ### Data Flow
+
 
 ```
 Input Paths → File Discovery → Batch Creation → Processing → Results
@@ -42,9 +51,12 @@ Input Paths → File Discovery → Batch Creation → Processing → Results
 Configuration → Validation → Progress → Error → Reporting
 ```
 
+
 ## Configuration
 
+
 ### JSON Configuration
+
 
 ```json
 {
@@ -66,7 +78,9 @@ Configuration → Validation → Progress → Error → Reporting
 }
 ```
 
+
 ### Configuration Properties
+
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
@@ -86,6 +100,7 @@ Configuration → Validation → Progress → Error → Reporting
 
 ### Validation Rules
 
+
 - `defaultBatchSize`: 1-10,000, must not exceed `maxBatchSize`
 - `defaultMaxConcurrency`: 1-100, must not exceed `maxConcurrency`
 - `defaultProgressReportingInterval`: 100-60,000 milliseconds
@@ -95,7 +110,9 @@ Configuration → Validation → Progress → Error → Reporting
 
 ## Usage Examples
 
+
 ### Basic Usage
+
 
 ```csharp
 var bulkProcessor = new BulkProcessorService(logger, fileSystem);
@@ -114,7 +131,9 @@ var request = new BulkProcessingRequest
 var result = await bulkProcessor.ProcessAsync(request);
 ```
 
+
 ### With Progress Reporting
+
 
 ```csharp
 var progress = new Progress<BulkProcessingProgress>(p =>
@@ -133,7 +152,9 @@ var request = new BulkProcessingRequest
 var result = await bulkProcessor.ProcessAsync(request);
 ```
 
+
 ### With Configuration Integration
+
 
 ```csharp
 var configService = new ConfigurationService(logger, fileSystem);
@@ -149,7 +170,9 @@ if (config.Configuration?.BulkProcessing != null)
 }
 ```
 
+
 ### Error Handling
+
 
 ```csharp
 var request = new BulkProcessingRequest
@@ -175,9 +198,12 @@ if (result.Status == BulkProcessingStatus.CompletedWithErrors)
 }
 ```
 
+
 ## Models
 
+
 ### BulkProcessingRequest
+
 
 Primary input for bulk processing operations.
 
@@ -191,7 +217,9 @@ public class BulkProcessingRequest
 }
 ```
 
+
 ### BulkProcessingOptions
+
 
 Configuration options for processing behavior.
 
@@ -214,7 +242,9 @@ public class BulkProcessingOptions
 }
 ```
 
+
 ### BulkProcessingResult
+
 
 Result container with processing statistics and error information.
 
@@ -233,7 +263,9 @@ public class BulkProcessingResult
 }
 ```
 
+
 ### BulkProcessingProgress
+
 
 Progress reporting model with detailed status information.
 
@@ -252,14 +284,17 @@ public class BulkProcessingProgress
 }
 ```
 
+
 ## Error Handling
 
+
 ### Error Categories
+
 
 The system categorizes errors for appropriate handling:
 
 - **ValidationError**: Input validation failures
-- **FileSystemError**: File access and I/O issues  
+- **FileSystemError**: File access and I/O issues
 - **ProcessingError**: Core processing failures
 - **TimeoutError**: Operation timeout exceeded
 - **CancellationError**: Operation cancelled by user
@@ -267,6 +302,7 @@ The system categorizes errors for appropriate handling:
 - **UnknownError**: Uncategorized errors
 
 ### Retry Mechanism
+
 
 ```csharp
 // Automatic retry with exponential backoff
@@ -280,7 +316,9 @@ var options = new BulkProcessingOptions
 // Retry delays: 1000ms, 2000ms, 4000ms (exponential backoff)
 ```
 
+
 ### Error Limits
+
 
 ```csharp
 // Stop processing after 10 errors
@@ -291,9 +329,12 @@ var options = new BulkProcessingOptions
 };
 ```
 
+
 ## Performance Tuning
 
+
 ### Batch Size Optimization
+
 
 - **Small batches (10-50)**: Better for mixed file sizes, more frequent progress updates
 - **Medium batches (50-200)**: Balanced performance and memory usage
@@ -301,13 +342,15 @@ var options = new BulkProcessingOptions
 
 ### Concurrency Guidelines
 
+
 - **CPU-bound**: Set to CPU core count
-- **I/O-bound**: Set to 2-4× CPU core count  
+- **I/O-bound**: Set to 2-4× CPU core count
 - **Network storage**: Lower concurrency (2-4) to avoid overwhelming network
 - **SSD storage**: Higher concurrency acceptable
 - **HDD storage**: Lower concurrency (2-6) to minimize seek time
 
 ### Memory Management
+
 
 ```csharp
 var options = new BulkProcessingOptions
@@ -318,9 +361,12 @@ var options = new BulkProcessingOptions
 };
 ```
 
+
 ## Monitoring and Diagnostics
 
+
 ### Progress Reporting
+
 
 ```csharp
 var reporter = new ConsoleProgressReporter();
@@ -334,19 +380,23 @@ var progress = new Progress<BulkProcessingProgress>(reporter.Report);
 // - Current file being processed
 ```
 
+
 ### Logging Integration
+
 
 The system uses structured logging with Microsoft.Extensions.Logging:
 
 ```csharp
 // Log levels used:
 // - Information: Normal progress and completion
-// - Warning: Recoverable errors and retries  
+// - Warning: Recoverable errors and retries
 // - Error: Unrecoverable errors
 // - Debug: Detailed operation traces
 ```
 
+
 ### Statistics Collection
+
 
 ```csharp
 // Available in result.Statistics:
@@ -359,16 +409,20 @@ The system uses structured logging with Microsoft.Extensions.Logging:
 // - RetryStatistics
 ```
 
+
 ## Testing
 
+
 ### Unit Tests
+
 
 - Model validation and property behavior
 - Service method functionality
 - Error handling scenarios
 - Configuration validation
 
-### Integration Tests  
+### Integration Tests
+
 
 - End-to-end processing workflows
 - Configuration loading and validation
@@ -377,6 +431,7 @@ The system uses structured logging with Microsoft.Extensions.Logging:
 
 ### Performance Tests
 
+
 - Throughput measurement across batch sizes
 - Memory usage monitoring
 - Concurrency scaling validation
@@ -384,7 +439,9 @@ The system uses structured logging with Microsoft.Extensions.Logging:
 
 ## Best Practices
 
+
 ### File Organization
+
 
 ```csharp
 // Organize input by size for better batching
@@ -394,7 +451,9 @@ var largeFiles = files.Where(f => GetFileSize(f) >= 1GB);
 // Process separately with different batch sizes
 ```
 
+
 ### Error Handling Strategy
+
 
 ```csharp
 // Use appropriate error handling for scenario
@@ -405,14 +464,16 @@ var interactiveOptions = new BulkProcessingOptions
     MaxErrorsBeforeAbort = 10
 };
 
-var automatedOptions = new BulkProcessingOptions  
+var automatedOptions = new BulkProcessingOptions
 {
     ContinueOnError = false, // Fail fast for automated scenarios
     RetryAttempts = 0
 };
 ```
 
+
 ### Resource Management
+
 
 ```csharp
 // For long-running operations
@@ -424,7 +485,9 @@ var options = new BulkProcessingOptions
 };
 ```
 
+
 ### Configuration Management
+
 
 ```csharp
 // Load configuration once and reuse
@@ -439,9 +502,12 @@ if (reloaded)
 }
 ```
 
+
 ## Troubleshooting
 
+
 ### Common Issues
+
 
 **High Memory Usage**
 
@@ -450,7 +516,7 @@ if (reloaded)
 - Reduce concurrency
 - Check for file handle leaks
 
-**Poor Performance**  
+**Poor Performance**
 
 - Adjust batch size for file size distribution
 - Optimize concurrency for storage type
@@ -472,6 +538,7 @@ if (reloaded)
 - Review validation error messages
 
 ### Diagnostic Information
+
 
 ```csharp
 // Enable detailed logging
@@ -495,9 +562,12 @@ var progress = new Progress<BulkProcessingProgress>(p =>
 });
 ```
 
+
 ## Version History
 
+
 ### v1.0.0 (2025-09-13)
+
 
 - Initial implementation of bulk processing extension
 - Core batch processing with concurrency support
@@ -507,6 +577,7 @@ var progress = new Progress<BulkProcessingProgress>(p =>
 - Performance optimization and memory management
 
 ## Support
+
 
 For questions, issues, or contributions:
 

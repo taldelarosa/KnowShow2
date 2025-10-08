@@ -1,11 +1,13 @@
 # Contract: IBulkProcessor Service
 
+
 **Date**: September 13, 2025
 **Feature**: 009-bulk-processing-extension
 **Contract**: IBulkProcessor
 **Purpose**: Define the primary service contract for bulk processing operations
 
 ## Interface Definition
+
 
 ```csharp
 using System;
@@ -67,9 +69,12 @@ namespace EpisodeIdentifier.Core.Services
 }
 ```
 
+
 ## Behavioral Contracts
 
+
 ### ProcessAsync Method
+
 
 **Preconditions**:
 
@@ -111,6 +116,7 @@ namespace EpisodeIdentifier.Core.Services
 
 ### DiscoverFilesAsync Method
 
+
 **Preconditions**:
 
 - `path` parameter must be non-empty and point to existing file or directory
@@ -140,6 +146,7 @@ namespace EpisodeIdentifier.Core.Services
 
 ### ValidateRequestAsync Method
 
+
 **Preconditions**:
 
 - `request` parameter must not be null
@@ -159,7 +166,9 @@ namespace EpisodeIdentifier.Core.Services
 
 ## Usage Examples
 
+
 ### Basic File Processing
+
 
 ```csharp
 var processor = serviceProvider.GetRequiredService<IBulkProcessor>();
@@ -178,7 +187,9 @@ var result = await processor.ProcessAsync(request);
 Console.WriteLine($"Processed {result.FilesProcessedSuccessfully} files successfully");
 ```
 
+
 ### Directory Processing with Progress
+
 
 ```csharp
 var processor = serviceProvider.GetRequiredService<IBulkProcessor>();
@@ -204,7 +215,9 @@ var request = new BulkProcessingRequest
 var result = await processor.ProcessAsync(request, progress);
 ```
 
+
 ### File Discovery
+
 
 ```csharp
 var processor = serviceProvider.GetRequiredService<IBulkProcessor>();
@@ -218,7 +231,9 @@ var files = await processor.DiscoverFilesAsync("/media/movies", options);
 Console.WriteLine($"Found {files.Count()} video files");
 ```
 
+
 ### Request Validation
+
 
 ```csharp
 var processor = serviceProvider.GetRequiredService<IBulkProcessor>();
@@ -239,21 +254,27 @@ if (!validation.IsValid)
 }
 ```
 
+
 ## Integration Points
 
+
 ### Dependency Injection Registration
+
 
 ```csharp
 services.AddScoped<IBulkProcessor, BulkProcessorService>();
 ```
 
+
 ### Configuration Dependencies
+
 
 - Requires `IConfiguration` for bulk processing settings
 - Uses `episodeidentifier.config.json` for default options
 - Respects existing configuration patterns
 
 ### Service Dependencies
+
 
 - `IEpisodeIdentificationService`: For actual episode identification
 - `IFileDiscoveryService`: For file enumeration and validation
@@ -262,13 +283,16 @@ services.AddScoped<IBulkProcessor, BulkProcessorService>();
 
 ### Database Dependencies
 
+
 - Uses existing database connection for storing results
 - Leverages existing hash storage and caching mechanisms
 - May create additional tables for bulk processing history
 
 ## Testing Strategy
 
+
 ### Unit Tests
+
 
 - Mock all dependencies to test business logic in isolation
 - Test all error conditions and edge cases
@@ -277,12 +301,14 @@ services.AddScoped<IBulkProcessor, BulkProcessorService>();
 
 ### Integration Tests
 
+
 - Test with real file system and database
 - Verify performance characteristics with large datasets
 - Test cross-platform file system behavior
 - Validate memory usage patterns
 
 ### Contract Tests
+
 
 - Verify interface contracts are fulfilled by implementation
 - Test pre/post-conditions and invariants
@@ -291,6 +317,7 @@ services.AddScoped<IBulkProcessor, BulkProcessorService>();
 
 ### Performance Tests
 
+
 - Test with directories containing 10,000+ files
 - Measure memory usage during large operations
 - Verify progress reporting doesn't impact performance
@@ -298,7 +325,9 @@ services.AddScoped<IBulkProcessor, BulkProcessorService>();
 
 ## Error Scenarios
 
+
 ### File System Errors
+
 
 - **Access Denied**: Log error, skip file, continue processing
 - **File Not Found**: Skip file if discovered but deleted during processing
@@ -307,11 +336,13 @@ services.AddScoped<IBulkProcessor, BulkProcessorService>();
 
 ### Configuration Errors
 
+
 - **Invalid Options**: Fail fast with descriptive error message
 - **Missing Dependencies**: Fail during service construction, not runtime
 - **Resource Limits**: Graceful degradation when system limits reached
 
 ### System Errors
+
 
 - **Out of Memory**: Reduce batch sizes, force garbage collection, continue if possible
 - **Disk Full**: Fail gracefully with clear error message
@@ -319,7 +350,9 @@ services.AddScoped<IBulkProcessor, BulkProcessorService>();
 
 ## Backward Compatibility
 
+
 ### Existing Service Integration
+
 
 - Does not modify existing `IEpisodeIdentificationService` interface
 - Extends existing functionality without breaking changes
@@ -327,6 +360,7 @@ services.AddScoped<IBulkProcessor, BulkProcessorService>();
 - Preserves existing configuration file structure
 
 ### CLI Compatibility
+
 
 - Adds new commands without modifying existing ones
 - Maintains existing command behavior and output formats

@@ -1,5 +1,6 @@
 # Configuration Guide
 
+
 <<<<<<< HEAD
 
 =======
@@ -7,6 +8,7 @@
 EpisodeIdentifier.Core supports JSON-based configuration for maximum flexibility. The configuration file `episodeidentifier.config.json` is automatically created with default values if not present.
 
 ## Configuration File Location
+
 
 <<<<<<< HEAD
 
@@ -18,13 +20,16 @@ The configuration file should be placed in the same directory as the executable:
 
 ## Configuration Options
 
+
 <<<<<<< HEAD
 
 ### Match Confidence Thresholds
 
+
 =======
 
 ### Match Confidence Thresholds
+
 
 >>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 
@@ -34,6 +39,7 @@ The configuration file should be placed in the same directory as the executable:
   "renameConfidenceThreshold": 0.85
 }
 ```
+
 
 <<<<<<< HEAD
 
@@ -52,6 +58,7 @@ The configuration file should be placed in the same directory as the executable:
 
 ### Filename Parsing Patterns
 
+
 <<<<<<< HEAD
 
 =======
@@ -64,12 +71,13 @@ The configuration file should be placed in the same directory as the executable:
 <<<<<<< HEAD
     "secondaryPattern": "^(.+?)\\s+(\\d+)x(\\d+)(?:[\\s\\.\\-]+(.+?))?$",
 =======
-    "secondaryPattern": "^(.+?)\\s+(\\d+)x(\\d+)(?:[\\s\\.\\-]+(.+?))?$", 
+    "secondaryPattern": "^(.+?)\\s+(\\d+)x(\\d+)(?:[\\s\\.\\-]+(.+?))?$",
 >>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
     "tertiaryPattern": "^(.+?)\\.S(\\d+)\\.E(\\d+)(?:\\.(.+?))?$"
   }
 }
 ```
+
 
 <<<<<<< HEAD
 
@@ -91,6 +99,7 @@ These regex patterns control how series information is extracted from subtitle f
 
 ### Filename Template
 
+
 <<<<<<< HEAD
 
 =======
@@ -101,6 +110,7 @@ These regex patterns control how series information is extracted from subtitle f
   "filenameTemplate": "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}"
 }
 ```
+
 
 <<<<<<< HEAD
 
@@ -118,13 +128,16 @@ Controls the format of renamed files. Available placeholders:
 
 ## Example Configurations
 
+
 <<<<<<< HEAD
 
 ### Conservative (High Accuracy)
 
+
 =======
 
 ### Conservative (High Accuracy)
+
 
 >>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 
@@ -135,13 +148,16 @@ Controls the format of renamed files. Available placeholders:
 }
 ```
 
+
 <<<<<<< HEAD
 
 ### Permissive (More Matches)
 
+
 =======
 
 ### Permissive (More Matches)
+
 
 >>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 
@@ -152,13 +168,16 @@ Controls the format of renamed files. Available placeholders:
 }
 ```
 
+
 <<<<<<< HEAD
 
 ### Custom Patterns for Different Naming Conventions
 
+
 =======
 
 ### Custom Patterns for Different Naming Conventions
+
 
 >>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 
@@ -172,13 +191,16 @@ Controls the format of renamed files. Available placeholders:
 }
 ```
 
+
 <<<<<<< HEAD
 
 ## Configuration Validation
 
+
 =======
 
 ## Configuration Validation
+
 
 >>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
 The application will log warnings if:
@@ -190,6 +212,7 @@ The application will log warnings if:
 In case of errors, the application falls back to default values and continues operation.
 
 ## Runtime Configuration Loading
+
 
 <<<<<<< HEAD
 

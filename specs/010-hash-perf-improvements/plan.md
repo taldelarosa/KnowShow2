@@ -1,14 +1,17 @@
 # Implementation Plan: Hash Performance Improvements with Series/Season Filtering
 
+
 **Branch**: `010-hash-perf-improvements` | **Date**: October 7, 2025 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/mnt/c/Users/Ragma/KnowShow2-charlie/specs/010-hash-perf-improvements/spec.md`
 
 ## Execution Flow (/plan command scope)
 
+
 ```
 
 1. Load feature spec from Input path
    → If not found: ERROR "No feature spec at {path}"
+
 
 
 
@@ -26,10 +29,12 @@
 
 
 
+
    → Set Structure Decision based on project type
 
 3. Evaluate Constitution Check section below
    → If violations exist: Document in Complexity Tracking
+
 
 
 
@@ -50,9 +55,11 @@
 
 
 
+
 5. Execute Phase 1 → contracts, data-model.md, quickstart.md, agent-specific template file (e.g., `CLAUDE.md` for Claude Code, `.github/copilot-instructions.md` for GitHub Copilot, or `GEMINI.md` for Gemini CLI).
 6. Re-evaluate Constitution Check section
    → If new violations: Refactor design, return to Phase 1
+
 
 
 
@@ -66,6 +73,7 @@
 8. STOP - Ready for /tasks command
 ```
 
+
 **IMPORTANT**: The /plan command STOPS at step 7. Phases 2-4 are executed by other commands:
 
 - Phase 2: /tasks command creates tasks.md
@@ -73,9 +81,11 @@
 
 ## Summary
 
+
 This feature adds optional series name and season number parameters to hash-based episode identification searches, enabling dramatic performance improvements when users have context about the content they're identifying. By filtering database queries to specific series/seasons instead of searching the entire database, search operations can complete significantly faster. The system maintains full backwards compatibility for users without series/season knowledge.
 
 ## Technical Context
+
 
 **Language/Version**: C# / .NET 8.0
 **Primary Dependencies**: Microsoft.Data.Sqlite 8.0.0, ssdeep.NET 1.0.0, System.CommandLine 2.0.0-beta4.22272.1
@@ -88,6 +98,7 @@ This feature adds optional series name and season number parameters to hash-base
 **Scale/Scope**: Current database has 246 episodes (Bones complete series); system designed for thousands of episodes across multiple series
 
 ## Constitution Check
+
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
@@ -131,7 +142,9 @@ This feature adds optional series name and season number parameters to hash-base
 
 ## Project Structure
 
+
 ### Documentation (this feature)
+
 
 ```
 specs/[###-feature]/
@@ -143,11 +156,14 @@ specs/[###-feature]/
 └── tasks.md             # Phase 2 output (/tasks command - NOT created by /plan)
 ```
 
+
 ### Source Code (repository root)
+
 
 ```
 
 # Option 1: Single project (DEFAULT)
+
 
 
 
@@ -167,6 +183,7 @@ tests/
 └── unit/
 
 # Option 2: Web application (when "frontend" + "backend" detected)
+
 
 
 
@@ -196,6 +213,7 @@ frontend/
 
 
 
+
 api/
 └── [same as backend above]
 
@@ -203,13 +221,16 @@ ios/ or android/
 └── [platform-specific structure]
 ```
 
+
 **Structure Decision**: Option 1 (Single project - EpisodeIdentifier.Core)
 
 ## Phase 0: Outline & Research ✅ COMPLETE
 
+
 **Output**: `research.md` with all technical decisions documented
 
 Key research findings:
+
 - Database query filtering using WHERE clause with optional parameters
 - Leverage existing idx_series_season index for performance
 - Optional nullable parameters for backwards compatibility
@@ -218,13 +239,16 @@ Key research findings:
 
 ## Phase 1: Design & Contracts ✅ COMPLETE
 
+
 **Outputs**:
+
 - `data-model.md`: Search filter parameters, method signatures, database query construction
 - `contracts/FindMatches-API.md`: Service method contract with filtering parameters
 - `contracts/CLI-identify-command.md`: CLI command contract with --series and --season options
 - `quickstart.md`: Feature validation steps and testing guide
 
 Key design artifacts:
+
 - Method signature extension with optional seriesFilter and seasonFilter parameters
 - Dynamic SQL WHERE clause building for conditional filtering
 - CLI option definitions for System.CommandLine framework
@@ -233,11 +257,13 @@ Key design artifacts:
 
 ## Phase 2: Task Planning Approach
 
+
 *This section describes what the /tasks command will do - DO NOT execute during /plan*
 
 **Task Generation Strategy**:
 
 The /tasks command will:
+
 1. Load `/templates/tasks-template.md` as base structure
 2. Generate tasks from Phase 1 design artifacts:
    - Contract tests for FuzzyHashService.FindMatches method extension
@@ -283,6 +309,7 @@ The /tasks command will:
 **Estimated Task Count**: 16-20 tasks total
 
 **Test-First Commitment**:
+
 - ALL contract tests written before ANY implementation
 - Git commit after contract tests (verifying RED phase)
 - Implementation only proceeds after test failures verified
@@ -292,6 +319,7 @@ The /tasks command will:
 
 ## Phase 3+: Future Implementation
 
+
 *These phases are beyond the scope of the /plan command*
 
 **Phase 3**: Task execution (/tasks command creates tasks.md)
@@ -300,9 +328,11 @@ The /tasks command will:
 
 ## Complexity Tracking
 
+
 *Fill ONLY if Constitution Check has violations that must be justified*
 
 **No violations found** - All constitutional requirements satisfied:
+
 - Single project architecture maintained
 - Library-first approach with CLI interface
 - TDD workflow enforced
@@ -310,6 +340,7 @@ The /tasks command will:
 - Backwards compatible extension
 
 ## Progress Tracking
+
 
 *This checklist is updated during execution flow*
 

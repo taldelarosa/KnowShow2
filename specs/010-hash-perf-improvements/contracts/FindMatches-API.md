@@ -1,11 +1,13 @@
 # API Contract: FuzzyHashService.FindMatches with Filtering
 
+
 **Method**: `FindMatches`
 **Service**: `FuzzyHashService`
 **Purpose**: Search for episode matches with optional series/season filtering
 **Version**: 0.10.0
 
 ## Method Signature
+
 
 ```csharp
 public async Task<List<(LabelledSubtitle Subtitle, double Confidence)>> FindMatches(
@@ -15,9 +17,12 @@ public async Task<List<(LabelledSubtitle Subtitle, double Confidence)>> FindMatc
     int? seasonFilter = null)
 ```
 
+
 ## Parameters
 
+
 ### Input Parameters
+
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -28,12 +33,14 @@ public async Task<List<(LabelledSubtitle Subtitle, double Confidence)>> FindMatc
 
 ### Parameter Constraints
 
+
 - `subtitleText`: Cannot be null or empty
 - `threshold`: Must be between 0.0 and 1.0
 - `seriesFilter`: Case-insensitive, whitespace-trimmed, null/empty treated as no filter
 - `seasonFilter`: Must be positive integer, cannot be provided without seriesFilter
 
 ## Return Value
+
 
 Returns `Task<List<(LabelledSubtitle Subtitle, double Confidence)>>`
 
@@ -43,6 +50,7 @@ Returns `Task<List<(LabelledSubtitle Subtitle, double Confidence)>>`
 
 ## Error Conditions
 
+
 | Condition | Exception | Message |
 |-----------|-----------|---------|
 | Season filter without series filter | ArgumentException | "Season filter requires series filter to be specified" |
@@ -50,6 +58,7 @@ Returns `Task<List<(LabelledSubtitle Subtitle, double Confidence)>>`
 | Invalid threshold | ArgumentException | (existing validation) |
 
 ## Backwards Compatibility
+
 
 All new parameters are optional with default values. Existing call patterns remain valid:
 
@@ -67,7 +76,9 @@ var matches = await service.FindMatches(subtitleText, 0.8, "Bones");
 var matches = await service.FindMatches(subtitleText, 0.8, "Bones", 2);
 ```
 
+
 ## Performance Characteristics
+
 
 | Scenario | Expected Behavior |
 |----------|-------------------|
@@ -79,7 +90,9 @@ Expected performance improvement: 10-90% faster with filtering depending on data
 
 ## Database Query Contract
 
+
 ### SQL Query Pattern (No Filters)
+
 
 ```sql
 SELECT Series, Season, Episode, OriginalText, OriginalHash,
@@ -87,7 +100,9 @@ SELECT Series, Season, Episode, OriginalText, OriginalHash,
 FROM SubtitleHashes;
 ```
 
+
 ### SQL Query Pattern (Series Filter)
+
 
 ```sql
 SELECT Series, Season, Episode, OriginalText, OriginalHash,
@@ -96,7 +111,9 @@ FROM SubtitleHashes
 WHERE LOWER(Series) = LOWER(@series);
 ```
 
+
 ### SQL Query Pattern (Series + Season Filter)
+
 
 ```sql
 SELECT Series, Season, Episode, OriginalText, OriginalHash,
@@ -106,7 +123,9 @@ WHERE LOWER(Series) = LOWER(@series)
   AND Season = @season;
 ```
 
+
 ## Test Contract Requirements
+
 
 Contract tests must verify:
 
@@ -119,7 +138,9 @@ Contract tests must verify:
 
 ## Example Usage
 
+
 ### Scenario 1: No Filtering (Existing Behavior)
+
 
 ```csharp
 var service = new FuzzyHashService(dbPath, logger, normalizationService);
@@ -127,7 +148,9 @@ var matches = await service.FindMatches(videoSubtitleText, threshold: 0.8);
 // Returns: All matching episodes from entire database
 ```
 
+
 ### Scenario 2: Series Filtering
+
 
 ```csharp
 var service = new FuzzyHashService(dbPath, logger, normalizationService);
@@ -138,7 +161,9 @@ var matches = await service.FindMatches(
 // Returns: Only episodes from "Bones" series
 ```
 
+
 ### Scenario 3: Series + Season Filtering
+
 
 ```csharp
 var service = new FuzzyHashService(dbPath, logger, normalizationService);
@@ -150,7 +175,9 @@ var matches = await service.FindMatches(
 // Returns: Only episodes from "Bones" Season 2
 ```
 
+
 ### Scenario 4: Error Case - Season Without Series
+
 
 ```csharp
 var service = new FuzzyHashService(dbPath, logger, normalizationService);
@@ -162,7 +189,9 @@ await service.FindMatches(
     seasonFilter: 2);  // ERROR: No series specified
 ```
 
+
 ## Logging Contract
+
 
 Method must log performance metrics:
 
@@ -170,11 +199,13 @@ Method must log performance metrics:
 INFO: Search completed: {ElapsedMs}ms, scanned {Scanned} records, {Comparisons} comparisons, found {Matches} matches
 ```
 
+
 When filters applied:
 
 ```
 INFO: Search filter applied: Series='{Series}', Season={Season}
 ```
+
 
 ---
 
