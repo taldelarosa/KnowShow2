@@ -418,11 +418,12 @@ public class FuzzyHashService : IDisposable
             command.Parameters.AddWithValue("@series", seriesFilter);
         }
         
-        // Add season filter if provided (season stored as zero-padded string)
+        // Add season filter if provided (matches both padded "01" and non-padded "1" formats)
         if (seasonFilter.HasValue)
         {
-            whereClauses.Add("Season = @season");
-            command.Parameters.AddWithValue("@season", seasonFilter.Value.ToString("D2"));
+            whereClauses.Add("(Season = @seasonPadded OR Season = @seasonUnpadded)");
+            command.Parameters.AddWithValue("@seasonPadded", seasonFilter.Value.ToString("D2"));
+            command.Parameters.AddWithValue("@seasonUnpadded", seasonFilter.Value.ToString());
         }
         
         // Combine base query with WHERE clause if filters present
