@@ -349,8 +349,29 @@ public class FuzzyHashService : IDisposable
         }
     }
 
-    public async Task<List<(LabelledSubtitle Subtitle, double Confidence)>> FindMatches(string subtitleText, double threshold = 0.8)
+    /// <summary>
+    /// Finds matching episodes for the given subtitle text.
+    /// </summary>
+    /// <param name="subtitleText">The subtitle text to search for</param>
+    /// <param name="threshold">Minimum confidence threshold (0.0-1.0)</param>
+    /// <param name="seriesFilter">Optional series name to filter results (case-insensitive)</param>
+    /// <param name="seasonFilter">Optional season number to filter results (requires seriesFilter)</param>
+    /// <returns>List of matching subtitles with confidence scores</returns>
+    /// <exception cref="ArgumentException">Thrown when seasonFilter is provided without seriesFilter</exception>
+    public async Task<List<(LabelledSubtitle Subtitle, double Confidence)>> FindMatches(
+        string subtitleText, 
+        double threshold = 0.8,
+        string? seriesFilter = null,
+        int? seasonFilter = null)
     {
+        // Validate parameter combination: season requires series
+        if (seasonFilter.HasValue && string.IsNullOrWhiteSpace(seriesFilter))
+        {
+            throw new ArgumentException(
+                "Season filter requires series filter to be specified. Use --series <name> when providing --season <number>.",
+                nameof(seasonFilter));
+        }
+
         var results = new List<(LabelledSubtitle, double)>();
 
         // Create normalized versions and hashes of the input text
@@ -363,6 +384,14 @@ public class FuzzyHashService : IDisposable
             CleanHash = GenerateFuzzyHash(inputNormalized.NoHtmlAndTimecodes)
         };
 
+        // Log search filter parameters
+        if (!string.IsNullOrWhiteSpace(seriesFilter) || seasonFilter.HasValue)
+        {
+            _logger.LogInformation("Search filter applied: Series='{Series}', Season={Season}",
+                seriesFilter ?? "null",
+                seasonFilter?.ToString() ?? "null");
+        }
+
         // DEBUG: Log the input hashes for debugging
         _logger.LogInformation("DEBUG: Input video subtitle hashes:");
         _logger.LogInformation("DEBUG:   CleanHash = {CleanHash}", inputHashes.CleanHash);
@@ -374,13 +403,46 @@ public class FuzzyHashService : IDisposable
         await connection.OpenAsync();
 
         using var command = connection.CreateCommand();
-        command.CommandText = @"
+        
+        // Build SQL query with optional WHERE clause for filtering
+        var baseQuery = @"
             SELECT Series, Season, Episode, OriginalText, OriginalHash, NoTimecodesHash, NoHtmlHash, CleanHash, EpisodeName
-            FROM SubtitleHashes;";
+            FROM SubtitleHashes";
+        
+        var whereClauses = new List<string>();
+        
+        // Add series filter if provided (case-insensitive)
+        if (!string.IsNullOrWhiteSpace(seriesFilter))
+        {
+            whereClauses.Add("LOWER(Series) = LOWER(@series)");
+            command.Parameters.AddWithValue("@series", seriesFilter);
+        }
+        
+        // Add season filter if provided (season stored as zero-padded string)
+        if (seasonFilter.HasValue)
+        {
+            whereClauses.Add("Season = @season");
+            command.Parameters.AddWithValue("@season", seasonFilter.Value.ToString("D2"));
+        }
+        
+        // Combine base query with WHERE clause if filters present
+        if (whereClauses.Any())
+        // Combine base query with WHERE clause if filters present
+        if (whereClauses.Any())
+        {
+            command.CommandText = baseQuery + " WHERE " + string.Join(" AND ", whereClauses) + ";";
+        }
+        else
+        {
+            command.CommandText = baseQuery + ";";
+        }
 
         using var reader = await command.ExecuteReaderAsync();
+        
+        var recordsScanned = 0;
         while (await reader.ReadAsync())
         {
+            recordsScanned++;
             var subtitle = new LabelledSubtitle
             {
                 Series = reader.GetString(0),
@@ -464,8 +526,8 @@ public class FuzzyHashService : IDisposable
         }
 
         var sortedResults = results.OrderByDescending(x => x.Item2).ToList();
-        _logger.LogInformation("Found {Count} matches above threshold {Threshold:P2} using fast hash comparison",
-            sortedResults.Count, threshold);
+        _logger.LogInformation("Search completed: scanned {Scanned} records, found {Matches} matches above threshold {Threshold:P2}",
+            recordsScanned, sortedResults.Count, threshold);
 
         return sortedResults;
     }
