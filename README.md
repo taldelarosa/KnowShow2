@@ -1,14 +1,17 @@
 # Episode Identifier - PGS Subtitle Extraction
 
+
 This application identifies Season and Episode numbers from AV1 encoded video files by extracting PGS (Presentation Graphics Stream) subtitles and comparing them to known labeled subtitles.
 
 ## Quick Setup (Fresh Linux System)
+
 
 **⚡ One-Command Setup:**
 
 ```bash
 
 # Check what's needed
+
 
 
 
@@ -26,9 +29,11 @@ This application identifies Season and Episode numbers from AV1 encoded video fi
 
 
 
+
 ./scripts/setup-prerequisites.sh --install
 
 # Build and test
+
 
 
 
@@ -40,6 +45,7 @@ cd src/EpisodeIdentifier.Core && dotnet build
 dotnet test
 ```
 
+
 **Manual verification:** The setup script will install all required dependencies including:
 
 - .NET 8.0 SDK
@@ -49,6 +55,7 @@ dotnet test
 - Enhanced OCR training data
 
 ## Git Workflow
+
 
 **⚠️ Important**: This project uses a **feature branch workflow** with branch protection:
 
@@ -62,9 +69,11 @@ dotnet test
 
 
 
+
 git checkout -b 005-new-feature    # Create feature branch
 
 # Make changes...
+
 
 
 
@@ -83,7 +92,9 @@ git push origin 005-new-feature    # Push feature branch
 
 
 
+
 # Get code review → Merge via PR
+
 
 
 
@@ -100,8 +111,10 @@ git push origin 005-new-feature    # Push feature branch
 
 
 
+
 git push origin main  # This will fail!
 ```
+
 
 **Required for all changes:**
 
@@ -112,18 +125,26 @@ git push origin main  # This will fail!
 
 ## Development & CI/CD
 
+
 ### Code Quality Standards
+
 
 **Automated Formatting & Linting:**
 
 ```bash
+
 # C# code formatting
+
 dotnet format EpisodeIdentifier.sln
 
 # Markdown documentation linting (manual check)
+
 ./scripts/lint-markdown.sh --fix
+
 # or directly: markdownlint --config .markdownlint.json '**/*.md' --fix
+
 ```
+
 
 **Configuration Files:**
 
@@ -143,6 +164,7 @@ dotnet format EpisodeIdentifier.sln
 - Solution-wide formatting enforced via `dotnet format`
 
 ### GitHub Actions Workflow
+
 
 **Build Process:**
 
@@ -166,7 +188,9 @@ dotnet format EpisodeIdentifier.sln
 
 ## Features
 
+
 ### Core Functionality
+
 
 - **AV1 Video Support**: Validates that input files are AV1 encoded
 - **PGS Subtitle Extraction**: Extracts PGS subtitles from video containers
@@ -175,6 +199,7 @@ dotnet format EpisodeIdentifier.sln
 - **JSON Output**: All responses formatted as JSON for automation
 
 ### New File Renaming Features (FR-007 Implementation)
+
 
 - **Filename Suggestions**: Automatically generates standardized filenames for identified episodes
 - **Automatic Renaming**: Optional `--rename` flag to automatically rename files
@@ -185,6 +210,7 @@ dotnet format EpisodeIdentifier.sln
 
 ### New PGS Extraction Features (FR-002 Implementation)
 
+
 - **Multi-Track Support**: Automatically detects all PGS subtitle tracks in video
 - **Language Selection**: Supports preferred language selection (e.g., `--language eng`)
 - **Smart Track Selection**: Defaults to English, falls back to first available track
@@ -194,13 +220,16 @@ dotnet format EpisodeIdentifier.sln
 
 ## Dependencies
 
+
 **🎯 Automated Setup:** Use `./scripts/setup-prerequisites.sh --install` to install everything automatically.
 
 ### Required External Tools
 
+
 ```bash
 
 # Video processing
+
 
 
 
@@ -218,9 +247,11 @@ sudo apt-get install ffmpeg mkvtoolnix-cli
 
 
 
+
 sudo apt-get install tesseract-ocr tesseract-ocr-eng
 
 # Additional language packs (optional)
+
 
 
 
@@ -238,10 +269,13 @@ sudo apt-get install tesseract-ocr-spa tesseract-ocr-fra tesseract-ocr-deu
 
 
 
+
 pip install pgsrip
 ```
 
+
 ### .NET Dependencies (auto-restored)
+
 
 - Microsoft.Data.Sqlite
 - Microsoft.Extensions.Logging
@@ -250,48 +284,74 @@ pip install pgsrip
 
 ## Usage
 
+
 ### Basic Identification
+
+
+## Basic Identification
 
 ```bash
 dotnet run -- --input video.mkv --hash-db hashes.sqlite
 ```
 
+### With Series/Season Filtering (Faster Search)
+
+```bash
+# Filter by series only (~22% faster for multi-series databases)
+dotnet run -- --input video.mkv --hash-db hashes.sqlite --series "Bones"
+
+# Filter by series AND season (~93% faster for large databases)
+dotnet run -- --input video.mkv --hash-db hashes.sqlite --series "Bones" --season 1
+```
+
 ### With Language Preference
+
+
+### With Language Preference
+
 
 ```bash
 dotnet run -- --input video.mkv --hash-db hashes.sqlite --language eng
 ```
 
+
 ### With Automatic File Renaming
+
 
 ```bash
 dotnet run -- --input video.mkv --hash-db hashes.sqlite --rename
 ```
 
+
 ### Store Known Subtitle
+
 
 ```bash
 dotnet run -- --input subtitle.txt --hash-db hashes.sqlite --store --series "Show Name" --season "01" --episode "02"
 ```
 
+
 ## Command Line Options
+
 
 | Option | Description | Required | Default |
 |--------|-------------|----------|---------|
 | `--input` | Path to AV1 video file or subtitle file | ✅ | - |
 | `--hash-db` | Path to SQLite hash database | ✅ | - |
+| `--series` | Filter by series name (case-insensitive) | ❌ | - |
+| `--season` | Filter by season number (requires `--series`) | ❌ | - |
 | `--store` | Store mode instead of identify | ❌ | false |
-| `--series` | Series name (store mode only) | ✅** | - |
-| `--season` | Season number (store mode only) | ✅** | - |
 | `--episode` | Episode number (store mode only) | ✅** | - |
 | `--episode-name` | Episode title (store mode only) | ❌ | - |
 | `--language` | Preferred subtitle language | ❌ | eng |
 | `--rename` | Automatically rename file to suggested filename | ❌ | false |
 
-*Required for identification mode
+*Note: When using `--series` and `--season` for filtering, the search will only scan matching episodes, improving performance significantly (up to 93% faster for targeted searches).*
+
 **Required when using `--store`
 
 ## Supported Languages
+
 
 The application supports multiple subtitle languages through Tesseract OCR:
 
@@ -310,9 +370,12 @@ The application supports multiple subtitle languages through Tesseract OCR:
 
 ## Output Examples
 
+
 ## Output Examples
 
+
 ### Successful Identification with Filename Suggestion
+
 
 ```json
 {
@@ -326,7 +389,9 @@ The application supports multiple subtitle languages through Tesseract OCR:
 }
 ```
 
+
 ### Successful Identification with Automatic Rename
+
 
 ```json
 {
@@ -342,7 +407,9 @@ The application supports multiple subtitle languages through Tesseract OCR:
 }
 ```
 
+
 ### Low Confidence Identification (No Filename Suggestion)
+
 
 ```json
 {
@@ -355,7 +422,9 @@ The application supports multiple subtitle languages through Tesseract OCR:
 }
 ```
 
+
 ### File Rename Error
+
 
 ```json
 {
@@ -373,7 +442,9 @@ The application supports multiple subtitle languages through Tesseract OCR:
 }
 ```
 
+
 ### AV1 Validation Error
+
 
 ```json
 {
@@ -384,7 +455,9 @@ The application supports multiple subtitle languages through Tesseract OCR:
 }
 ```
 
+
 ### Missing OCR Dependencies
+
 
 ```json
 {
@@ -395,7 +468,9 @@ The application supports multiple subtitle languages through Tesseract OCR:
 }
 ```
 
+
 ### No Subtitles Found
+
 
 ```json
 {
@@ -406,7 +481,9 @@ The application supports multiple subtitle languages through Tesseract OCR:
 }
 ```
 
+
 ### OCR Processing Failed
+
 
 ```json
 {
@@ -417,9 +494,12 @@ The application supports multiple subtitle languages through Tesseract OCR:
 }
 ```
 
+
 ## Technical Implementation
 
+
 ### PGS Extraction Process
+
 
 1. **Format Validation**: Verify input is AV1 encoded using ffprobe
 2. **Track Discovery**: Identify all PGS subtitle tracks with metadata
@@ -431,6 +511,7 @@ The application supports multiple subtitle languages through Tesseract OCR:
 
 ### Error Handling
 
+
 - **Dependency Checks**: Validates external tools before processing
 - **File Validation**: Ensures input files exist and are accessible
 - **Format Verification**: Confirms AV1 encoding before processing
@@ -439,6 +520,7 @@ The application supports multiple subtitle languages through Tesseract OCR:
 
 ### Performance Considerations
 
+
 - **Temporary Files**: Uses unique temporary filenames to avoid conflicts
 - **Memory Management**: Streams large files instead of loading into memory
 - **Parallel Processing**: Supports concurrent OCR processing of multiple images
@@ -446,27 +528,36 @@ The application supports multiple subtitle languages through Tesseract OCR:
 
 ## Testing
 
+
 ### Unit Tests
+
 
 ```bash
 dotnet test tests/unit/
 ```
 
+
 ### Integration Tests
+
 
 ```bash
 dotnet test tests/integration/
 ```
 
+
 ### Contract Tests
+
 
 ```bash
 dotnet test tests/contract/
 ```
 
+
 ## Architecture
 
+
 ### New Service Classes
+
 
 - `VideoFormatValidator`: AV1 validation and subtitle track discovery
 - `PgsToTextConverter`: PGS to text conversion via OCR
@@ -474,19 +565,23 @@ dotnet test tests/contract/
 
 ### Models
 
+
 - `SubtitleTrackInfo`: Represents discovered subtitle tracks
 - `IdentificationResult`: Enhanced with new error types
 - `IdentificationError`: Extended error codes for new scenarios
 
 ## Troubleshooting
 
+
 ### Setup Issues
+
 
 **"Command not found" or missing dependencies**
 
 ```bash
 
 # Run the comprehensive setup checker
+
 
 
 
@@ -504,8 +599,10 @@ dotnet test tests/contract/
 
 
 
+
 ./scripts/setup-prerequisites.sh --install
 ```
+
 
 **"Permission denied" when running setup**
 
@@ -519,10 +616,13 @@ dotnet test tests/contract/
 
 
 
+
 chmod +x scripts/setup-prerequisites.sh
 ```
 
+
 ### Common Issues
+
 
 **"Tesseract OCR is required but not available"**
 
@@ -559,9 +659,11 @@ chmod +x scripts/setup-prerequisites.sh
 
 ### Debug Logging
 
+
 Set environment variable for detailed logging:
 
 ```bash
 export DOTNET_LOGGING_CONSOLE_DISABLECOLORS=true
 dotnet run -- --input video.mkv --hash-db hashes.db
 ```
+
