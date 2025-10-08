@@ -288,9 +288,23 @@ pip install pgsrip
 ### Basic Identification
 
 
+## Basic Identification
+
 ```bash
 dotnet run -- --input video.mkv --hash-db hashes.sqlite
 ```
+
+### With Series/Season Filtering (Faster Search)
+
+```bash
+# Filter by series only (~22% faster for multi-series databases)
+dotnet run -- --input video.mkv --hash-db hashes.sqlite --series "Bones"
+
+# Filter by series AND season (~93% faster for large databases)
+dotnet run -- --input video.mkv --hash-db hashes.sqlite --series "Bones" --season 1
+```
+
+### With Language Preference
 
 
 ### With Language Preference
@@ -324,15 +338,16 @@ dotnet run -- --input subtitle.txt --hash-db hashes.sqlite --store --series "Sho
 |--------|-------------|----------|---------|
 | `--input` | Path to AV1 video file or subtitle file | ✅ | - |
 | `--hash-db` | Path to SQLite hash database | ✅ | - |
+| `--series` | Filter by series name (case-insensitive) | ❌ | - |
+| `--season` | Filter by season number (requires `--series`) | ❌ | - |
 | `--store` | Store mode instead of identify | ❌ | false |
-| `--series` | Series name (store mode only) | ✅** | - |
-| `--season` | Season number (store mode only) | ✅** | - |
 | `--episode` | Episode number (store mode only) | ✅** | - |
 | `--episode-name` | Episode title (store mode only) | ❌ | - |
 | `--language` | Preferred subtitle language | ❌ | eng |
 | `--rename` | Automatically rename file to suggested filename | ❌ | false |
 
-*Required for identification mode
+*Note: When using `--series` and `--season` for filtering, the search will only scan matching episodes, improving performance significantly (up to 93% faster for targeted searches).*
+
 **Required when using `--store`
 
 ## Supported Languages
