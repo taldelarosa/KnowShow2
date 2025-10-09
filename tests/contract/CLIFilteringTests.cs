@@ -34,11 +34,10 @@ public class CLIFilteringTests : IDisposable
     {
         // Find the CLI executable based on the current build configuration
         var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        var projectRoot = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
-        var cliProjectPath = Path.Combine(projectRoot, "src", "EpisodeIdentifier.Core");
         
-        // Look for the built executable
-        var exePath = Path.Combine(cliProjectPath, "bin", "Debug", "net8.0", "EpisodeIdentifier.Core.dll");
+        // Navigate from tests/contract/bin/Debug/net8.0 to src/EpisodeIdentifier.Core/bin/Debug/net8.0
+        var projectRoot = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "..", ".."));
+        var exePath = Path.Combine(projectRoot, "src", "EpisodeIdentifier.Core", "bin", "Debug", "net8.0", "EpisodeIdentifier.Core.dll");
         
         if (!File.Exists(exePath))
         {
