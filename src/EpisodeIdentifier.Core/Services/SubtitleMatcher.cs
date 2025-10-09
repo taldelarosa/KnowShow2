@@ -18,16 +18,17 @@ public class SubtitleMatcher : ISubtitleMatcher
         _configService = configService;
     }
 
-    public async Task<IdentificationResult> IdentifyEpisode(string subtitleText, double? minConfidence = null)
+    public async Task<IdentificationResult> IdentifyEpisode(string subtitleText, double? minConfidence = null, string? seriesFilter = null, int? seasonFilter = null)
     {
         // Use provided confidence or fall back to configuration
         var threshold = minConfidence ?? _configService.Config.MatchConfidenceThreshold;
 
-        _logger.LogInformation("Attempting to identify episode using subtitle text (threshold: {Threshold:P1})", threshold);
+        _logger.LogInformation("Attempting to identify episode using subtitle text (threshold: {Threshold:P1}, series: {Series}, season: {Season})",
+            threshold, seriesFilter ?? "all", seasonFilter?.ToString() ?? "all");
 
         try
         {
-            var matches = await _hashService.FindMatches(subtitleText, threshold);
+            var matches = await _hashService.FindMatches(subtitleText, threshold, seriesFilter, seasonFilter);
 
             if (!matches.Any())
             {
