@@ -23,7 +23,7 @@ public class SubtitleMatcher : ISubtitleMatcher
         // Use provided confidence or fall back to configuration
         var threshold = minConfidence ?? _configService.Config.MatchConfidenceThreshold;
 
-        _logger.LogInformation("Attempting to identify episode using subtitle text (threshold: {Threshold:P1}, series: {Series}, season: {Season})", 
+        _logger.LogInformation("Attempting to identify episode using subtitle text (threshold: {Threshold:P1}, series: {Series}, season: {Season})",
             threshold, seriesFilter ?? "all", seasonFilter?.ToString() ?? "all");
 
         try

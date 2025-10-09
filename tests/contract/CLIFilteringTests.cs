@@ -20,7 +20,7 @@ public class CLIFilteringTests : IDisposable
     {
         _testDbPath = TestDatabaseConfig.GetTempDatabasePath();
         _cliPath = GetCliExecutablePath();
-        
+
         // Setup test database with multi-series data
         SetupTestDatabase().Wait();
     }
@@ -34,16 +34,16 @@ public class CLIFilteringTests : IDisposable
     {
         // Find the CLI executable based on the current build configuration
         var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        
+
         // Navigate from tests/contract/bin/Debug/net8.0 to src/EpisodeIdentifier.Core/bin/Debug/net8.0
         var projectRoot = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "..", ".."));
         var exePath = Path.Combine(projectRoot, "src", "EpisodeIdentifier.Core", "bin", "Debug", "net8.0", "EpisodeIdentifier.Core.dll");
-        
+
         if (!File.Exists(exePath))
         {
             throw new FileNotFoundException($"CLI executable not found at: {exePath}");
         }
-        
+
         return exePath;
     }
 
@@ -51,7 +51,7 @@ public class CLIFilteringTests : IDisposable
     {
         // Create a test database with multiple series
         var hashService = TestDatabaseConfig.CreateTestFuzzyHashService(_testDbPath);
-        
+
         // Add Bones episodes
         for (int ep = 1; ep <= 3; ep++)
         {
@@ -64,7 +64,7 @@ public class CLIFilteringTests : IDisposable
                 EpisodeName = $"Bones Episode {ep}"
             });
         }
-        
+
         // Add Breaking Bad episodes
         for (int ep = 1; ep <= 3; ep++)
         {
@@ -77,7 +77,7 @@ public class CLIFilteringTests : IDisposable
                 EpisodeName = $"Breaking Bad Episode {ep}"
             });
         }
-        
+
         hashService.Dispose();
     }
 

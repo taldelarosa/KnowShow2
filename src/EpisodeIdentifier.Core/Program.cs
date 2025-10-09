@@ -81,7 +81,7 @@ public class Program
             "--season",
             "Season number when storing subtitle information, or filter by season during identification (requires --series)")
         { IsRequired = false };
-        
+
         // Add validator to ensure --season is only used with --series
         seasonOption.AddValidator(result =>
         {
