@@ -461,16 +461,6 @@ public class FuzzyHashService : IDisposable
                 CleanHash = reader.IsDBNull(7) ? "" : reader.GetString(7)
             };
 
-            // DEBUG: Special logging for Bones Season 2 Episode 13 comparison
-            if (subtitle.Series == "Bones" && subtitle.Season == "2" && subtitle.Episode == "13")
-            {
-                _logger.LogInformation("DEBUG: Comparing with Bones S2E13:");
-                _logger.LogInformation("DEBUG:   Stored CleanHash = {StoredCleanHash}", storedHashes.CleanHash);
-                _logger.LogInformation("DEBUG:   Input CleanHash = {InputCleanHash}", inputHashes.CleanHash);
-                var debugConfidence = CompareFuzzyHashes(inputHashes.CleanHash, storedHashes.CleanHash);
-                _logger.LogInformation("DEBUG:   Clean hash confidence = {Confidence:P2}", debugConfidence);
-            }
-
             // Fast hash-based comparison - try the most important combinations first
             var confidence = 0.0;
 
