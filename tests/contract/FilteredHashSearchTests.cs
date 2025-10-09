@@ -42,8 +42,8 @@ public class FilteredHashSearchTests : IDisposable
         // Act & Assert - This should compile and run
         // Currently will fail because parameter doesn't exist
         var result = await _hashService.FindMatches(
-            subtitleText, 
-            threshold: 0.8, 
+            subtitleText,
+            threshold: 0.8,
             seriesFilter: seriesFilter);
 
         // Verify method accepts the parameter

@@ -359,7 +359,7 @@ public class FuzzyHashService : IDisposable
     /// <returns>List of matching subtitles with confidence scores</returns>
     /// <exception cref="ArgumentException">Thrown when seasonFilter is provided without seriesFilter</exception>
     public async Task<List<(LabelledSubtitle Subtitle, double Confidence)>> FindMatches(
-        string subtitleText, 
+        string subtitleText,
         double threshold = 0.8,
         string? seriesFilter = null,
         int? seasonFilter = null)
@@ -397,21 +397,21 @@ public class FuzzyHashService : IDisposable
         await connection.OpenAsync();
 
         using var command = connection.CreateCommand();
-        
+
         // Build SQL query with optional WHERE clause for filtering
         var baseQuery = @"
             SELECT Series, Season, Episode, OriginalText, OriginalHash, NoTimecodesHash, NoHtmlHash, CleanHash, EpisodeName
             FROM SubtitleHashes";
-        
+
         var whereClauses = new List<string>();
-        
+
         // Add series filter if provided (case-insensitive)
         if (!string.IsNullOrWhiteSpace(seriesFilter))
         {
             whereClauses.Add("LOWER(Series) = LOWER(@series)");
             command.Parameters.AddWithValue("@series", seriesFilter);
         }
-        
+
         // Add season filter if provided (matches both padded "01" and non-padded "1" formats)
         if (seasonFilter.HasValue)
         {
@@ -419,7 +419,7 @@ public class FuzzyHashService : IDisposable
             command.Parameters.AddWithValue("@seasonPadded", seasonFilter.Value.ToString("D2"));
             command.Parameters.AddWithValue("@seasonUnpadded", seasonFilter.Value.ToString());
         }
-        
+
         // Combine base query with WHERE clause if filters present
         if (whereClauses.Any())
         // Combine base query with WHERE clause if filters present
@@ -432,7 +432,7 @@ public class FuzzyHashService : IDisposable
         }
 
         using var reader = await command.ExecuteReaderAsync();
-        
+
         var recordsScanned = 0;
         while (await reader.ReadAsync())
         {

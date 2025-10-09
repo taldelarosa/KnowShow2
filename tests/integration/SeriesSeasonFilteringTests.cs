@@ -21,7 +21,7 @@ public class SeriesSeasonFilteringTests : IDisposable
     {
         _testDbPath = TestDatabaseConfig.GetTempDatabasePath();
         _hashService = TestDatabaseConfig.CreateTestFuzzyHashService(_testDbPath);
-        
+
         // Setup multi-series test data
         SetupMultiSeriesDatabase().Wait();
     }
@@ -105,7 +105,7 @@ public class SeriesSeasonFilteringTests : IDisposable
         // Assert - Should only return Bones episodes, not Breaking Bad or The Office
         Assert.NotEmpty(results);
         Assert.All(results, r => Assert.Equal("Bones", r.Subtitle.Series));
-        
+
         // Verify no other series in results
         Assert.DoesNotContain(results, r => r.Subtitle.Series == "Breaking Bad");
         Assert.DoesNotContain(results, r => r.Subtitle.Series == "The Office");
@@ -130,7 +130,7 @@ public class SeriesSeasonFilteringTests : IDisposable
 
         // Assert - Should only return Bones Season 2 episodes
         Assert.NotEmpty(results);
-        Assert.All(results, r => 
+        Assert.All(results, r =>
         {
             Assert.Equal("Bones", r.Subtitle.Series);
             Assert.Equal("02", r.Subtitle.Season);
@@ -170,7 +170,7 @@ public class SeriesSeasonFilteringTests : IDisposable
     {
         // Arrange - Create unique content that could match across series
         var sharedContent = "This is shared dialog content";
-        
+
         await _hashService.StoreHash(new LabelledSubtitle
         {
             Series = "Bones",
@@ -224,7 +224,7 @@ public class SeriesSeasonFilteringTests : IDisposable
         // Assert - Should find Season 1 episodes
         Assert.NotEmpty(results);
         Assert.All(results, r => Assert.Equal("01", r.Subtitle.Season));
-        
+
         // Should not find Season 2 episodes
         Assert.DoesNotContain(results, r => r.Subtitle.Season == "02");
     }

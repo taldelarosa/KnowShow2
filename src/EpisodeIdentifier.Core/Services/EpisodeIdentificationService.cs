@@ -94,10 +94,10 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
                     stopwatch.Stop();
                     _logger.LogInformation("Episode identified using CTPH fuzzy hashing - Operation: {OperationId}, Series: {Series}, Season: {Season}, Episode: {Episode}, Confidence: {Confidence:P1}, FuzzyTime: {FuzzyTime}ms, TotalTime: {Duration}ms",
                         operationId, fuzzyResult.Series, fuzzyResult.Season, fuzzyResult.Episode, fuzzyResult.MatchConfidence, fuzzyDuration, stopwatch.ElapsedMilliseconds);
-                    
+
                     // Set matching method information
                     fuzzyResult.MatchingMethod = fuzzyResult.UsedTextFallback ? "TextFallback" : "CTPH";
-                    
+
                     return fuzzyResult;
                 }
 
@@ -121,7 +121,7 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
             {
                 _logger.LogInformation("Episode identified using legacy hashing - Operation: {OperationId}, Series: {Series}, Season: {Season}, Episode: {Episode}, Confidence: {Confidence:P1}, LegacyTime: {LegacyTime}ms, TotalTime: {Duration}ms",
                     operationId, legacyResult.Series, legacyResult.Season, legacyResult.Episode, legacyResult.MatchConfidence, legacyDuration, stopwatch.ElapsedMilliseconds);
-                
+
                 // Set matching method information for legacy matches
                 legacyResult.MatchingMethod = "Legacy";
                 legacyResult.UsedTextFallback = false;
@@ -180,8 +180,8 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
 
             if (comparisonResult.IsSuccess && comparisonResult.IsMatch)
             {
-                var confidence = comparisonResult.UsedTextFallback ? 
-                    (comparisonResult.TextSimilarityScore / 100.0) : 
+                var confidence = comparisonResult.UsedTextFallback ?
+                    (comparisonResult.TextSimilarityScore / 100.0) :
                     (comparisonResult.HashSimilarityScore / 100.0);
 
                 // Check against minimum confidence threshold from config
