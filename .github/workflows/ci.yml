@@ -42,16 +42,16 @@ jobs:
       
     - name: Build solution (excluding failing integration tests)
       run: |
-        dotnet build src/EpisodeIdentifier.Core/EpisodeIdentifier.Core.csproj --no-restore --configuration Release
-        dotnet build tests/unit/EpisodeIdentifier.Tests.Unit.csproj --no-restore --configuration Release
-        dotnet build tests/contract/EpisodeIdentifier.Tests.Contract.csproj --no-restore --configuration Release
+        dotnet build src/EpisodeIdentifier.Core/EpisodeIdentifier.Core.csproj --no-restore --configuration Debug
+        dotnet build tests/unit/EpisodeIdentifier.Tests.Unit.csproj --no-restore --configuration Debug
+        dotnet build tests/contract/EpisodeIdentifier.Tests.Contract.csproj --no-restore --configuration Debug
       
     - name: Run unit tests
-      run: dotnet test --no-build --configuration Release --verbosity normal --logger trx --results-directory "TestResults"
+      run: dotnet test --no-build --configuration Debug --verbosity normal --logger trx --results-directory "TestResults"
       working-directory: ./tests/unit
       
     - name: Run contract tests
-      run: dotnet test --no-build --configuration Release --verbosity normal --logger trx --results-directory "TestResults"
+      run: dotnet test --no-build --configuration Debug --verbosity normal --logger trx --results-directory "TestResults"
       working-directory: ./tests/contract
       
     # Skip integration tests for now due to API compatibility issues
