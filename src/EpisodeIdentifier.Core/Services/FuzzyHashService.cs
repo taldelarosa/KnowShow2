@@ -429,7 +429,6 @@ public class FuzzyHashService : IDisposable
         // Combine base query with WHERE clause if filters present
         if (whereClauses.Any())
         // Combine base query with WHERE clause if filters present
-        if (whereClauses.Any())
         {
             command.CommandText = baseQuery + " WHERE " + string.Join(" AND ", whereClauses) + ";";
         }
