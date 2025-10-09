@@ -43,11 +43,15 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
     /// <param name="subtitleText">The subtitle text content to identify</param>
     /// <param name="sourceFilePath">Optional path to the source file (used for CTPH hashing)</param>
     /// <param name="minConfidence">Optional minimum confidence threshold</param>
+    /// <param name="seriesFilter">Optional series name to filter results (case-insensitive)</param>
+    /// <param name="seasonFilter">Optional season number to filter results (requires seriesFilter)</param>
     /// <returns>Episode identification result</returns>
     public async Task<IdentificationResult> IdentifyEpisodeAsync(
         string subtitleText,
         string? sourceFilePath = null,
-        double? minConfidence = null)
+        double? minConfidence = null,
+        string? seriesFilter = null,
+        int? seasonFilter = null)
     {
         var operationId = Guid.NewGuid();
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -58,7 +62,9 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
             ["OperationId"] = operationId,
             ["SourceFilePath"] = sourceFilePath ?? "none",
             ["MinConfidence"] = minConfidence ?? 0.0,
-            ["SubtitleTextLength"] = subtitleText?.Length ?? 0
+            ["SubtitleTextLength"] = subtitleText?.Length ?? 0,
+            ["SeriesFilter"] = seriesFilter ?? "none",
+            ["SeasonFilter"] = seasonFilter?.ToString() ?? "none"
         });
 
         if (string.IsNullOrWhiteSpace(subtitleText))
@@ -113,7 +119,7 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
             // Fall back to legacy subtitle matcher
             _logger.LogDebug("Using legacy fuzzy hash identification - Operation: {OperationId}", operationId);
             var legacyStartTime = stopwatch.ElapsedMilliseconds;
-            var legacyResult = await _legacyMatcher.IdentifyEpisode(subtitleText, minConfidence);
+            var legacyResult = await _legacyMatcher.IdentifyEpisode(subtitleText, minConfidence, seriesFilter, seasonFilter);
             var legacyDuration = stopwatch.ElapsedMilliseconds - legacyStartTime;
             stopwatch.Stop();
 
