@@ -392,12 +392,6 @@ public class FuzzyHashService : IDisposable
                 seasonFilter?.ToString() ?? "null");
         }
 
-        // DEBUG: Log the input hashes for debugging
-        _logger.LogInformation("DEBUG: Input video subtitle hashes:");
-        _logger.LogInformation("DEBUG:   CleanHash = {CleanHash}", inputHashes.CleanHash);
-        _logger.LogInformation("DEBUG:   OriginalHash = {OriginalHash}", inputHashes.OriginalHash);
-        _logger.LogInformation("DEBUG:   NoTimecodesHash = {NoTimecodesHash}", inputHashes.NoTimecodesHash);
-        _logger.LogInformation("DEBUG:   NoHtmlHash = {NoHtmlHash}", inputHashes.NoHtmlHash);
 
         using var connection = new SqliteConnection($"Data Source={_dbPath}");
         await connection.OpenAsync();
