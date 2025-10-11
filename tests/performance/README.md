@@ -14,14 +14,17 @@
   - Tests memory management and error handling
   - Tests progress reporting overhead
 
+- **SubtitleProcessingBenchmarks.cs** - BenchmarkDotNet performance benchmarks (✅ Fixed!)
+  - Benchmarks episode identification from subtitle text
+  - Benchmarks video format validation
+  - Benchmarks text subtitle extraction
+  - Benchmarks PGS subtitle extraction and conversion
+  - Uses in-memory database for consistent testing
+
 ### ⚠️ Tests Requiring Updates
 - **SubtitleWorkflowPerformanceTests.cs** - Needs refactoring
   - References deprecated SubtitleMatcher (now EpisodeIdentificationService)
   - Needs updating to current workflow architecture
-
-- **SubtitleProcessingBenchmarks.cs** - Needs refactoring  
-  - References deprecated SubtitleMatcher
-  - BenchmarkDotNet integration needs verification
 
 ## Running Tests
 
