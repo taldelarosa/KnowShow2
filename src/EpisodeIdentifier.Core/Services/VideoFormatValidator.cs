@@ -48,7 +48,7 @@ public class VideoFormatValidator
             var subtitleTracks = await GetSubtitleTracks(videoPath);
             var hasSubtitles = subtitleTracks.Any();
 
-            _logger.LogInformation("File {VideoPath}: MKV={IsMkv}, Subtitles={HasSubtitles} (Count: {SubtitleCount})", 
+            _logger.LogInformation("File {VideoPath}: MKV={IsMkv}, Subtitles={HasSubtitles} (Count: {SubtitleCount})",
                 videoPath, true, hasSubtitles, subtitleTracks.Count);
 
             if (hasSubtitles)

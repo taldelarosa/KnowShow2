@@ -237,9 +237,13 @@ public class HotReloadDuringProcessingIntegrationTests
         result.ProcessedFiles.Should().Be(2);
         result.TotalFiles.Should().Be(2);
 
-        // Verify configuration validation failed but processing wasn't interrupted
+        // Verify configuration was loaded with auto-correction of invalid MaxConcurrency
         var configResult = await configService.LoadConfiguration();
-        configResult.IsValid.Should().BeFalse(); // Invalid configuration
+        configResult.IsValid.Should().BeTrue(); // Configuration is valid after auto-correction
+        configResult.Configuration.Should().NotBeNull();
+        configResult.Configuration!.MaxConcurrency.Should().Be(1); // Should be defaulted to 1
+        configResult.WasMaxConcurrencyDefaulted.Should().BeTrue(); // Should indicate defaulting occurred
+        configResult.OriginalMaxConcurrencyOutOfRange.Should().BeTrue(); // Should track original was out of range
     }
 
     [Fact]
