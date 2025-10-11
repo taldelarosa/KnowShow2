@@ -198,7 +198,6 @@ public class Program
         var pgsConverter = new EnhancedPgsToTextConverter(loggerFactory.CreateLogger<EnhancedPgsToTextConverter>(), pgsRipService, fallbackConverter);
         var normalizationService = new SubtitleNormalizationService(loggerFactory.CreateLogger<SubtitleNormalizationService>());
         var hashService = new FuzzyHashService(hashDb.FullName, loggerFactory.CreateLogger<FuzzyHashService>(), normalizationService);
-        var matcher = new SubtitleMatcher(hashService, loggerFactory.CreateLogger<SubtitleMatcher>(), legacyConfigService);
         var filenameParser = new SubtitleFilenameParser(loggerFactory.CreateLogger<SubtitleFilenameParser>(), legacyConfigService);
         var textExtractor = new VideoTextSubtitleExtractor(loggerFactory.CreateLogger<VideoTextSubtitleExtractor>());
         var filenameService = new FilenameService(legacyConfigService);
@@ -213,10 +212,9 @@ public class Program
             loggerFactory.CreateLogger<EnhancedCTPhHashingService>(),
             fuzzyHashConfigService);
 
-        // Create new episode identification service that supports both legacy and enhanced CTPH fuzzy hashing with text fallback
+        // Create episode identification service that uses CTPH fuzzy hashing with text fallback
         var episodeIdentificationService = new EpisodeIdentificationService(
             loggerFactory.CreateLogger<EpisodeIdentificationService>(),
-            matcher,
             fileSystem,
             enhancedCtphService);
 

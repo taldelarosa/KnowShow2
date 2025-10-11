@@ -61,7 +61,6 @@ public static class ServiceCollectionExtensions
                 provider.GetRequiredService<ILogger<FuzzyHashService>>(),
                 provider.GetRequiredService<SubtitleNormalizationService>()
             ));
-        services.AddScoped<ISubtitleMatcher, SubtitleMatcher>();
 
         // CTPH hashing (enhanced pipeline)
         services.AddScoped<ICTPhHashingService, CTPhHashingService>();

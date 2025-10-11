@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Collections.Concurrent;
 using System.Threading;
+using SSDEEP.NET;
 
 namespace EpisodeIdentifier.Core.Services;
 
@@ -666,99 +667,34 @@ public class FuzzyHashService : IDisposable
     }
 
     /// <summary>
-    /// Generates a custom fuzzy hash that creates a compact representation suitable for fast comparison
-    /// This creates a hash similar to ssdeep but optimized for subtitle content
+    /// Generates a CTPH (Context-Triggered Piecewise Hash) from subtitle text.
+    /// Uses ssdeep fuzzy hashing algorithm on the text content for similarity detection.
     /// </summary>
     private string GenerateFuzzyHash(string input)
     {
         if (string.IsNullOrWhiteSpace(input))
             return "";
 
-        var normalizedInput = input.ToLowerInvariant();
-
-        // Instead of cryptographic hashes, use word-based and n-gram approaches for fuzzy matching
-        var hashes = new List<string>();
-
-        // Approach 1: Word-based hash (most important for subtitle content)
-        var words = normalizedInput.Split(new char[] { ' ', '\n', '\r', '\t', '.', ',', ':', ';', '!', '?' },
-            StringSplitOptions.RemoveEmptyEntries);
-        var wordHash = GenerateWordBasedHash(words);
-        hashes.Add($"words:{wordHash}");
-
-        // Approach 2: Character n-gram hash (handles minor variations)
-        var trigramHash = GenerateNGramHash(normalizedInput, 3);
-        hashes.Add($"trigrams:{trigramHash}");
-
-        // Approach 3: Shingle hash (overlapping chunks for similarity)
-        var shingleHash = GenerateShingleHash(words, 5); // 5-word shingles
-        hashes.Add($"shingles:{shingleHash}");
-
-        return string.Join(",", hashes);
-    }
-
-    private string GenerateWordBasedHash(string[] words)
-    {
-        // Create a hash based on word frequency and presence
-        var wordCounts = new Dictionary<string, int>();
-
-        foreach (var word in words.Take(200)) // Limit to first 200 words for performance
+        try
         {
-            if (word.Length > 2) // Skip very short words
-            {
-                wordCounts[word] = wordCounts.GetValueOrDefault(word, 0) + 1;
-            }
+            // Convert text to bytes for CTPH hashing
+            var textBytes = Encoding.UTF8.GetBytes(input);
+            
+            // Generate ssdeep hash with EliminateSequences mode for better text comparison
+            var hash = Hasher.HashBuffer(textBytes, textBytes.Length, FuzzyHashMode.EliminateSequences);
+            
+            return hash ?? "";
         }
-
-        // Sort by frequency and create signature
-        var topWords = wordCounts
-            .OrderByDescending(kvp => kvp.Value)
-            .ThenBy(kvp => kvp.Key)
-            .Take(50) // Top 50 most frequent words
-            .Select(kvp => $"{kvp.Key}:{kvp.Value}")
-            .ToArray();
-
-        return string.Join("|", topWords);
-    }
-
-    private string GenerateNGramHash(string input, int n)
-    {
-        var ngrams = new HashSet<string>();
-
-        // Create overlapping n-grams
-        for (int i = 0; i <= input.Length - n; i++)
+        catch (Exception ex)
         {
-            var ngram = input.Substring(i, n);
-            if (ngram.Any(char.IsLetter)) // Only include n-grams with letters
-            {
-                ngrams.Add(ngram);
-            }
-
-            if (ngrams.Count >= 100) // Limit for performance
-                break;
+            _logger.LogWarning(ex, "Failed to generate CTPH hash for text, length: {Length}", input.Length);
+            return "";
         }
-
-        return string.Join("|", ngrams.OrderBy(x => x).Take(50));
-    }
-
-    private string GenerateShingleHash(string[] words, int shingleSize)
-    {
-        var shingles = new HashSet<string>();
-
-        // Create overlapping word shingles
-        for (int i = 0; i <= words.Length - shingleSize; i++)
-        {
-            var shingle = string.Join(" ", words.Skip(i).Take(shingleSize));
-            shingles.Add(shingle);
-
-            if (shingles.Count >= 50) // Limit for performance
-                break;
-        }
-
-        return string.Join("|", shingles.OrderBy(x => x));
     }
 
     /// <summary>
-    /// Compares two fuzzy hashes and returns a similarity score (0.0 to 1.0)
+    /// Compares two CTPH fuzzy hashes and returns a similarity score (0.0 to 1.0)
+    /// Uses ssdeep's built-in comparison algorithm.
     /// </summary>
     private double CompareFuzzyHashes(string hash1, string hash2)
     {
@@ -770,121 +706,18 @@ public class FuzzyHashService : IDisposable
 
         try
         {
-            // Parse both hashes
-            var parts1 = ParseNewFuzzyHash(hash1);
-            var parts2 = ParseNewFuzzyHash(hash2);
-
-            double maxSimilarity = 0.0;
-
-            // Compare words (most important for subtitle matching)
-            if (parts1.ContainsKey("words") && parts2.ContainsKey("words"))
-            {
-                var wordSimilarity = CompareWordHashes(parts1["words"], parts2["words"]);
-                maxSimilarity = Math.Max(maxSimilarity, wordSimilarity * 1.0); // Full weight
-            }
-
-            // Compare trigrams (handles minor variations)
-            if (parts1.ContainsKey("trigrams") && parts2.ContainsKey("trigrams"))
-            {
-                var trigramSimilarity = CompareSetHashes(parts1["trigrams"], parts2["trigrams"]);
-                maxSimilarity = Math.Max(maxSimilarity, trigramSimilarity * 0.8); // Lower weight
-            }
-
-            // Compare shingles (handles order and context)
-            if (parts1.ContainsKey("shingles") && parts2.ContainsKey("shingles"))
-            {
-                var shingleSimilarity = CompareSetHashes(parts1["shingles"], parts2["shingles"]);
-                maxSimilarity = Math.Max(maxSimilarity, shingleSimilarity * 0.9); // High weight
-            }
-
-            return maxSimilarity;
+            // Use ssdeep's compare function which returns 0-100
+            var similarity = Comparer.Compare(hash1, hash2);
+            
+            // Convert to 0.0-1.0 range
+            return similarity / 100.0;
         }
         catch (Exception ex)
         {
-            _logger.LogDebug("Error comparing fuzzy hashes: {Error}", ex.Message);
+            _logger.LogWarning(ex, "Failed to compare CTPH hashes");
             return 0.0;
         }
     }
-
-    private Dictionary<string, string> ParseNewFuzzyHash(string hash)
-    {
-        var result = new Dictionary<string, string>();
-        var parts = hash.Split(',');
-
-        foreach (var part in parts)
-        {
-            var colonIndex = part.IndexOf(':');
-            if (colonIndex > 0 && colonIndex < part.Length - 1)
-            {
-                var key = part.Substring(0, colonIndex);
-                var value = part.Substring(colonIndex + 1);
-                result[key] = value;
-            }
-        }
-
-        return result;
-    }
-
-    private double CompareWordHashes(string wordHash1, string wordHash2)
-    {
-        if (wordHash1 == wordHash2) return 1.0;
-
-        var words1 = ParseWordHash(wordHash1);
-        var words2 = ParseWordHash(wordHash2);
-
-        if (words1.Count == 0 || words2.Count == 0) return 0.0;
-
-        // Calculate weighted Jaccard similarity based on word frequencies
-        var commonWords = words1.Keys.Intersect(words2.Keys).ToList();
-        var allWords = words1.Keys.Union(words2.Keys).ToList();
-
-        if (allWords.Count == 0) return 0.0;
-
-        // Weight by frequency - common high-frequency words count more
-        double intersection = commonWords.Sum(word => Math.Min(words1[word], words2[word]));
-        double union = allWords.Sum(word => Math.Max(words1.GetValueOrDefault(word, 0), words2.GetValueOrDefault(word, 0)));
-
-        return union > 0 ? intersection / union : 0.0;
-    }
-
-    private Dictionary<string, int> ParseWordHash(string wordHash)
-    {
-        var result = new Dictionary<string, int>();
-        var parts = wordHash.Split('|', StringSplitOptions.RemoveEmptyEntries);
-
-        foreach (var part in parts)
-        {
-            var colonIndex = part.LastIndexOf(':');
-            if (colonIndex > 0)
-            {
-                var word = part.Substring(0, colonIndex);
-                if (int.TryParse(part.Substring(colonIndex + 1), out var count))
-                {
-                    result[word] = count;
-                }
-            }
-        }
-
-        return result;
-    }
-
-    private double CompareSetHashes(string setHash1, string setHash2)
-    {
-        if (setHash1 == setHash2) return 1.0;
-
-        var set1 = new HashSet<string>(setHash1.Split('|', StringSplitOptions.RemoveEmptyEntries));
-        var set2 = new HashSet<string>(setHash2.Split('|', StringSplitOptions.RemoveEmptyEntries));
-
-        if (set1.Count == 0 || set2.Count == 0) return 0.0;
-
-        // Jaccard similarity
-        var intersection = set1.Intersect(set2).Count();
-        var union = set1.Union(set2).Count();
-
-        return union > 0 ? (double)intersection / union : 0.0;
-    }
-
-
 
     public void Dispose()
     {

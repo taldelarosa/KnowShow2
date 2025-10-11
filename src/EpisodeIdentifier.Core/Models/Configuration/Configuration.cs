@@ -92,19 +92,9 @@ public class Configuration
 public enum HashingAlgorithm
 {
     /// <summary>
-    /// Legacy MD5 hashing (backward compatibility).
-    /// </summary>
-    MD5 = 0,
-
-    /// <summary>
-    /// Legacy SHA1 hashing (backward compatibility).
-    /// </summary>
-    SHA1 = 1,
-
-    /// <summary>
     /// Context-triggered piecewise hashing (fuzzy matching).
     /// </summary>
-    CTPH = 2
+    CTPH = 0
 }
 
 /// <summary>
@@ -237,7 +227,7 @@ public class ConfigurationValidator : AbstractValidator<Configuration>
 
         RuleFor(x => x.HashingAlgorithm)
             .IsInEnum()
-            .WithMessage("HashingAlgorithm must be a valid value (MD5, SHA1, or CTPH)");
+            .WithMessage("HashingAlgorithm must be CTPH");
 
         RuleFor(x => x.FilenamePatterns)
             .NotNull()

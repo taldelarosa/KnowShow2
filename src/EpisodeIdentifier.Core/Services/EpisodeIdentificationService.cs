@@ -8,26 +8,22 @@ using EpisodeIdentifier.Core.Services.Hashing;
 namespace EpisodeIdentifier.Core.Services;
 
 /// <summary>
-/// Service that orchestrates episode identification using either legacy fuzzy hashing or CTPH fuzzy hashing
-/// based on configuration settings. Provides a unified interface for episode identification with automatic
-/// fallback to legacy systems when fuzzy hashing configuration is not available or invalid.
+/// Service that orchestrates episode identification using CTPH fuzzy hashing.
+/// Provides a unified interface for episode identification with text fallback capabilities.
 /// </summary>
 public class EpisodeIdentificationService : IEpisodeIdentificationService
 {
     private readonly ILogger<EpisodeIdentificationService> _logger;
-    private readonly ISubtitleMatcher _legacyMatcher;
     private readonly CTPhHashingService _ctphHashingService;
     private readonly IFileSystem _fileSystem;
     private readonly EnhancedCTPhHashingService? _enhancedCtphService;
 
     public EpisodeIdentificationService(
         ILogger<EpisodeIdentificationService> logger,
-        ISubtitleMatcher legacyMatcher,
         IFileSystem? fileSystem = null,
         EnhancedCTPhHashingService? enhancedCtphService = null)
     {
         _logger = logger;
-        _legacyMatcher = legacyMatcher;
         _fileSystem = fileSystem ?? new System.IO.Abstractions.FileSystem();
         _enhancedCtphService = enhancedCtphService;
         _ctphHashingService = new CTPhHashingService(
@@ -74,65 +70,55 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
             _logger.LogInformation("Starting episode identification - Operation: {OperationId}, SubtitleLength: {SubtitleLength}, SourceFile: {SourceFilePath}, MinConfidence: {MinConfidence}",
                 operationId, subtitleText.Length, sourceFilePath ?? "none", minConfidence ?? 0.0);
 
-            // Check if fuzzy hashing (CTPH) is enabled and available
+            // Use CTPH fuzzy hashing for identification
             var configCheckTime = stopwatch.ElapsedMilliseconds;
             var fuzzyConfig = await Program.GetFuzzyHashConfigurationAsync();
-            var isFuzzyHashingEnabled = await Program.IsFuzzyHashingEnabledAsync();
             var configCheckDuration = stopwatch.ElapsedMilliseconds - configCheckTime;
 
-            if (isFuzzyHashingEnabled && fuzzyConfig != null)
+            if (fuzzyConfig == null)
             {
-                _logger.LogDebug("CTPH fuzzy hashing enabled, attempting fuzzy hash identification - Operation: {OperationId}, ConfigCheckTime: {ConfigCheckTime}ms",
-                    operationId, configCheckDuration);
-
-                var fuzzyStartTime = stopwatch.ElapsedMilliseconds;
-                var fuzzyResult = await TryFuzzyHashIdentification(subtitleText, sourceFilePath, fuzzyConfig, minConfidence, operationId);
-                var fuzzyDuration = stopwatch.ElapsedMilliseconds - fuzzyStartTime;
-
-                if (fuzzyResult != null)
+                stopwatch.Stop();
+                _logger.LogError("CTPH configuration not available - Operation: {OperationId}", operationId);
+                return new IdentificationResult
                 {
-                    stopwatch.Stop();
-                    _logger.LogInformation("Episode identified using CTPH fuzzy hashing - Operation: {OperationId}, Series: {Series}, Season: {Season}, Episode: {Episode}, Confidence: {Confidence:P1}, FuzzyTime: {FuzzyTime}ms, TotalTime: {Duration}ms",
-                        operationId, fuzzyResult.Series, fuzzyResult.Season, fuzzyResult.Episode, fuzzyResult.MatchConfidence, fuzzyDuration, stopwatch.ElapsedMilliseconds);
-
-                    // Set matching method information
-                    fuzzyResult.MatchingMethod = fuzzyResult.UsedTextFallback ? "TextFallback" : "CTPH";
-
-                    return fuzzyResult;
-                }
-
-                _logger.LogDebug("CTPH fuzzy hashing did not produce a match, falling back to legacy identification - Operation: {OperationId}, FuzzyTime: {FuzzyTime}ms",
-                    operationId, fuzzyDuration);
+                    Error = new IdentificationError
+                    {
+                        Code = "CONFIGURATION_ERROR",
+                        Message = "CTPH hashing configuration is not available"
+                    }
+                };
             }
-            else
+
+            _logger.LogDebug("CTPH fuzzy hashing enabled, attempting fuzzy hash identification - Operation: {OperationId}, ConfigCheckTime: {ConfigCheckTime}ms",
+                operationId, configCheckDuration);
+
+            var fuzzyStartTime = stopwatch.ElapsedMilliseconds;
+            var fuzzyResult = await TryFuzzyHashIdentification(subtitleText, sourceFilePath, fuzzyConfig, minConfidence, operationId);
+            var fuzzyDuration = stopwatch.ElapsedMilliseconds - fuzzyStartTime;
+
+            if (fuzzyResult != null)
             {
-                _logger.LogDebug("CTPH fuzzy hashing not enabled or configured, using legacy identification - Operation: {OperationId}, ConfigCheckTime: {ConfigCheckTime}ms",
-                    operationId, configCheckDuration);
+                stopwatch.Stop();
+                _logger.LogInformation("Episode identified using CTPH fuzzy hashing - Operation: {OperationId}, Series: {Series}, Season: {Season}, Episode: {Episode}, Confidence: {Confidence:P1}, FuzzyTime: {FuzzyTime}ms, TotalTime: {Duration}ms",
+                    operationId, fuzzyResult.Series, fuzzyResult.Season, fuzzyResult.Episode, fuzzyResult.MatchConfidence, fuzzyDuration, stopwatch.ElapsedMilliseconds);
+
+                // Set matching method information
+                fuzzyResult.MatchingMethod = fuzzyResult.UsedTextFallback ? "TextFallback" : "CTPH";
+
+                return fuzzyResult;
             }
 
-            // Fall back to legacy subtitle matcher
-            _logger.LogDebug("Using legacy fuzzy hash identification - Operation: {OperationId}", operationId);
-            var legacyStartTime = stopwatch.ElapsedMilliseconds;
-            var legacyResult = await _legacyMatcher.IdentifyEpisode(subtitleText, minConfidence);
-            var legacyDuration = stopwatch.ElapsedMilliseconds - legacyStartTime;
+            // No match found
             stopwatch.Stop();
+            _logger.LogInformation("No match found using CTPH hashing - Operation: {OperationId}, Duration: {Duration}ms",
+                operationId, stopwatch.ElapsedMilliseconds);
 
-            if (legacyResult.MatchConfidence > 0)
+            return new IdentificationResult
             {
-                _logger.LogInformation("Episode identified using legacy hashing - Operation: {OperationId}, Series: {Series}, Season: {Season}, Episode: {Episode}, Confidence: {Confidence:P1}, LegacyTime: {LegacyTime}ms, TotalTime: {Duration}ms",
-                    operationId, legacyResult.Series, legacyResult.Season, legacyResult.Episode, legacyResult.MatchConfidence, legacyDuration, stopwatch.ElapsedMilliseconds);
-
-                // Set matching method information for legacy matches
-                legacyResult.MatchingMethod = "Legacy";
-                legacyResult.UsedTextFallback = false;
-            }
-            else
-            {
-                _logger.LogInformation("No episode match found using any available hashing method - Operation: {OperationId}, LegacyTime: {LegacyTime}ms, TotalTime: {Duration}ms",
-                    operationId, legacyDuration, stopwatch.ElapsedMilliseconds);
-            }
-
-            return legacyResult;
+                MatchConfidence = 0,
+                AmbiguityNotes = "No matching episode found in database",
+                MatchingMethod = "CTPH"
+            };
         }
         catch (Exception ex)
         {
