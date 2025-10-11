@@ -8,12 +8,13 @@
   - Tests performance scaling from 1-8 concurrent operations
   - Simulates realistic processing delays
 
+- **BulkProcessingPerformanceTests.cs** - Bulk processing performance tests (✅ Fixed!)
+  - Tests small, medium, and large batch processing
+  - Validates concurrency scaling and batch size optimization
+  - Tests memory management and error handling
+  - Tests progress reporting overhead
+
 ### ⚠️ Tests Requiring Updates
-- **BulkProcessingPerformanceTests.cs** - Needs API updates
-  - Uses old BulkProcessorService constructor signature
-  - References removed properties (TotalDuration, Progress)
-  - Needs refactoring to match current BulkProcessingResult API
-  
 - **SubtitleWorkflowPerformanceTests.cs** - Needs refactoring
   - References deprecated SubtitleMatcher (now EpisodeIdentificationService)
   - Needs updating to current workflow architecture
@@ -24,9 +25,18 @@
 
 ## Running Tests
 
-### Run Working Tests
+### Run All Working Tests
 ```bash
+dotnet test tests/performance/EpisodeIdentifier.Tests.Performance.csproj --filter "FullyQualifiedName~AsyncConcurrencyPerformanceTests|FullyQualifiedName~BulkProcessingPerformanceTests"
+```
+
+### Run Individual Test Suites
+```bash
+# Async concurrency tests
 dotnet test tests/performance/EpisodeIdentifier.Tests.Performance.csproj --filter "FullyQualifiedName~AsyncConcurrencyPerformanceTests"
+
+# Bulk processing tests
+dotnet test tests/performance/EpisodeIdentifier.Tests.Performance.csproj --filter "FullyQualifiedName~BulkProcessingPerformanceTests"
 ```
 
 ### Manual Performance Testing
