@@ -430,8 +430,8 @@ public class Program
             }
             else
             {
-                // Validate AV1 encoding first
-                if (!await validator.IsAV1Encoded(input!.FullName))
+                // Validate file format first
+                if (!await validator.IsValidForProcessing(input!.FullName))
                 {
                     Console.WriteLine(JsonSerializer.Serialize(new
                     {
