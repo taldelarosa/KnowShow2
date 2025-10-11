@@ -28,6 +28,7 @@ public partial class ConfigurationService : IConfigurationService, IAppConfigSer
     private volatile bool _hasObservedIncrease = false; // Indicates if any increase over initial baseline has been seen
     private readonly CancellationTokenSource _monitorCts = new CancellationTokenSource();
     private Task? _monitorTask;
+    private bool _disposed; // Track disposal state to prevent multiple disposal attempts
     public ConfigurationResult? LastConfigurationResult => _lastLoadedConfig;
 
     public ConfigurationService(
@@ -791,28 +792,28 @@ public partial class ConfigurationService
         }, _monitorCts.Token);
     }
 
-    ~ConfigurationService()
-    {
-        try
-        {
-            _monitorCts.Cancel();
-        }
-        catch { /* ignore */ }
-    }
-
+    /// <summary>
+    /// Disposes resources used by the ConfigurationService.
+    /// Safe to call multiple times.
+    /// </summary>
     public void Dispose()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         try
         {
             _monitorCts.Cancel();
             _monitorTask?.Wait(TimeSpan.FromMilliseconds(50));
         }
-        catch { /* ignore */ }
+        catch { /* ignore cancellation and timeout exceptions */ }
         finally
         {
             _monitorCts.Dispose();
+            _disposed = true;
         }
-        GC.SuppressFinalize(this);
     }
 
     /// <summary>
