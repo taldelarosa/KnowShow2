@@ -9,9 +9,9 @@ namespace EpisodeIdentifier.Tests.Performance;
 public class SubtitleProcessingBenchmarks
 {
     private ServiceProvider _serviceProvider = null!;
-    private SubtitleWorkflowCoordinator_coordinator = null!;
+    private SubtitleWorkflowCoordinator _coordinator = null!;
     private VideoFormatValidator _validator = null!;
-    private ITextSubtitleExtractor_textExtractor = null!;
+    private ITextSubtitleExtractor _textExtractor = null!;
     private string _testVideoPath = null!;
 
     [GlobalSetup]

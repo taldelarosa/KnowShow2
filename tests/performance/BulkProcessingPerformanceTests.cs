@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.IO.Abstractions.TestingHelpers;
-using EpisodeIdentifier.Core.Models.BulkProcessing;
-using EpisodeIdentifier.Core.Services.BulkProcessing;
+using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -16,9 +16,9 @@ namespace EpisodeIdentifier.Tests.Performance;
 public class BulkProcessingPerformanceTests : IDisposable
 {
     private readonly MockFileSystem _fileSystem;
-    private readonly ILogger<BulkProcessorService>_logger;
+    private readonly ILogger<BulkProcessorService> _logger;
     private readonly BulkProcessorService _bulkProcessor;
-    private readonly Stopwatch_stopwatch;
+    private readonly Stopwatch _stopwatch;
 
     public BulkProcessingPerformanceTests()
     {
