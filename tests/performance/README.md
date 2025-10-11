@@ -2,7 +2,7 @@
 
 ## Status
 
-### ✅ Working Tests
+### ✅ All Performance Tests Working
 - **AsyncConcurrencyPerformanceTests.cs** - Tests for concurrent processing feature (9/9 passing)
   - Validates configurable maxConcurrency setting
   - Tests performance scaling from 1-8 concurrent operations
@@ -21,10 +21,12 @@
   - Benchmarks PGS subtitle extraction and conversion
   - Uses in-memory database for consistent testing
 
-### ⚠️ Tests Requiring Updates
-- **SubtitleWorkflowPerformanceTests.cs** - Needs refactoring
-  - References deprecated SubtitleMatcher (now EpisodeIdentificationService)
-  - Needs updating to current workflow architecture
+- **SubtitleWorkflowPerformanceTests.cs** - End-to-end workflow performance tests (✅ Fixed!)
+  - Tests complete video processing pipeline
+  - Validates subtitle detection and extraction performance
+  - Tests multiple processing iterations for consistency
+  - Monitors memory usage across multiple runs
+  - Tests concurrent request handling
 
 ## Running Tests
 
@@ -49,20 +51,21 @@ See `MANUAL_TESTING_RESULTS.md` for real-world performance validation results.
 
 1. ✅ **Update BulkProcessingPerformanceTests to use current API** - Fixed all API mismatches
 2. ✅ **Update SubtitleProcessingBenchmarks to use current API** - Fixed deprecated service references
-3. ✅ **Verify BenchmarkDotNet integration** - Working correctly with 7 benchmarks
+3. ✅ **Update SubtitleWorkflowPerformanceTests to use current API** - Fixed all 6 test methods
+4. ✅ **Verify BenchmarkDotNet integration** - Working correctly with 7 benchmarks
+5. ✅ **All 4 performance test files now compile successfully**
 
 ## Next Steps
 
-1. ⚠️ **Refactor SubtitleWorkflowPerformanceTests** (Low Priority) - Update deprecated SubtitleMatcher references
-2. 🎯 **Add more real-world scenario tests** - Consider adding:
+1. 🎯 **Add more real-world scenario tests** - Consider adding:
    - Network vs local storage performance comparisons
    - Large batch processing (100+ files)
    - Memory pressure scenarios
    - Different video formats and codecs
-3. 📊 **Baseline Performance Metrics** - Establish baseline benchmarks for:
+2. 📊 **Baseline Performance Metrics** - Establish baseline benchmarks for:
    - Episode identification speed
    - Concurrent processing throughput
    - Memory usage patterns
-4. 🔍 **Performance Regression Testing** - Set up automated performance tracking
+3. 🔍 **Performance Regression Testing** - Set up automated performance tracking
 
 
