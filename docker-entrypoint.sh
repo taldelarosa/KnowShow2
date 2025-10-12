@@ -27,13 +27,13 @@ echo "Setting directory permissions..."
 chown -R appuser:appuser /data /app/logs 2>/dev/null || true
 chmod -R u+rw /data 2>/dev/null || true
 
+# Set default CONFIG_PATH if not provided
+CONFIG_PATH=${CONFIG_PATH:-/data/config/episodeidentifier.config.json}
+
 # Create default config if it doesn't exist
-if [ ! -f "${CONFIG_PATH:-/data/config/episodeidentifier.config.json}" ]; then
-    echo "Creating default configuration file..."
-    if [ -f "/data/config/episodeidentifier.config.json" ]; then
-        cp /data/config/episodeidentifier.config.json "${CONFIG_PATH}"
-    else
-        cat > "${CONFIG_PATH}" <<'EOF'
+if [ ! -f "${CONFIG_PATH}" ]; then
+    echo "Creating default configuration file at ${CONFIG_PATH}..."
+    cat > "${CONFIG_PATH}" <<'EOF'
 {
   "thresholds": {
     "minimumTextMatchRatio": 0.65,
@@ -57,8 +57,7 @@ if [ ! -f "${CONFIG_PATH:-/data/config/episodeidentifier.config.json}" ]; then
   }
 }
 EOF
-        chown appuser:appuser "${CONFIG_PATH}" 2>/dev/null || true
-    fi
+    chown appuser:appuser "${CONFIG_PATH}" 2>/dev/null || true
 fi
 
 echo "Configuration file ready at: ${CONFIG_PATH}"
