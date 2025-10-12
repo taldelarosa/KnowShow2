@@ -1,10 +1,17 @@
+using System.Collections.Concurrent;
+
 namespace EpisodeIdentifier.Core.Models;
 
 /// <summary>
 /// Represents the result of a bulk processing operation.
+/// Designed to be thread-safe for concurrent operation result aggregation.
 /// </summary>
 public class BulkProcessingResult
 {
+    private int _processedFiles = 0;
+    private int _failedFiles = 0;
+    private int _skippedFiles = 0;
+
     /// <summary>
     /// Gets or sets the request ID that generated this result.
     /// </summary>
@@ -36,19 +43,22 @@ public class BulkProcessingResult
     public int TotalFiles { get; set; } = 0;
 
     /// <summary>
-    /// Gets or sets the number of files successfully processed.
+    /// Gets the number of files successfully processed.
+    /// Thread-safe for concurrent operations.
     /// </summary>
-    public int ProcessedFiles { get; set; } = 0;
+    public int ProcessedFiles => _processedFiles;
 
     /// <summary>
-    /// Gets or sets the number of files that failed processing.
+    /// Gets the number of files that failed processing.
+    /// Thread-safe for concurrent operations.
     /// </summary>
-    public int FailedFiles { get; set; } = 0;
+    public int FailedFiles => _failedFiles;
 
     /// <summary>
-    /// Gets or sets the number of files skipped during processing.
+    /// Gets the number of files skipped during processing.
+    /// Thread-safe for concurrent operations.
     /// </summary>
-    public int SkippedFiles { get; set; } = 0;
+    public int SkippedFiles => _skippedFiles;
 
     /// <summary>
     /// Gets or sets the processing rate in files per second.
@@ -56,14 +66,16 @@ public class BulkProcessingResult
     public double ProcessingRate => Duration.TotalSeconds > 0 ? ProcessedFiles / Duration.TotalSeconds : 0;
 
     /// <summary>
-    /// Gets or sets detailed results for individual files.
+    /// Gets detailed results for individual files.
+    /// Thread-safe for concurrent operations.
     /// </summary>
-    public List<FileProcessingResult> FileResults { get; set; } = new();
+    public ConcurrentBag<FileProcessingResult> FileResults { get; private set; } = new();
 
     /// <summary>
-    /// Gets or sets any errors that occurred during bulk processing.
+    /// Gets any errors that occurred during bulk processing.
+    /// Thread-safe for concurrent operations.
     /// </summary>
-    public List<BulkProcessingError> Errors { get; set; } = new();
+    public ConcurrentBag<BulkProcessingError> Errors { get; private set; } = new();
 
     /// <summary>
     /// Gets or sets the final progress information.
@@ -84,4 +96,31 @@ public class BulkProcessingResult
     /// Gets a value indicating whether the processing was cancelled.
     /// </summary>
     public bool WasCancelled => Status == BulkProcessingStatus.Cancelled;
+
+    /// <summary>
+    /// Thread-safe method to increment the processed files counter.
+    /// </summary>
+    public void IncrementProcessedFiles() => Interlocked.Increment(ref _processedFiles);
+
+    /// <summary>
+    /// Thread-safe method to increment the failed files counter.
+    /// </summary>
+    public void IncrementFailedFiles() => Interlocked.Increment(ref _failedFiles);
+
+    /// <summary>
+    /// Thread-safe method to increment the skipped files counter.
+    /// </summary>
+    public void IncrementSkippedFiles() => Interlocked.Increment(ref _skippedFiles);
+
+    /// <summary>
+    /// Gets file results as a list for JSON serialization.
+    /// Converts the thread-safe ConcurrentBag to a standard List.
+    /// </summary>
+    public List<FileProcessingResult> GetFileResultsAsList() => FileResults.ToList();
+
+    /// <summary>
+    /// Gets errors as a list for JSON serialization.
+    /// Converts the thread-safe ConcurrentBag to a standard List.
+    /// </summary>
+    public List<BulkProcessingError> GetErrorsAsList() => Errors.ToList();
 }

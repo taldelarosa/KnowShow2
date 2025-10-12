@@ -113,9 +113,9 @@ This feature adds optional series name and season number parameters to hash-base
 
 - EVERY feature as library? YES (FuzzyHashService is library with CLI interface)
 - Libraries listed:
-  - FuzzyHashService: Hash generation, storage, and filtered searching
-  - SubtitleNormalizationService: Text normalization (existing)
-  - ConfigurationService: Configuration management (existing)
+    - FuzzyHashService: Hash generation, storage, and filtered searching
+    - SubtitleNormalizationService: Text normalization (existing)
+    - ConfigurationService: Configuration management (existing)
 - CLI per library: YES (existing `config` command structure, will extend for filtering params)
 - Library docs: llms.txt format used in documentation
 

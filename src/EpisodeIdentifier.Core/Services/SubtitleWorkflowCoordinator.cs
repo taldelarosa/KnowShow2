@@ -15,7 +15,7 @@ public class SubtitleWorkflowCoordinator
     private readonly SubtitleExtractor _pgsExtractor;
     private readonly ITextSubtitleExtractor _textExtractor;
     private readonly EnhancedPgsToTextConverter _pgsConverter;
-    private readonly SubtitleMatcher _matcher;
+    private readonly IEpisodeIdentificationService _identificationService;
 
     public SubtitleWorkflowCoordinator(
         ILogger<SubtitleWorkflowCoordinator> logger,
@@ -23,14 +23,14 @@ public class SubtitleWorkflowCoordinator
         SubtitleExtractor pgsExtractor,
         ITextSubtitleExtractor textExtractor,
         EnhancedPgsToTextConverter pgsConverter,
-        SubtitleMatcher matcher)
+        IEpisodeIdentificationService identificationService)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _validator = validator ?? throw new ArgumentNullException(nameof(validator));
         _pgsExtractor = pgsExtractor ?? throw new ArgumentNullException(nameof(pgsExtractor));
         _textExtractor = textExtractor ?? throw new ArgumentNullException(nameof(textExtractor));
         _pgsConverter = pgsConverter ?? throw new ArgumentNullException(nameof(pgsConverter));
-        _matcher = matcher ?? throw new ArgumentNullException(nameof(matcher));
+        _identificationService = identificationService ?? throw new ArgumentNullException(nameof(identificationService));
     }
 
     /// <summary>
@@ -174,7 +174,7 @@ public class SubtitleWorkflowCoordinator
             _logger.LogDebug("Successfully extracted {Length} characters from PGS subtitles", subtitleText.Length);
 
             // Match against database
-            var result = await _matcher.IdentifyEpisode(subtitleText);
+            var result = await _identificationService.IdentifyEpisodeAsync(subtitleText, videoFilePath);
 
             // Add workflow metadata
             if (!result.HasError)
@@ -270,7 +270,7 @@ public class SubtitleWorkflowCoordinator
             _logger.LogDebug("Successfully extracted {Length} characters from text subtitles", extractedTrack.Content.Length);
 
             // Match against database
-            var result = await _matcher.IdentifyEpisode(extractedTrack.Content);
+            var result = await _identificationService.IdentifyEpisodeAsync(extractedTrack.Content, videoFilePath);
 
             // Add workflow metadata
             if (!result.HasError)

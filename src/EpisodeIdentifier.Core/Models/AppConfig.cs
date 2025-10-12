@@ -28,6 +28,13 @@ public class AppConfig
     /// </summary>
     [JsonPropertyName("filenameTemplate")]
     public string FilenameTemplate { get; set; } = "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}";
+
+    /// <summary>
+    /// Maximum number of concurrent operations allowed for bulk processing (default: 1, range: 1-100).
+    /// Controls the level of parallelism when processing multiple files simultaneously.
+    /// </summary>
+    [JsonPropertyName("maxConcurrency")]
+    public int MaxConcurrency { get; set; } = 1;
 }
 
 public class FilenamePatterns

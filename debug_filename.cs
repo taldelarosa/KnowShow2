@@ -10,7 +10,7 @@ var testRequest = new FilenameGenerationRequest
 {
     Series = new string('B', 150),
     Season = "01",
-    Episode = "01", 
+    Episode = "01",
     EpisodeName = new string('C', 150),
     FileExtension = ".mkv",
     MatchConfidence = 0.95,

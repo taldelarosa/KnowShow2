@@ -1,0 +1,320 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.IO.Abstractions.TestingHelpers;
+using System.Threading.Tasks;
+using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Services;
+using EpisodeIdentifier.Core.Extensions;
+using EpisodeIdentifier.Core.Interfaces;
+using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Xunit;
+using Xunit.Abstractions;
+
+namespace EpisodeIdentifier.Tests.Integration;
+
+/// <summary>
+/// Integration tests for concurrent processing with maxConcurrency=3.
+/// These tests verify the complete pipeline with concurrent file processing enabled.
+/// 
+/// T009: Integration test for concurrent processing (maxConcurrency=3)
+/// Tests the full workflow: Configuration → BulkProcessingOptions → Concurrent Processing
+/// </summary>
+public class ConcurrentProcessingIntegrationTests
+{
+    private readonly ITestOutputHelper _output;
+    private readonly MockFileSystem _fileSystem;
+
+    public ConcurrentProcessingIntegrationTests(ITestOutputHelper output)
+    {
+        _output = output;
+        _fileSystem = new MockFileSystem();
+    }
+
+    private ServiceProvider CreateServiceProvider(string configPath)
+    {
+        var services = new ServiceCollection();
+        
+        // Setup logging to capture test output
+        services.AddLogging(builder => 
+        {
+            builder.AddProvider(new XunitLoggerProvider(_output));
+            builder.SetMinimumLevel(LogLevel.Debug);
+        });
+
+        // Override file system with mock
+        services.AddSingleton<System.IO.Abstractions.IFileSystem>(_fileSystem);
+        
+        // Add all episode identification services using the extension method
+        services.AddEpisodeIdentificationServices();
+        
+        // Override the configuration service to use the test config path
+        services.AddScoped<IConfigurationService>(provider => 
+            new ConfigurationService(
+                provider.GetRequiredService<ILogger<ConfigurationService>>(),
+                provider.GetRequiredService<System.IO.Abstractions.IFileSystem>(),
+                configPath
+            ));
+        
+        return services.BuildServiceProvider();
+    }
+
+    [Fact]
+    public async Task ProcessMultipleFiles_WithMaxConcurrencyThree_ShouldProcessConcurrently()
+    {
+        // Arrange
+        var configPath = Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
+        var testFiles = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "Series.S01E01.mkv"),
+            Path.Combine(AppContext.BaseDirectory, "Series.S01E02.mkv"), 
+            Path.Combine(AppContext.BaseDirectory, "Series.S01E03.mkv"),
+            Path.Combine(AppContext.BaseDirectory, "Series.S01E04.mkv")
+        };
+        
+        // Create configuration JSON with maxConcurrency = 3
+        var configJson = @"{
+            ""version"": ""2.0"",
+            ""matchConfidenceThreshold"": 0.8,
+            ""renameConfidenceThreshold"": 0.85,
+            ""fuzzyHashThreshold"": 75,
+            ""hashingAlgorithm"": ""CTPH"",
+            ""maxConcurrency"": 3,
+            ""filenamePatterns"": {
+                ""primaryPattern"": ""^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$""
+            },
+            ""filenameTemplate"": ""{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}""
+        }";
+        
+        _fileSystem.AddFile(configPath, configJson);
+        foreach (var file in testFiles)
+        {
+            _fileSystem.AddFile(file, "test episode content");
+        }
+
+        // Setup service provider with proven pattern
+        using var serviceProvider = CreateServiceProvider(configPath);
+        
+        var configService = serviceProvider.GetRequiredService<IConfigurationService>();
+        var configResult = await configService.LoadConfiguration();
+        configResult.Should().NotBeNull();
+        configResult.Configuration?.MaxConcurrency.Should().Be(3);
+
+        // Act & Assert - Process multiple files concurrently
+        var bulkProcessor = serviceProvider.GetRequiredService<IBulkProcessor>();
+        
+        var request = new BulkProcessingRequest
+        {
+            Paths = testFiles.ToList()
+        };
+        
+        var result = await bulkProcessor.ProcessAsync(request);
+        
+        result.Should().NotBeNull();
+        result.ProcessedFiles.Should().Be(4);
+        result.FileResults.Should().HaveCount(4);
+        result.FileResults.Should().AllSatisfy(processedFile =>
+        {
+            processedFile.Should().NotBeNull();
+            processedFile.Status.Should().Be(FileProcessingStatus.Success);
+        });
+    }
+
+    [Theory]
+    [InlineData(3, 5)] // 3 concurrent, 5 files  
+    [InlineData(2, 4)] // 2 concurrent, 4 files
+    [InlineData(4, 3)] // 4 concurrent, 3 files (should only use 3)
+    public async Task ProcessMultipleFiles_VariousConcurrencyLevels_ShouldRespectLimits(
+        int maxConcurrency, int fileCount)
+    {
+        // Arrange
+        var configPath = Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
+        var testFiles = new List<string>();
+        
+        for (int i = 1; i <= fileCount; i++)
+        {
+            var filePath = Path.Combine(AppContext.BaseDirectory, $"Series.S01E{i:00}.mkv");
+            testFiles.Add(filePath);
+            _fileSystem.AddFile(filePath, "test episode content");
+        }
+        
+        var configJson = $@"{{
+            ""version"": ""2.0"",
+            ""matchConfidenceThreshold"": 0.8,
+            ""renameConfidenceThreshold"": 0.85,
+            ""fuzzyHashThreshold"": 75,
+            ""hashingAlgorithm"": ""CTPH"",
+            ""maxConcurrency"": {maxConcurrency},
+            ""filenamePatterns"": {{
+                ""primaryPattern"": ""^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$""
+            }},
+            ""filenameTemplate"": ""{{SeriesName}} - S{{Season:D2}}E{{Episode:D2}} - {{EpisodeName}}{{FileExtension}}""
+        }}";
+        
+        _fileSystem.AddFile(configPath, configJson);
+
+        // Setup service provider with proven pattern
+        using var serviceProvider = CreateServiceProvider(configPath);
+        
+        var configService = serviceProvider.GetRequiredService<IConfigurationService>();
+        var configResult = await configService.LoadConfiguration();
+        configResult.Should().NotBeNull();
+        configResult.Configuration?.MaxConcurrency.Should().Be(maxConcurrency);
+
+        // Act
+        var bulkProcessor = serviceProvider.GetRequiredService<IBulkProcessor>();
+        
+        var request = new BulkProcessingRequest
+        {
+            Paths = testFiles
+        };
+        
+        var result = await bulkProcessor.ProcessAsync(request);
+        
+        // Assert
+        result.Should().NotBeNull();
+        result.ProcessedFiles.Should().Be(fileCount);
+        result.FileResults.Should().HaveCount(fileCount);
+        
+        _output.WriteLine($"Processed {result.ProcessedFiles} files with maxConcurrency={maxConcurrency}");
+        _output.WriteLine($"Processing took {result.Duration.TotalMilliseconds:F1}ms");
+    }
+
+    [Fact]
+    public async Task ProcessMultipleFiles_LargeBatch_ShouldHandleConcurrently()
+    {
+        // Arrange
+        const int fileCount = 10;
+        var configPath = Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
+        var testFiles = new List<string>();
+        
+        for (int i = 1; i <= fileCount; i++)
+        {
+            var filePath = Path.Combine(AppContext.BaseDirectory, $"Series.S01E{i:00}.mkv");
+            testFiles.Add(filePath);
+            _fileSystem.AddFile(filePath, "test episode content");
+        }
+        
+        var configJson = @"{
+            ""version"": ""2.0"",
+            ""matchConfidenceThreshold"": 0.8,
+            ""renameConfidenceThreshold"": 0.85,
+            ""fuzzyHashThreshold"": 75,
+            ""hashingAlgorithm"": ""CTPH"",
+            ""maxConcurrency"": 3,
+            ""filenamePatterns"": {
+                ""primaryPattern"": ""^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$""
+            },
+            ""filenameTemplate"": ""{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}""
+        }";
+        
+        _fileSystem.AddFile(configPath, configJson);
+
+        // Setup service provider with proven pattern
+        using var serviceProvider = CreateServiceProvider(configPath);
+        
+        var configService = serviceProvider.GetRequiredService<IConfigurationService>();
+        var configResult = await configService.LoadConfiguration();
+        configResult.Should().NotBeNull();
+        configResult.Configuration?.MaxConcurrency.Should().Be(3);
+
+        // Act
+        var bulkProcessor = serviceProvider.GetRequiredService<IBulkProcessor>();
+        
+        var request = new BulkProcessingRequest
+        {
+            Paths = testFiles
+        };
+        
+        var result = await bulkProcessor.ProcessAsync(request);
+        
+        // Assert
+        result.Should().NotBeNull();
+        result.ProcessedFiles.Should().Be(fileCount);
+        result.FileResults.Should().HaveCount(fileCount);
+        
+        // Verify all files were processed
+        foreach (var file in testFiles)
+        {
+            var fileResult = result.FileResults.FirstOrDefault(r => r.FilePath == file);
+            fileResult.Should().NotBeNull($"Expected result for file {file}");
+            fileResult!.Status.Should().Be(FileProcessingStatus.Success);
+        }
+        
+        _output.WriteLine($"Successfully processed {result.ProcessedFiles} files in {result.Duration.TotalMilliseconds:F1}ms");
+        _output.WriteLine($"Average processing rate: {result.ProcessingRate:F2} files/second");
+    }
+
+    [Fact]
+    public async Task ProcessMultipleFiles_WithProgressReporting_ShouldReportProgress()
+    {
+        // Arrange
+        var configPath = Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
+        var testFiles = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "Series.S01E01.mkv"),
+            Path.Combine(AppContext.BaseDirectory, "Series.S01E02.mkv"),
+            Path.Combine(AppContext.BaseDirectory, "Series.S01E03.mkv")
+        };
+        
+        var configJson = @"{
+            ""version"": ""2.0"",
+            ""matchConfidenceThreshold"": 0.8,
+            ""renameConfidenceThreshold"": 0.85,
+            ""fuzzyHashThreshold"": 75,
+            ""hashingAlgorithm"": ""CTPH"",
+            ""maxConcurrency"": 3,
+            ""filenamePatterns"": {
+                ""primaryPattern"": ""^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$""
+            },
+            ""filenameTemplate"": ""{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}""
+        }";
+        
+        _fileSystem.AddFile(configPath, configJson);
+        foreach (var file in testFiles)
+        {
+            _fileSystem.AddFile(file, "test episode content");
+        }
+
+        // Setup service provider with proven pattern
+        using var serviceProvider = CreateServiceProvider(configPath);
+        
+        var configService = serviceProvider.GetRequiredService<IConfigurationService>();
+        var configResult = await configService.LoadConfiguration();
+        configResult.Should().NotBeNull();
+        configResult.Configuration?.MaxConcurrency.Should().Be(3);
+
+        // Setup progress tracking
+        var progressUpdates = new List<BulkProcessingProgress>();
+        var progress = new Progress<BulkProcessingProgress>(p => progressUpdates.Add(p));
+
+        // Act
+        var bulkProcessor = serviceProvider.GetRequiredService<IBulkProcessor>();
+        
+        var request = new BulkProcessingRequest
+        {
+            Paths = testFiles.ToList()
+        };
+        
+        var result = await bulkProcessor.ProcessAsync(request, progress);
+        
+        // Assert
+        result.Should().NotBeNull();
+        result.ProcessedFiles.Should().Be(3);
+        result.FileResults.Should().HaveCount(3);
+        
+        // Verify progress was reported
+        progressUpdates.Should().NotBeEmpty("Expected progress updates during processing");
+        _output.WriteLine($"Received {progressUpdates.Count} progress updates");
+        
+        // Log progress updates for visibility
+        for (int i = 0; i < progressUpdates.Count; i++)
+        {
+            var update = progressUpdates[i];
+            _output.WriteLine($"Progress {i + 1}: Phase={update.CurrentPhase}, Files={update.ProcessedFiles}/{update.TotalFiles}");
+        }
+    }
+}

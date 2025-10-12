@@ -15,14 +15,14 @@ public class VideoFormatValidatorTests
     }
 
     [Fact]
-    public async Task IsAV1Encoded_WithNonexistentFile_ReturnsFalse()
+    public async Task IsValidForProcessing_WithNonexistentFile_ReturnsFalse()
     {
         // Arrange
         var validator = GetValidator();
         var nonexistentPath = "/path/to/nonexistent/file.mkv";
 
         // Act
-        var result = await validator.IsAV1Encoded(nonexistentPath);
+        var result = await validator.IsValidForProcessing(nonexistentPath);
 
         // Assert
         Assert.False(result);

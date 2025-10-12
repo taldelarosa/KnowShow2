@@ -220,7 +220,6 @@ public class Program
         var pgsConverter = new EnhancedPgsToTextConverter(loggerFactory.CreateLogger<EnhancedPgsToTextConverter>(), pgsRipService, fallbackConverter);
         var normalizationService = new SubtitleNormalizationService(loggerFactory.CreateLogger<SubtitleNormalizationService>());
         var hashService = new FuzzyHashService(hashDb.FullName, loggerFactory.CreateLogger<FuzzyHashService>(), normalizationService);
-        var matcher = new SubtitleMatcher(hashService, loggerFactory.CreateLogger<SubtitleMatcher>(), legacyConfigService);
         var filenameParser = new SubtitleFilenameParser(loggerFactory.CreateLogger<SubtitleFilenameParser>(), legacyConfigService);
         var textExtractor = new VideoTextSubtitleExtractor(loggerFactory.CreateLogger<VideoTextSubtitleExtractor>());
         var filenameService = new FilenameService(legacyConfigService);
@@ -235,10 +234,9 @@ public class Program
             loggerFactory.CreateLogger<EnhancedCTPhHashingService>(),
             fuzzyHashConfigService);
 
-        // Create new episode identification service that supports both legacy and enhanced CTPH fuzzy hashing with text fallback
+        // Create episode identification service that uses CTPH fuzzy hashing with text fallback
         var episodeIdentificationService = new EpisodeIdentificationService(
             loggerFactory.CreateLogger<EpisodeIdentificationService>(),
-            matcher,
             fileSystem,
             enhancedCtphService);
 
@@ -389,18 +387,19 @@ public class Program
                     loggerFactory.CreateLogger<BulkProcessorService>(),
                     fileDiscoveryService,
                     progressTracker,
-                    videoFileProcessingService);
+                    videoFileProcessingService,
+                    localFileSystem);
+
+                // Create BulkProcessingOptions with config-based concurrency
+                var bulkProcessingOptions = await BulkProcessingOptions.CreateFromConfigurationAsync(legacyConfigService);
+                bulkProcessingOptions.Recursive = true;
+                bulkProcessingOptions.IncludeExtensions = new List<string> { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v" };
+                bulkProcessingOptions.ContinueOnError = true;
 
                 var request = new BulkProcessingRequest
                 {
                     Paths = new List<string> { bulkIdentifyDirectory.FullName },
-                    Options = new BulkProcessingOptions
-                    {
-                        Recursive = true,
-                        IncludeExtensions = new List<string> { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v" },
-                        MaxConcurrency = Environment.ProcessorCount,
-                        ContinueOnError = true
-                    }
+                    Options = bulkProcessingOptions
                 };
 
                 // Set up progress reporting
@@ -431,7 +430,7 @@ public class Program
                             skippedFiles = result.SkippedFiles,
                             processingTime = result.Duration.ToString(@"mm\:ss")
                         },
-                        results = result.FileResults.Select(fr => new
+                        results = result.GetFileResultsAsList().Select(fr => new
                         {
                             file = Path.GetFileName(fr.FilePath),
                             status = fr.Status.ToString(),
@@ -454,8 +453,8 @@ public class Program
             }
             else
             {
-                // Validate AV1 encoding first
-                if (!await validator.IsAV1Encoded(input!.FullName))
+                // Validate file format first
+                if (!await validator.IsValidForProcessing(input!.FullName))
                 {
                     Console.WriteLine(JsonSerializer.Serialize(new
                     {

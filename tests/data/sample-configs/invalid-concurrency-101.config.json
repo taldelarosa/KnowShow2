@@ -1,0 +1,23 @@
+{
+  "version": "2.0",
+  "hashingAlgorithm": "CTPH",
+  "maxConcurrency": 101,
+  "matchConfidenceThreshold": 0.85,
+  "renameConfidenceThreshold": 0.90,
+  "fuzzyHashThreshold": 75,
+  "filenamePatterns": {
+    "primaryPattern": "(?<SeriesName>.*?) - S(?<Season>\\d{2})E(?<Episode>\\d{2})",
+    "fallbackPatterns": []
+  },
+  "filenameTemplate": "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}.{Extension}",
+  "bulkProcessing": {
+    "defaultBatchSize": 100,
+    "defaultMaxConcurrency": 1,
+    "defaultProgressReportingInterval": 2000,
+    "defaultMaxErrorsBeforeAbort": null,
+    "defaultFileProcessingTimeout": null,
+    "maxBatchSize": 1000,
+    "maxConcurrency": 50
+  },
+  "enableMemoryMonitoring": true
+}
