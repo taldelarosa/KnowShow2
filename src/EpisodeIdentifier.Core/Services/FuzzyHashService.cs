@@ -515,15 +515,34 @@ public class FuzzyHashService : IDisposable
         }
 
         await _readConnSemaphore.WaitAsync();
-        if (_readConnections.TryTake(out var pooled) && pooled.State == System.Data.ConnectionState.Open)
+        
+        try
         {
-            return pooled;
-        }
+            // Try to reuse a pooled connection if available and open
+            if (_readConnections.TryTake(out var pooled) && pooled.State == System.Data.ConnectionState.Open)
+            {
+                return pooled;
+            }
 
-        var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync();
-        ApplyConnectionPragmas(connection);
-        return connection;
+            // Dispose closed/broken connection if we got one
+            if (pooled != null)
+            {
+                try { pooled.Dispose(); } catch { /* ignore */ }
+            }
+
+            // Create a new connection
+            var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+            ApplyConnectionPragmas(connection);
+            return connection;
+        }
+        catch
+        {
+            // CRITICAL: Release semaphore if connection creation fails
+            // to prevent permanent semaphore count decrement
+            _readConnSemaphore.Release();
+            throw;
+        }
     }
 
     private void ReturnReadConnection(SqliteConnection connection)
