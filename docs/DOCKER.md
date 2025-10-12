@@ -199,7 +199,7 @@ Best for:
 - Automated workflows
 - Integration with media management tools
 
-See [docs/unraid.md](docs/unraid.md) for detailed Unraid setup.
+See [unraid.md](unraid.md) for detailed Unraid setup.
 
 ### Standalone Docker (Production)
 
@@ -510,10 +510,9 @@ jobs:
 
 ## Additional Resources
 
-- **Unraid Setup Guide**: [docs/unraid.md](docs/unraid.md)
-- **Main Documentation**: [README.md](README.md)
-- **Configuration Guide**: [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md)
-- **Docker Hub**: <https://hub.docker.com/r/episodeidentifier/episodeidentifier>
+- **Unraid Setup Guide**: [unraid.md](unraid.md)
+- **Main Documentation**: [../README.md](../README.md)
+- **Configuration Guide**: [../CONFIGURATION_GUIDE.md](../CONFIGURATION_GUIDE.md)
 - **GitHub Repository**: <https://github.com/taldelarosa/KnowShow2>
 
 ## Support
