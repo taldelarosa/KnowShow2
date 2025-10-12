@@ -8,6 +8,7 @@ using Xunit;
 using EpisodeIdentifier.Core.Models;
 using EpisodeIdentifier.Core.Services;
 using EpisodeIdentifier.Core.Models.Configuration;
+using EpisodeIdentifier.Core.Interfaces;
 using System.IO.Abstractions.TestingHelpers;
 
 namespace EpisodeIdentifier.Tests.Contract
@@ -30,10 +31,15 @@ namespace EpisodeIdentifier.Tests.Contract
             var configPath = Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
             var mockFileSystem = new MockFileSystem();
             services.AddSingleton<System.IO.Abstractions.IFileSystem>(mockFileSystem);
-            services.AddSingleton<IAppConfigService>(provider => new ConfigurationService(
+            
+            // Register ConfigurationService for both interfaces it implements
+            // This test specifically needs IAppConfigService for BulkProcessingOptions.CreateFromConfigurationAsync
+            services.AddSingleton<ConfigurationService>(provider => new ConfigurationService(
                 provider.GetRequiredService<ILogger<ConfigurationService>>(),
                 mockFileSystem,
                 configPath));
+            services.AddSingleton<IAppConfigService>(provider => provider.GetRequiredService<ConfigurationService>());
+            services.AddSingleton<IConfigurationService>(provider => provider.GetRequiredService<ConfigurationService>());
 
             _serviceProvider = services.BuildServiceProvider();
         }
