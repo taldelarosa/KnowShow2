@@ -11,17 +11,20 @@
 **Decision**: Use multi-stage build with `mcr.microsoft.com/dotnet/sdk:8.0` for build stage and `mcr.microsoft.com/dotnet/runtime:8.0` for runtime stage
 
 **Rationale**:
+
 - SDK image (~1GB) only needed for compilation, not runtime
 - Runtime image (~200MB) significantly smaller for final container
 - Microsoft official images have security updates and best practices built-in
 - Self-contained publish can reduce runtime dependencies but increases size (~75MB)
 
 **Alternatives Considered**:
+
 - **Single-stage with SDK**: Rejected - 800MB+ larger final image
 - **Self-contained single file**: Rejected - larger artifact, no shared runtime benefits
 - **Alpine-based .NET images**: Considered but runtime images with musl libc have limited testing
 
 **Implementation**:
+
 ```dockerfile
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 # Build application
@@ -36,17 +39,20 @@ FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 **Decision**: Use Debian-based .NET runtime image and install dependencies via apt
 
 **Rationale**:
+
 - FFmpeg, MKVToolNix, Tesseract readily available in Debian repos
 - Microsoft's .NET runtime images based on Debian Bullseye/Bookworm
 - Better compatibility with pgsrip and Python dependencies
 - Well-documented package versions
 
 **Alternatives Considered**:
+
 - **Alpine Linux**: Rejected - musl libc compatibility issues with some dependencies, smaller package ecosystem
 - **Ubuntu**: Considered - similar to Debian but larger base image
 - **Build from source**: Rejected - significantly increases build time and maintenance
 
 **Implementation**:
+
 ```dockerfile
 RUN apt-get update && apt-get install -y \
     ffmpeg \
@@ -65,17 +71,20 @@ RUN apt-get update && apt-get install -y \
 **Decision**: Install pgsrip via uv (fast Python package manager) during build stage
 
 **Rationale**:
+
 - pgsrip requires Python 3.10+ and specific dependencies (Pillow, pytesseract)
 - uv is significantly faster than pip (10-100x) for dependency resolution
 - Can pin specific versions for reproducibility
 - Already used in project's setup scripts
 
 **Alternatives Considered**:
+
 - **pip**: Rejected - slower, less reliable dependency resolution
 - **System packages**: Rejected - pgsrip not available in Debian repos
 - **Manual installation**: Rejected - harder to maintain and version control
 
 **Implementation**:
+
 ```dockerfile
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     uv pip install --system pgsrip
@@ -88,17 +97,20 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
 **Decision**: Create XML template following Unraid Community Applications schema
 
 **Rationale**:
+
 - Unraid's Docker UI parses XML templates to generate configuration forms
 - Users can add repositories directly via URL or manual entry
 - Supports variable types (Path, Port, Variable), descriptions, defaults
 - Industry-standard format used by hundreds of Unraid apps
 
 **Alternatives Considered**:
+
 - **docker-compose.yml**: Rejected - not native to Unraid UI
 - **JSON format**: Rejected - Unraid uses XML exclusively
 - **No template**: Rejected - poor user experience, requires manual config
 
 **Template Structure**:
+
 ```xml
 <?xml version="1.0"?>
 <Container version="2">
@@ -111,7 +123,7 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
 </Container>
 ```
 
-**Reference**: https://unraid.net/community/apps/templates
+**Reference**: <https://unraid.net/community/apps/templates>
 
 ---
 
@@ -120,17 +132,20 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
 **Decision**: Use gosu for user switching with PUID/PGID environment variables
 
 **Rationale**:
+
 - Unraid uses specific UIDs (99=nobody, 100=users by default)
 - Files created in container must match host permissions
 - gosu switches user without sudo overhead and setuid complications
 - Standard pattern in Unraid-compatible containers (linuxserver.io style)
 
 **Alternatives Considered**:
+
 - **su/sudo**: Rejected - more complex, security implications
 - **runuser**: Considered - similar but gosu is lighter
 - **Fixed UID/GID**: Rejected - inflexible, doesn't match all Unraid configs
 
 **Implementation**:
+
 ```bash
 #!/bin/bash
 # entrypoint.sh
@@ -150,17 +165,20 @@ exec gosu appuser "$@"
 **Decision**: Implement health check verifying CLI responds to --version command
 
 **Rationale**:
+
 - CLI tools don't have HTTP endpoints to ping
 - --version command validates binary works and dependencies load
 - Fast (<1 second) and reliable indicator
 - Unraid displays health status in Docker UI
 
 **Alternatives Considered**:
+
 - **No health check**: Rejected - harder to diagnose container issues
 - **Database check**: Considered - but database might not exist on first start
 - **File system check**: Rejected - doesn't validate application works
 
 **Implementation**:
+
 ```dockerfile
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD dotnet /app/EpisodeIdentifier.Core.dll --version || exit 1
@@ -173,11 +191,13 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 **Decision**: Multi-layered approach to minimize final image size
 
 **Rationale**:
+
 - Target <2GB for reasonable download time (per NFR-001)
 - Each optimization technique provides cumulative benefit
 - Smaller images = faster deployments and lower bandwidth
 
 **Techniques Applied**:
+
 1. **Multi-stage builds**: Exclude SDK (~800MB savings)
 2. **Apt cache cleanup**: Remove package lists after install (~100MB savings)
 3. **Layer ordering**: Place changing layers last (better caching)
@@ -185,11 +205,13 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 5. **Combine RUN commands**: Fewer layers = smaller image
 
 **Alternatives Considered**:
+
 - **Scratch/distroless base**: Rejected - can't install FFmpeg/Tesseract
 - **Aggressive trimming**: Rejected - might break dependencies
 - **External volume for tools**: Rejected - defeats purpose of self-contained container
 
 **Expected Final Size**: 1.5-1.8GB
+
 - Base runtime: ~200MB
 - .NET app: ~80MB
 - FFmpeg: ~300MB

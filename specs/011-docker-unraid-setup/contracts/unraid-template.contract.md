@@ -60,6 +60,7 @@ The Unraid template XML MUST conform to Unraid Community Applications schema ver
 ```
 
 **Contract**:
+
 - `Target` MUST be `/videos` (container path)
 - `Mode` MUST be `rw` for rename support
 - `Required` is `false` (can use --input with absolute paths)
@@ -83,6 +84,7 @@ The Unraid template XML MUST conform to Unraid Community Applications schema ver
 ```
 
 **Contract**:
+
 - `Target` MUST be `/data`
 - `Mode` MUST be `rw`
 - `Required` is `true` (critical for persistence)
@@ -106,6 +108,7 @@ The Unraid template XML MUST conform to Unraid Community Applications schema ver
 ```
 
 **Contract**:
+
 - `Target` MUST be `/config`
 - `Mode` MUST be `ro` (read-only)
 - `Display` is `advanced` (not shown by default)

@@ -6,6 +6,7 @@
 ## Contract Overview
 
 The Dockerfile MUST produce a working container image that:
+
 1. Contains all application dependencies
 2. Runs the Episode Identifier CLI
 3. Supports PUID/PGID for file permissions
@@ -21,12 +22,14 @@ The Dockerfile MUST produce a working container image that:
 **Base Image**: `mcr.microsoft.com/dotnet/sdk:8.0`
 
 **Responsibilities**:
+
 - Restore NuGet packages
 - Compile C# application
 - Publish in Release configuration
 - Output to `/app/publish`
 
 **Expected Outputs**:
+
 - `EpisodeIdentifier.Core.dll`
 - `EpisodeIdentifier.Core.deps.json`
 - `EpisodeIdentifier.Core.runtimeconfig.json`
@@ -41,6 +44,7 @@ The Dockerfile MUST produce a working container image that:
 **Base Image**: `mcr.microsoft.com/dotnet/runtime:8.0`
 
 **Responsibilities**:
+
 - Install system dependencies (FFmpeg, Tesseract, MKVToolNix)
 - Install Python and pgsrip
 - Install gosu for user switching
@@ -49,6 +53,7 @@ The Dockerfile MUST produce a working container image that:
 - Set up entrypoint script
 
 **Expected System Packages**:
+
 - `ffmpeg` (video processing)
 - `mkvtoolnix` (mkvextract command)
 - `tesseract-ocr` (OCR engine)
@@ -60,9 +65,11 @@ The Dockerfile MUST produce a working container image that:
 - `sqlite3` (database CLI, optional for debugging)
 
 **Expected Python Packages**:
+
 - `pgsrip` (PGS subtitle processor)
 
 **Test**: All commands available in PATH:
+
 ```bash
 ffmpeg -version
 mkvextract --version
@@ -87,6 +94,7 @@ gosu --version
 ```
 
 **Test**: Application can be executed:
+
 ```bash
 dotnet /app/EpisodeIdentifier.Core.dll --version
 ```
@@ -128,6 +136,7 @@ dotnet /app/EpisodeIdentifier.Core.dll --version
 ### File: `/entrypoint.sh`
 
 **Responsibilities**:
+
 1. Read PUID and PGID environment variables
 2. Update appuser UID/GID to match
 3. Fix ownership of /data, /config, /videos
@@ -135,10 +144,12 @@ dotnet /app/EpisodeIdentifier.Core.dll --version
 5. Execute passed command or default CLI
 
 **Input Environment Variables**:
+
 - `PUID` (default: 99)
 - `PGID` (default: 100)
 
 **Expected Behavior**:
+
 ```bash
 # Container starts with: docker run ... episode-identifier --help
 # entrypoint.sh receives: --help
@@ -146,6 +157,7 @@ dotnet /app/EpisodeIdentifier.Core.dll --version
 ```
 
 **Test Cases**:
+
 1. PUID=1000, PGID=1000 → files created as 1000:1000
 2. PUID=99, PGID=100 → files created as 99:100
 3. No PUID/PGID → defaults to 99:100
@@ -162,11 +174,13 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 ```
 
 **Success Criteria**:
+
 - Command exits with code 0
 - Output contains version string
 - Completes within 3 seconds
 
 **Failure Criteria**:
+
 - Command exits with non-zero code
 - Command times out (>3 seconds)
 - Command crashes or hangs
@@ -181,6 +195,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 **Target Size**: 1.5-1.8GB
 
 **Breakdown**:
+
 - Base runtime: ~200MB
 - .NET application: ~80MB
 - FFmpeg: ~300MB
@@ -233,6 +248,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 | `/config` | Configuration file | ro | No (uses defaults) |
 
 **Test Cases**:
+
 1. No volumes mounted → container starts, uses ephemeral storage
 2. Only /data mounted → database persists across restarts
 3. All volumes mounted → full functionality
@@ -303,11 +319,13 @@ docker exec test-container dotnet /app/EpisodeIdentifier.Core.dll --version
 ## Breaking Changes
 
 Any change that breaks these contracts requires:
+
 1. Major version bump
 2. Migration guide
 3. Deprecation notice (if possible)
 
 **Examples of breaking changes**:
+
 - Removing support for environment variable
 - Changing default paths
 - Removing system dependency

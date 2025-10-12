@@ -52,6 +52,7 @@
 - [ ] **T005** Ensure `docker/` directory structure exists and scripts are executable (chmod +x)
 
 **Files Created**:
+
 - `/mnt/c/Users/Ragma/KnowShow_Specd/.dockerignore`
 - `/mnt/c/Users/Ragma/KnowShow_Specd/docker/healthcheck.sh`
 - `/mnt/c/Users/Ragma/KnowShow_Specd/docker/entrypoint.sh`
@@ -66,63 +67,63 @@
 ### Contract Tests (4 tests - can run in parallel)
 
 - [ ] **T006** [P] Contract test for Dockerfile build stages in `tests/contract/DockerBuildContractTests.cs`
-  - Validates: Build stage uses .NET SDK 8.0, runtime stage uses .NET Runtime 8.0
-  - Validates: All dependencies installed (ffmpeg, mkvtoolnix, tesseract, pgsrip, gosu)
-  - Validates: Application files copied to `/app/`
-  - Validates: Image size < 2GB
-  - **Expected**: Test FAILS (Dockerfile doesn't exist yet)
+    - Validates: Build stage uses .NET SDK 8.0, runtime stage uses .NET Runtime 8.0
+    - Validates: All dependencies installed (ffmpeg, mkvtoolnix, tesseract, pgsrip, gosu)
+    - Validates: Application files copied to `/app/`
+    - Validates: Image size < 2GB
+    - **Expected**: Test FAILS (Dockerfile doesn't exist yet)
 
 - [ ] **T007** [P] Contract test for volume mounts in `tests/contract/DockerVolumeContractTests.cs`
-  - Validates: `/videos` volume is read/write accessible
-  - Validates: `/data` volume persists across container restarts
-  - Validates: `/config` volume is read-only
-  - Validates: Files created match PUID/PGID ownership
-  - **Expected**: Test FAILS (container not built yet)
+    - Validates: `/videos` volume is read/write accessible
+    - Validates: `/data` volume persists across container restarts
+    - Validates: `/config` volume is read-only
+    - Validates: Files created match PUID/PGID ownership
+    - **Expected**: Test FAILS (container not built yet)
 
 - [ ] **T008** [P] Contract test for environment variables in `tests/contract/DockerEnvironmentContractTests.cs`
-  - Validates: PUID/PGID default to 99/100
-  - Validates: Invalid PUID/PGID are rejected or defaulted
-  - Validates: TZ environment variable sets timezone correctly
-  - Validates: LOG_LEVEL environment variable is respected
-  - **Expected**: Test FAILS (entrypoint.sh not implemented yet)
+    - Validates: PUID/PGID default to 99/100
+    - Validates: Invalid PUID/PGID are rejected or defaulted
+    - Validates: TZ environment variable sets timezone correctly
+    - Validates: LOG_LEVEL environment variable is respected
+    - **Expected**: Test FAILS (entrypoint.sh not implemented yet)
 
 - [ ] **T009** [P] Contract test for Unraid template XML in `tests/contract/UnraidTemplateValidationTests.cs`
-  - Validates: XML is well-formed
-  - Validates: All required elements present (Name, Repository, Config entries)
-  - Validates: Volume paths start with `/`
-  - Validates: Default host paths use `/mnt/user/` convention
-  - **Expected**: Test FAILS (template doesn't exist yet)
+    - Validates: XML is well-formed
+    - Validates: All required elements present (Name, Repository, Config entries)
+    - Validates: Volume paths start with `/`
+    - Validates: Default host paths use `/mnt/user/` convention
+    - **Expected**: Test FAILS (template doesn't exist yet)
 
 ### Integration Tests (4 tests - can run in parallel after contracts pass)
 
 - [ ] **T010** [P] Integration test for container startup in `tests/integration/DockerStartupTests.cs`
-  - Test: Container builds successfully
-  - Test: Container starts and reaches "healthy" status within 30 seconds
-  - Test: Health check passes consistently
-  - Test: Application responds to `--version` command
-  - **Expected**: Test FAILS (Dockerfile not implemented yet)
+    - Test: Container builds successfully
+    - Test: Container starts and reaches "healthy" status within 30 seconds
+    - Test: Health check passes consistently
+    - Test: Application responds to `--version` command
+    - **Expected**: Test FAILS (Dockerfile not implemented yet)
 
 - [ ] **T011** [P] Integration test for file permissions in `tests/integration/DockerPermissionsTests.cs`
-  - Test: Files created with PUID=1000 PGID=1000 have correct ownership
-  - Test: Files created with default PUID/PGID (99/100) have correct ownership
-  - Test: Container can read/write to mounted volumes
-  - Test: Config volume is read-only (write attempts fail)
-  - **Expected**: Test FAILS (entrypoint not implemented yet)
+    - Test: Files created with PUID=1000 PGID=1000 have correct ownership
+    - Test: Files created with default PUID/PGID (99/100) have correct ownership
+    - Test: Container can read/write to mounted volumes
+    - Test: Config volume is read-only (write attempts fail)
+    - **Expected**: Test FAILS (entrypoint not implemented yet)
 
 - [ ] **T012** [P] Integration test for episode identification in `tests/integration/DockerIdentificationTests.cs`
-  - Test: Store episode subtitle hash via container
-  - Test: Identify episode from video file via container
-  - Test: Database persists after container restart
-  - Test: All CLI commands work identically inside container
-  - **Expected**: Test FAILS (Dockerfile not complete yet)
+    - Test: Store episode subtitle hash via container
+    - Test: Identify episode from video file via container
+    - Test: Database persists after container restart
+    - Test: All CLI commands work identically inside container
+    - **Expected**: Test FAILS (Dockerfile not complete yet)
 
 - [ ] **T013** [P] Integration test for quickstart validation in `tests/integration/QuickstartValidationTests.cs`
-  - Automates all steps from quickstart.md
-  - Test: Container deployment (Phase 1)
-  - Test: Configuration setup (Phase 2)
-  - Test: First episode identification (Phase 3)
-  - Test: Bulk processing (Phase 4)
-  - **Expected**: Test FAILS (full pipeline not ready)
+    - Automates all steps from quickstart.md
+    - Test: Container deployment (Phase 1)
+    - Test: Configuration setup (Phase 2)
+    - Test: First episode identification (Phase 3)
+    - Test: Bulk processing (Phase 4)
+    - **Expected**: Test FAILS (full pipeline not ready)
 
 **Test Verification**: Run all tests and verify they FAIL before proceeding to Phase 3.3
 
@@ -133,104 +134,104 @@
 ### Docker Configuration (2 tasks)
 
 - [ ] **T014** Create multi-stage `Dockerfile` in repository root
-  - **Stage 1 (build)**: Base `mcr.microsoft.com/dotnet/sdk:8.0`, copy .csproj, restore packages, copy source, publish to `/app/publish`
-  - **Stage 2 (runtime)**: Base `mcr.microsoft.com/dotnet/runtime:8.0`, install system packages (ffmpeg, mkvtoolnix, tesseract-ocr, tesseract-ocr-eng, python3, ca-certificates, gosu), install pgsrip via uv, copy app from build stage, create appuser, set working directory `/app`, copy entrypoint and healthcheck scripts, expose no ports, set HEALTHCHECK, set ENTRYPOINT to entrypoint.sh
-  - **Optimize**: Combine RUN commands, clean apt cache, use --no-cache for uv
-  - File: `/mnt/c/Users/Ragma/KnowShow_Specd/Dockerfile`
+    - **Stage 1 (build)**: Base `mcr.microsoft.com/dotnet/sdk:8.0`, copy .csproj, restore packages, copy source, publish to `/app/publish`
+    - **Stage 2 (runtime)**: Base `mcr.microsoft.com/dotnet/runtime:8.0`, install system packages (ffmpeg, mkvtoolnix, tesseract-ocr, tesseract-ocr-eng, python3, ca-certificates, gosu), install pgsrip via uv, copy app from build stage, create appuser, set working directory `/app`, copy entrypoint and healthcheck scripts, expose no ports, set HEALTHCHECK, set ENTRYPOINT to entrypoint.sh
+    - **Optimize**: Combine RUN commands, clean apt cache, use --no-cache for uv
+    - File: `/mnt/c/Users/Ragma/KnowShow_Specd/Dockerfile`
 
 - [ ] **T015** Create Unraid Docker template XML at `docker/unraid-template.xml`
-  - Include: Container metadata (Name, Repository, Icon, Overview, Category)
-  - Include: Volume configs for /videos, /data, /config with descriptions
-  - Include: Environment configs for PUID, PGID, TZ, LOG_LEVEL
-  - Include: Support URL (GitHub issues), Project URL, Description with usage examples
-  - Validate: XML is well-formed and follows Unraid schema v2
-  - File: `/mnt/c/Users/Ragma/KnowShow_Specd/docker/unraid-template.xml`
+    - Include: Container metadata (Name, Repository, Icon, Overview, Category)
+    - Include: Volume configs for /videos, /data, /config with descriptions
+    - Include: Environment configs for PUID, PGID, TZ, LOG_LEVEL
+    - Include: Support URL (GitHub issues), Project URL, Description with usage examples
+    - Validate: XML is well-formed and follows Unraid schema v2
+    - File: `/mnt/c/Users/Ragma/KnowShow_Specd/docker/unraid-template.xml`
 
 ### Documentation (2 tasks - can run in parallel)
 
 - [ ] **T016** [P] Create comprehensive Unraid setup guide at `docs/unraid.md`
-  - Section 1: Prerequisites and requirements
-  - Section 2: Installation via Unraid Docker UI (step-by-step with screenshots placeholders)
-  - Section 3: Configuration (PUID/PGID, volume paths, environment variables)
-  - Section 4: Usage examples (docker exec commands for common operations)
-  - Section 5: Integration with User Scripts plugin (post-processing examples)
-  - Section 6: Troubleshooting common issues
-  - File: `/mnt/c/Users/Ragma/KnowShow_Specd/docs/unraid.md`
+    - Section 1: Prerequisites and requirements
+    - Section 2: Installation via Unraid Docker UI (step-by-step with screenshots placeholders)
+    - Section 3: Configuration (PUID/PGID, volume paths, environment variables)
+    - Section 4: Usage examples (docker exec commands for common operations)
+    - Section 5: Integration with User Scripts plugin (post-processing examples)
+    - Section 6: Troubleshooting common issues
+    - File: `/mnt/c/Users/Ragma/KnowShow_Specd/docs/unraid.md`
 
 - [ ] **T017** [P] Update main `README.md` with Docker deployment section
-  - Add "Docker Deployment" section after "Quick Setup"
-  - Include: Quick start with docker run command
-  - Include: Link to docs/unraid.md for detailed Unraid instructions
-  - Include: Volume mapping explanations
-  - Include: Common docker exec commands
-  - File: `/mnt/c/Users/Ragma/KnowShow_Specd/README.md`
+    - Add "Docker Deployment" section after "Quick Setup"
+    - Include: Quick start with docker run command
+    - Include: Link to docs/unraid.md for detailed Unraid instructions
+    - Include: Volume mapping explanations
+    - Include: Common docker exec commands
+    - File: `/mnt/c/Users/Ragma/KnowShow_Specd/README.md`
 
 ---
 
 ## Phase 3.4: Integration & Build Pipeline (5 tasks)
 
 - [ ] **T018** Build Docker image locally and verify contract tests pass
-  - Command: `docker build -t episode-identifier:test .`
-  - Verify: Image builds without errors
-  - Verify: Image size is under 2GB
-  - Run: All contract tests (T006-T009) should now PASS
-  - Fix: Any test failures before proceeding
+    - Command: `docker build -t episode-identifier:test .`
+    - Verify: Image builds without errors
+    - Verify: Image size is under 2GB
+    - Run: All contract tests (T006-T009) should now PASS
+    - Fix: Any test failures before proceeding
 
 - [ ] **T019** Run integration tests against built image
-  - Start container: `docker run -d --name test-container -e PUID=99 -e PGID=100 -v /tmp/test-videos:/videos -v /tmp/test-data:/data episode-identifier:test`
-  - Run: All integration tests (T010-T013) should now PASS
-  - Verify: Quickstart guide can be executed successfully
-  - Fix: Any test failures before proceeding
-  - Cleanup: Stop and remove test container
+    - Start container: `docker run -d --name test-container -e PUID=99 -e PGID=100 -v /tmp/test-videos:/videos -v /tmp/test-data:/data episode-identifier:test`
+    - Run: All integration tests (T010-T013) should now PASS
+    - Verify: Quickstart guide can be executed successfully
+    - Fix: Any test failures before proceeding
+    - Cleanup: Stop and remove test container
 
 - [ ] **T020** Test image on actual Unraid server (manual validation)
-  - Install container via Unraid Docker UI using template
-  - Verify: Container starts and shows "Healthy" status
-  - Verify: Execute quickstart.md steps on real server
-  - Verify: File permissions work correctly with Unraid shares
-  - Document: Any environment-specific issues discovered
+    - Install container via Unraid Docker UI using template
+    - Verify: Container starts and shows "Healthy" status
+    - Verify: Execute quickstart.md steps on real server
+    - Verify: File permissions work correctly with Unraid shares
+    - Document: Any environment-specific issues discovered
 
 - [ ] **T021** Create GitHub Actions workflow for automated builds at `.github/workflows/docker-build.yml`
-  - Trigger: On push to main branch and tags matching v*
-  - Jobs: Build multi-platform image (linux/amd64)
-  - Jobs: Run contract tests
-  - Jobs: Run integration tests
-  - Jobs: Publish to Docker Hub (on tags only)
-  - Include: Build cache optimization
-  - File: `/mnt/c/Users/Ragma/KnowShow_Specd/.github/workflows/docker-build.yml`
+    - Trigger: On push to main branch and tags matching v*
+    - Jobs: Build multi-platform image (linux/amd64)
+    - Jobs: Run contract tests
+    - Jobs: Run integration tests
+    - Jobs: Publish to Docker Hub (on tags only)
+    - Include: Build cache optimization
+    - File: `/mnt/c/Users/Ragma/KnowShow_Specd/.github/workflows/docker-build.yml`
 
 - [ ] **T022** Publish Docker image to Docker Hub
-  - Tag: `taldelarosa/episode-identifier:latest`
-  - Tag: `taldelarosa/episode-identifier:1.0.0-docker`
-  - Push: Both tags to Docker Hub
-  - Verify: Image is publicly accessible
-  - Update: Template XML with correct repository URL
+    - Tag: `taldelarosa/episode-identifier:latest`
+    - Tag: `taldelarosa/episode-identifier:1.0.0-docker`
+    - Push: Both tags to Docker Hub
+    - Verify: Image is publicly accessible
+    - Update: Template XML with correct repository URL
 
 ---
 
 ## Phase 3.5: Polish & Finalization (3 tasks)
 
 - [ ] **T023** [P] Create container icon and assets
-  - Design: 256x256 PNG icon for Unraid template
-  - Upload: Icon to repository (`docs/icon.png`)
-  - Update: Template XML with icon URL
-  - Create: Any additional visual assets needed
-  - File: `/mnt/c/Users/Ragma/KnowShow_Specd/docs/icon.png`
+    - Design: 256x256 PNG icon for Unraid template
+    - Upload: Icon to repository (`docs/icon.png`)
+    - Update: Template XML with icon URL
+    - Create: Any additional visual assets needed
+    - File: `/mnt/c/Users/Ragma/KnowShow_Specd/docs/icon.png`
 
 - [ ] **T024** [P] Performance and size optimization review
-  - Analyze: Docker image layers for optimization opportunities
-  - Test: Container startup time (target: <10 seconds)
-  - Test: Processing speed matches native installation (within 5%)
-  - Optimize: Dockerfile if any bottlenecks found
-  - Document: Performance benchmarks in docs/
+    - Analyze: Docker image layers for optimization opportunities
+    - Test: Container startup time (target: <10 seconds)
+    - Test: Processing speed matches native installation (within 5%)
+    - Optimize: Dockerfile if any bottlenecks found
+    - Document: Performance benchmarks in docs/
 
 - [ ] **T025** Final validation and documentation review
-  - Execute: Complete quickstart.md end-to-end on fresh system
-  - Review: All documentation for accuracy and completeness
-  - Verify: All tests passing (contract + integration)
-  - Verify: Template XML loads correctly in Unraid UI
-  - Update: DEPLOYMENT_GUIDE.md with Docker option
-  - Tag: Repository with v1.0.0-docker for release
+    - Execute: Complete quickstart.md end-to-end on fresh system
+    - Review: All documentation for accuracy and completeness
+    - Verify: All tests passing (contract + integration)
+    - Verify: Template XML loads correctly in Unraid UI
+    - Update: DEPLOYMENT_GUIDE.md with Docker option
+    - Tag: Repository with v1.0.0-docker for release
 
 ---
 

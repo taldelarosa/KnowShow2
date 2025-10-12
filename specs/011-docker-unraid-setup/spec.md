@@ -80,6 +80,7 @@ As an Unraid server administrator, I want to deploy the Episode Identifier as a 
 **Decision**: Manual execution via CLI commands
 
 **Rationale**:
+
 - Users typically process files in batches after downloads complete
 - Watch mode adds complexity and potential resource overhead
 - Can be added in future phases if demand exists
@@ -91,6 +92,7 @@ As an Unraid server administrator, I want to deploy the Episode Identifier as a 
 **Decision**: CLI-only operation with Unraid Docker UI template
 
 **Rationale**:
+
 - Unraid users are familiar with docker console/exec commands
 - Unraid Docker UI template makes installation and configuration user-friendly
 - Web UI adds significant complexity and maintenance burden
@@ -103,6 +105,7 @@ As an Unraid server administrator, I want to deploy the Episode Identifier as a 
 **Decision**: Standalone operation (Phase 1)
 
 **Rationale**:
+
 - External integrations (Radarr/Sonarr/etc.) can be achieved via post-processing scripts
 - Users can integrate via Unraid's User Scripts plugin
 - Keeps container focused and maintainable
@@ -150,9 +153,9 @@ As an Unraid server administrator, I want to deploy the Episode Identifier as a 
 
 - **Container Image**: Packaged application with all dependencies, ready for deployment on Unraid
 - **Volume Mounts**: Mapped directories for videos, database, and configuration
-  - Video directory: Source files for identification (read/write)
-  - Database directory: Persistent storage for subtitle hashes (read/write)
-  - Config directory: Application configuration files (read)
+    - Video directory: Source files for identification (read/write)
+    - Database directory: Persistent storage for subtitle hashes (read/write)
+    - Config directory: Application configuration files (read)
 - **Hash Database**: SQLite database persisted across container lifecycle containing learned subtitle hashes
 - **Configuration File**: JSON settings for thresholds, concurrency, and filename patterns
 - **Container Logs**: Output stream capturing application execution, errors, and processing results

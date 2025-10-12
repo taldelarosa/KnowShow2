@@ -13,11 +13,13 @@
 **Purpose**: Set UID for file operations inside container
 
 **Behavior**:
+
 - Container entrypoint sets appuser UID to this value
 - All file operations run as this UID
 - Files created in volumes will have this ownership
 
 **Test**:
+
 ```bash
 docker run -e PUID=1000 -v /tmp/test:/data episode-identifier touch /data/file
 stat -c '%u' /tmp/test/file  # Should output: 1000
@@ -33,11 +35,13 @@ stat -c '%u' /tmp/test/file  # Should output: 1000
 **Purpose**: Set GID for file operations inside container
 
 **Behavior**:
+
 - Container entrypoint sets appuser GID to this value
 - All file operations run with this GID
 - Files created in volumes will have this group ownership
 
 **Test**:
+
 ```bash
 docker run -e PGID=1000 -v /tmp/test:/data episode-identifier touch /data/file
 stat -c '%g' /tmp/test/file  # Should output: 1000
@@ -55,11 +59,13 @@ stat -c '%g' /tmp/test/file  # Should output: 1000
 **Purpose**: Set timezone for container and application logs
 
 **Behavior**:
+
 - Sets system timezone via `/etc/localtime`
 - Application timestamps use this timezone
 - Log entries show times in specified zone
 
 **Test**:
+
 ```bash
 docker run -e TZ=America/New_York episode-identifier date
 # Should show time in EST/EDT
@@ -75,11 +81,13 @@ docker run -e TZ=America/New_York episode-identifier date
 **Purpose**: Control application log verbosity
 
 **Behavior**:
+
 - Passed to .NET logging configuration
 - Controls which log messages are output
 - Lower levels include higher levels (Debug includes Information, Warning, Error)
 
 **Test**:
+
 ```bash
 docker run -e LOG_LEVEL=Debug episode-identifier --help
 # Should show debug-level log messages

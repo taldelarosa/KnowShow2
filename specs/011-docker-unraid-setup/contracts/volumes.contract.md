@@ -10,16 +10,19 @@
 **Purpose**: Read/write access to video files for processing
 
 **Requirements**:
+
 - **Mode**: `rw` (read-write) - Required for rename functionality
 - **Owner**: Must match PUID/PGID for file operations
 - **Contents**: Video files (.mkv, .mp4, etc.) with PGS subtitles
 
 **Behavior**:
+
 - Application reads video files from this directory
 - Application can write (rename) files in this directory
 - Subdirectories are processed in bulk operations
 
 **Test Cases**:
+
 1. Read video file → SUCCESS
 2. Rename video file → SUCCESS  
 3. Create/delete files → SUCCESS (if permissions allow)
@@ -32,17 +35,20 @@
 **Purpose**: Persistent storage for SQLite database and application state
 
 **Requirements**:
+
 - **Mode**: `rw` (read-write) - Required for database updates
 - **Owner**: Must match PUID/PGID
 - **Contents**: `production_hashes.db` (SQLite database)
 - **Persistence**: Must survive container restarts
 
 **Behavior**:
+
 - Database created automatically if not exists
 - Database updated during identification and storage operations
 - Configuration file can optionally be stored here
 
 **Test Cases**:
+
 1. Container start with empty `/data` → Creates new database
 2. Container restart → Database persists, existing hashes remain
 3. Database write → File ownership matches PUID/PGID
@@ -55,17 +61,20 @@
 **Purpose**: Read-only access to configuration JSON
 
 **Requirements**:
+
 - **Mode**: `ro` (read-only) - Configuration managed by user
 - **Owner**: Readable by PUID/PGID
 - **Contents**: `episodeidentifier.config.json`
 - **Optional**: Container uses defaults if not mounted
 
 **Behavior**:
+
 - Configuration loaded at startup
 - Hot-reload: Application watches for file changes
 - Missing config → Use built-in defaults
 
 **Test Cases**:
+
 1. Custom config provided → Application uses custom settings
 2. No config mounted → Application uses defaults
 3. Invalid JSON → Application fails fast with clear error
@@ -78,6 +87,7 @@
 ### PUID/PGID Mapping
 
 All file operations inside container MUST run as:
+
 - User ID = `$PUID` (environment variable)
 - Group ID = `$PGID` (environment variable)
 
@@ -92,6 +102,7 @@ All file operations inside container MUST run as:
 ### Pre-flight Checks
 
 Container entrypoint SHOULD validate:
+
 1. `/data` is writable (critical)
 2. `/videos` exists and is readable (if specified)
 3. `/config/episodeidentifier.config.json` is valid JSON (if exists)
@@ -117,6 +128,7 @@ docker run -v /mnt/user/appdata/episode-identifier:/data episode-identifier
 ```
 
 Result:
+
 - Database persists in `/mnt/user/appdata/episode-identifier/production_hashes.db`
 - Videos accessed via absolute paths in --input argument
 
@@ -133,6 +145,7 @@ docker run \
 ```
 
 Result:
+
 - Videos accessible at `/videos` inside container
 - Database persists across restarts
 - Custom configuration loaded from file
