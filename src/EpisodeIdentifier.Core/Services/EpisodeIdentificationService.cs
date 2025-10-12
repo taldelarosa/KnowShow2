@@ -39,11 +39,15 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
     /// <param name="subtitleText">The subtitle text content to identify</param>
     /// <param name="sourceFilePath">Optional path to the source file (used for CTPH hashing)</param>
     /// <param name="minConfidence">Optional minimum confidence threshold</param>
+    /// <param name="seriesFilter">Optional series name to filter results (case-insensitive)</param>
+    /// <param name="seasonFilter">Optional season number to filter results (requires seriesFilter)</param>
     /// <returns>Episode identification result</returns>
     public async Task<IdentificationResult> IdentifyEpisodeAsync(
         string subtitleText,
         string? sourceFilePath = null,
-        double? minConfidence = null)
+        double? minConfidence = null,
+        string? seriesFilter = null,
+        int? seasonFilter = null)
     {
         var operationId = Guid.NewGuid();
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -54,7 +58,9 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
             ["OperationId"] = operationId,
             ["SourceFilePath"] = sourceFilePath ?? "none",
             ["MinConfidence"] = minConfidence ?? 0.0,
-            ["SubtitleTextLength"] = subtitleText?.Length ?? 0
+            ["SubtitleTextLength"] = subtitleText?.Length ?? 0,
+            ["SeriesFilter"] = seriesFilter ?? "none",
+            ["SeasonFilter"] = seasonFilter?.ToString() ?? "none"
         });
 
         if (string.IsNullOrWhiteSpace(subtitleText))
@@ -81,7 +87,7 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
                 _logger.LogError("CTPH configuration not available - Operation: {OperationId}", operationId);
                 return new IdentificationResult
                 {
-                    Error = new IdentificationError
+Error = new IdentificationError
                     {
                         Code = "CONFIGURATION_ERROR",
                         Message = "CTPH hashing configuration is not available"
@@ -93,7 +99,7 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
                 operationId, configCheckDuration);
 
             var fuzzyStartTime = stopwatch.ElapsedMilliseconds;
-            var fuzzyResult = await TryFuzzyHashIdentification(subtitleText, sourceFilePath, fuzzyConfig, minConfidence, operationId);
+            var fuzzyResult = await TryFuzzyHashIdentification(subtitleText, sourceFilePath, fuzzyConfig, minConfidence, operationId, seriesFilter, seasonFilter);
             var fuzzyDuration = stopwatch.ElapsedMilliseconds - fuzzyStartTime;
 
             if (fuzzyResult != null)
@@ -138,7 +144,9 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
         string? sourceFilePath,
         Configuration fuzzyConfig,
         double? minConfidence,
-        Guid operationId)
+        Guid operationId,
+        string? seriesFilter = null,
+        int? seasonFilter = null)
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
@@ -146,7 +154,9 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
         {
             ["Operation"] = "EnhancedCTPhIdentification",
             ["ParentOperationId"] = operationId,
-            ["SourceFilePath"] = sourceFilePath ?? "none"
+            ["SourceFilePath"] = sourceFilePath ?? "none",
+            ["SeriesFilter"] = seriesFilter ?? "none",
+            ["SeasonFilter"] = seasonFilter?.ToString() ?? "none"
         });
 
         try

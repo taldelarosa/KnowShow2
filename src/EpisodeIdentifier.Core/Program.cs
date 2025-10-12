@@ -73,14 +73,29 @@ public class Program
 
         var seriesOption = new Option<string>(
             "--series",
-            "Series name when storing subtitle information")
+            "Series name when storing subtitle information, or filter by series during identification")
         { IsRequired = false };
         rootCommand.Add(seriesOption);
 
-        var seasonOption = new Option<string>(
+        var seasonOption = new Option<int?>(
             "--season",
-            "Season number when storing subtitle information")
+            "Season number when storing subtitle information, or filter by season during identification (requires --series)")
         { IsRequired = false };
+
+        // Add validator to ensure --season is only used with --series
+        seasonOption.AddValidator(result =>
+        {
+            var seasonValue = result.GetValueOrDefault<int?>();
+            if (seasonValue.HasValue)
+            {
+                // Check if --series was provided
+                var seriesValue = result.FindResultFor(seriesOption)?.GetValueOrDefault<string>();
+                if (string.IsNullOrWhiteSpace(seriesValue))
+                {
+                    result.ErrorMessage = "--season requires --series to be specified. Use --series <name> when providing --season <number>.";
+                }
+            }
+        });
         rootCommand.Add(seasonOption);
 
         var episodeOption = new Option<string>(
@@ -134,13 +149,20 @@ public class Program
         DirectoryInfo? bulkStoreDirectory,
         DirectoryInfo? bulkIdentifyDirectory,
         string? series,
-        string? season,
+        int? season,
         string? episode,
         string? language,
         bool rename)
     {
         // Configure JSON serialization with camelCase for consistent API
         var jsonSerializationOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+        // Additional validation: --season requires --series
+        if (season.HasValue && string.IsNullOrWhiteSpace(series))
+        {
+            Console.Error.WriteLine("--season requires --series to be specified.");
+            return 1;
+        }
 
         // Validate input parameters
         var bulkOptions = new[] { bulkStoreDirectory != null, bulkIdentifyDirectory != null }.Count(x => x);
@@ -222,11 +244,14 @@ public class Program
         {
             if (store)
             {
-                if (string.IsNullOrEmpty(series) || string.IsNullOrEmpty(season) || string.IsNullOrEmpty(episode))
+                if (string.IsNullOrEmpty(series) || !season.HasValue || string.IsNullOrEmpty(episode))
                 {
                     Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "MISSING_METADATA", message = "Series, season, and episode are required when storing subtitles" } }));
                     return 1;
                 }
+
+                // Convert season number to zero-padded string format (e.g., 1 -> "01")
+                var seasonString = season.Value.ToString("D2");
 
                 // Validate that the input file is a subtitle file, not a video file
                 var videoExtensions = new[] { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v" };
@@ -243,7 +268,7 @@ public class Program
                 var subtitle = new LabelledSubtitle
                 {
                     Series = series,
-                    Season = season,
+                    Season = seasonString,
                     Episode = episode,
                     SubtitleText = subtitleText
                 };
@@ -255,7 +280,7 @@ public class Program
                     details = new
                     {
                         series,
-                        season,
+                        season = seasonString,
                         episode,
                         file = input!.Name
                     }
@@ -473,7 +498,7 @@ public class Program
                 if (!pgsTracks.Any())
                 {
                     // No PGS tracks found, try text subtitle processing
-                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, episodeIdentificationService, rename, filenameService, fileRenameService, legacyConfigService);
+                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, episodeIdentificationService, rename, filenameService, fileRenameService, legacyConfigService, series, season);
                     if (textSubtitleResult != null)
                     {
                         Console.WriteLine(JsonSerializer.Serialize(textSubtitleResult, jsonSerializationOptions));
@@ -493,7 +518,7 @@ public class Program
                 if (string.IsNullOrWhiteSpace(subtitleText))
                 {
                     // PGS extraction failed, try text subtitle fallback
-                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, episodeIdentificationService, rename, filenameService, fileRenameService, legacyConfigService);
+                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, episodeIdentificationService, rename, filenameService, fileRenameService, legacyConfigService, series, season);
                     if (textSubtitleResult != null)
                     {
                         Console.WriteLine(JsonSerializer.Serialize(textSubtitleResult, jsonSerializationOptions));
@@ -512,7 +537,24 @@ public class Program
                 }
 
                 // Use the episode identification service that supports both legacy and CTPH fuzzy hashing
-                var result = await episodeIdentificationService.IdentifyEpisodeAsync(subtitleText, input.FullName);
+                IdentificationResult result;
+                try
+                {
+                    result = await episodeIdentificationService.IdentifyEpisodeAsync(subtitleText, input.FullName, null, series, season);
+                }
+                catch (ArgumentException ex)
+                {
+                    // Handle validation errors from FindMatches (e.g., season without series)
+                    Console.Error.WriteLine(ex.Message);
+                    return 1;
+                }
+
+                // Handle empty results when series filter doesn't match (return empty JSON array)
+                if (!result.HasError && result.MatchConfidence == 0 && !string.IsNullOrWhiteSpace(series))
+                {
+                    Console.WriteLine("[]");
+                    return 0;
+                }
 
                 // Handle file renaming if --rename flag is specified
                 if (rename && !result.HasError && result.MatchConfidence >= legacyConfigService.Config.RenameConfidenceThreshold)
@@ -661,7 +703,9 @@ public class Program
         bool rename,
         FilenameService filenameService,
         FileRenameService fileRenameService,
-        IAppConfigService legacyConfigService)
+        IAppConfigService legacyConfigService,
+        string? seriesFilter = null,
+        int? seasonFilter = null)
     {
         try
         {
@@ -693,7 +737,7 @@ public class Program
             }
 
             // Match against database using the episode identification service
-            var result = await episodeIdentificationService.IdentifyEpisodeAsync(subtitleText, videoFilePath);
+            var result = await episodeIdentificationService.IdentifyEpisodeAsync(subtitleText, videoFilePath, null, seriesFilter, seasonFilter);
 
             // Handle file renaming if --rename flag is specified
             if (rename && !result.HasError && result.MatchConfidence >= legacyConfigService.Config.RenameConfidenceThreshold)

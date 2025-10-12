@@ -15,6 +15,8 @@ public interface IEpisodeIdentificationService : IDisposable
     /// <param name="subtitleText">The subtitle text content to identify</param>
     /// <param name="sourceFilePath">Optional path to the source file (used for CTPH hashing)</param>
     /// <param name="minConfidence">Optional minimum confidence threshold</param>
+    /// <param name="seriesFilter">Optional series name to filter results (case-insensitive)</param>
+    /// <param name="seasonFilter">Optional season number to filter results (requires seriesFilter)</param>
     /// <returns>Episode identification result with match information</returns>
-    Task<IdentificationResult> IdentifyEpisodeAsync(string subtitleText, string? sourceFilePath = null, double? minConfidence = null);
+    Task<IdentificationResult> IdentifyEpisodeAsync(string subtitleText, string? sourceFilePath = null, double? minConfidence = null, string? seriesFilter = null, int? seasonFilter = null);
 }

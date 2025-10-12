@@ -26,6 +26,7 @@ public class FilenameServiceContractTests
     {
         public AppConfig Config => new AppConfig
         {
+            MatchConfidenceThreshold = 0.8,
             RenameConfidenceThreshold = 0.9,
             MaxConcurrency = 4  // Default test value
         };
