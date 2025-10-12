@@ -31,7 +31,7 @@ namespace EpisodeIdentifier.Tests.Contract
             var configPath = Path.Combine(AppContext.BaseDirectory, "episodeidentifier.config.json");
             var mockFileSystem = new MockFileSystem();
             services.AddSingleton<System.IO.Abstractions.IFileSystem>(mockFileSystem);
-            
+
             // Register ConfigurationService for both interfaces it implements
             // This test specifically needs IAppConfigService for BulkProcessingOptions.CreateFromConfigurationAsync
             services.AddSingleton<ConfigurationService>(provider => new ConfigurationService(

@@ -407,7 +407,7 @@ public class FuzzyHashService : IDisposable
             CleanHash = GenerateFuzzyHash(inputNormalized.NoHtmlAndTimecodes)
         };
 
-// Log search filter parameters
+        // Log search filter parameters
         if (!string.IsNullOrWhiteSpace(seriesFilter) || seasonFilter.HasValue)
         {
             _logger.LogInformation("Search filter applied: Series='{Series}', Season={Season}",
@@ -578,7 +578,7 @@ public class FuzzyHashService : IDisposable
         }
 
         await _readConnSemaphore.WaitAsync();
-        
+
         try
         {
             // Try to reuse a pooled connection if available and open
@@ -761,10 +761,10 @@ public class FuzzyHashService : IDisposable
         {
             // Convert text to bytes for CTPH hashing
             var textBytes = Encoding.UTF8.GetBytes(input);
-            
+
             // Generate ssdeep hash with EliminateSequences mode for better text comparison
             var hash = Hasher.HashBuffer(textBytes, textBytes.Length, FuzzyHashMode.EliminateSequences);
-            
+
             return hash ?? "";
         }
         catch (Exception ex)
@@ -790,7 +790,7 @@ public class FuzzyHashService : IDisposable
         {
             // Use ssdeep's compare function which returns 0-100
             var similarity = Comparer.Compare(hash1, hash2);
-            
+
             // Convert to 0.0-1.0 range
             return similarity / 100.0;
         }

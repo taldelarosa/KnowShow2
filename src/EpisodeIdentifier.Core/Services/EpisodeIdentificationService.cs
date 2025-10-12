@@ -87,7 +87,7 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
                 _logger.LogError("CTPH configuration not available - Operation: {OperationId}", operationId);
                 return new IdentificationResult
                 {
-Error = new IdentificationError
+                    Error = new IdentificationError
                     {
                         Code = "CONFIGURATION_ERROR",
                         Message = "CTPH hashing configuration is not available"
