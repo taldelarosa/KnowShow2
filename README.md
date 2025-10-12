@@ -54,6 +54,48 @@ dotnet test
 - pgsrip (advanced PGS processor)
 - Enhanced OCR training data
 
+## Docker Deployment
+
+**🐳 Run in Docker (Recommended for Unraid/Production):**
+
+The Episode Identifier is available as a Docker container with all dependencies pre-installed. Perfect for Unraid servers and production deployments.
+
+### Quick Start with Docker
+
+```bash
+# Pull the image
+docker pull episodeidentifier/episodeidentifier:latest
+
+# Run the container
+docker run -d \
+  --name episodeidentifier \
+  -e PUID=99 -e PGID=100 \
+  -v /path/to/videos:/data/videos:rw \
+  -v /path/to/database:/data/database:rw \
+  -v /path/to/config:/data/config:rw \
+  episodeidentifier/episodeidentifier:latest \
+  tail -f /dev/null
+
+# Execute commands
+docker exec episodeidentifier dotnet /app/EpisodeIdentifier.Core.dll \
+  --input /data/videos/yourfile.mkv \
+  --hash-db /data/database/production_hashes.db
+```
+
+### Deployment Guides
+
+- **🏠 Unraid Users**: See [docs/unraid.md](docs/unraid.md) for complete Unraid setup guide
+- **🐳 Docker Users**: See [docs/DOCKER.md](docs/DOCKER.md) for Docker deployment options
+- **📦 Building from Source**: `docker build -t episodeidentifier:latest .`
+
+### Key Features
+
+- ✅ All dependencies pre-installed (FFmpeg, Tesseract, pgsrip, etc.)
+- ✅ PUID/PGID support for proper file permissions
+- ✅ Persistent database and configuration storage
+- ✅ Compatible with Docker Compose and Unraid Docker UI
+- ✅ Multi-architecture support (amd64/arm64)
+
 ## Git Workflow
 
 

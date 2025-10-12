@@ -14,6 +14,7 @@
   "MD029": false,
   "MD025": false,
   "MD041": false,
+  "MD031": { "list_items": false },
   "MD001": true,
   "MD003": { "style": "atx" },
   "MD004": { "style": "dash" },

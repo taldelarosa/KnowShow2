@@ -1,0 +1,105 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>EpisodeIdentifier</Name>
+  <Repository>episodeidentifier/episodeidentifier</Repository>
+  <Registry/>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/taldelarosa/KnowShow2/issues</Support>
+  <Project>https://github.com/taldelarosa/KnowShow2</Project>
+  <Overview>Episode Identifier - Identify TV episodes from video files using PGS subtitle hashing and OCR. Automatically matches episodes without relying on filenames. Supports bulk processing, auto-rename, and fuzzy hashing (CTPH/ssdeep) for robust identification.</Overview>
+  <Category>MediaApp:Video MediaServer:Video Tools:</Category>
+  <WebUI/>
+  <TemplateURL/>
+  <Icon/>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled></DateInstalled>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="Videos Directory" Target="/data/videos" Default="/mnt/user/media/videos" Mode="rw" Description="Directory containing video files to identify (read/write access required for auto-rename feature)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/media/videos</Config>
+  <Config Name="Database Directory" Target="/data/database" Default="/mnt/user/appdata/episodeidentifier/database" Mode="rw" Description="Directory for persistent hash database storage" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/episodeidentifier/database</Config>
+  <Config Name="Config Directory" Target="/data/config" Default="/mnt/user/appdata/episodeidentifier/config" Mode="rw" Description="Directory for configuration files" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/episodeidentifier/config</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID for file permissions (default 99 for Unraid 'nobody' user)" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID for file permissions (default 100 for Unraid 'users' group)" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+  <Config Name="Log Level" Target="LOG_LEVEL" Default="Information" Mode="" Description="Logging verbosity: Trace, Debug, Information, Warning, Error, Critical" Type="Variable" Display="advanced" Required="false" Mask="false">Information</Config>
+  <Config Name="Config Path" Target="CONFIG_PATH" Default="/data/config/episodeidentifier.config.json" Mode="" Description="Path to configuration file inside container (usually no need to change)" Type="Variable" Display="advanced" Required="false" Mask="false">/data/config/episodeidentifier.config.json</Config>
+  <Config Name="Hash Database Path" Target="HASH_DB_PATH" Default="/data/database/production_hashes.db" Mode="" Description="Path to SQLite hash database inside container (usually no need to change)" Type="Variable" Display="advanced" Required="false" Mask="false">/data/database/production_hashes.db</Config>
+  <Description>
+    Episode Identifier uses PGS subtitle extraction and OCR to identify TV episodes from video files.
+    
+    ## Key Features:
+    - Identify episodes using subtitle hashing (no filename parsing required)
+    - Store known episode subtitles for future matching
+    - Bulk processing with configurable concurrency
+    - Auto-rename identified files with standardized naming
+    - Fuzzy hashing (CTPH/ssdeep) for robust matching
+    - Text search fallback when fuzzy hash not available
+    
+    ## Quick Start:
+    1. Map your video directory to /data/videos
+    2. Set PUID/PGID to match your Unraid user (usually 99/100)
+    3. Open container console and run identification commands
+    
+    ## Basic Commands:
+    - Identify a video: --input /data/videos/movie.mkv --hash-db /data/database/production_hashes.db
+    - Store known episode: --store --input /data/videos/S01E01.mkv --season 1 --episode 1
+    - Bulk processing: --bulk-identify /data/videos --hash-db /data/database/production_hashes.db
+    - Auto-rename: --input /data/videos/movie.mkv --rename --rename-template "{series} S{season:00}E{episode:00}"
+    
+    See full documentation: https://github.com/taldelarosa/KnowShow2/blob/main/docs/unraid.md
+  </Description>
+  <Networking>
+    <Mode>bridge</Mode>
+    <Publish/>
+  </Networking>
+  <Data>
+    <Volume>
+      <HostDir>/mnt/user/media/videos</HostDir>
+      <ContainerDir>/data/videos</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+    <Volume>
+      <HostDir>/mnt/user/appdata/episodeidentifier/database</HostDir>
+      <ContainerDir>/data/database</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+    <Volume>
+      <HostDir>/mnt/user/appdata/episodeidentifier/config</HostDir>
+      <ContainerDir>/data/config</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+  </Data>
+  <Environment>
+    <Variable>
+      <Value>99</Value>
+      <Name>PUID</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>100</Value>
+      <Name>PGID</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>Information</Value>
+      <Name>LOG_LEVEL</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>/data/config/episodeidentifier.config.json</Value>
+      <Name>CONFIG_PATH</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>/data/database/production_hashes.db</Value>
+      <Name>HASH_DB_PATH</Name>
+      <Mode/>
+    </Variable>
+  </Environment>
+  <Labels/>
+</Container>
