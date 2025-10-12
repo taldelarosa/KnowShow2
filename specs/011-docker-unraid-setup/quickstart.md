@@ -20,14 +20,12 @@
 1. Open Unraid web interface
 2. Navigate to **Docker** tab
 3. Click **Add Container**
-4. Click **Template repositories**
-5. Add URL: `https://raw.githubusercontent.com/taldelarosa/KnowShow2/main/docker/unraid-template.xml`
-6. Or manually configure:
+4. Manually configure (template not yet published):
 
 **Container Settings**:
 
 - **Name**: `episode-identifier`
-- **Repository**: `taldelarosa/episode-identifier:latest`
+- **Repository**: `taldelarosa/episode-identifier:latest` (or build locally)
 - **Network Type**: `Bridge`
 
 **Volume Mappings**:
