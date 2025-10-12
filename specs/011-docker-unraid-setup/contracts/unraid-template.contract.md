@@ -222,5 +222,4 @@ See: `/mnt/c/Users/Ragma/KnowShow_Specd/docker/unraid-template.xml` (to be creat
 
 ## References
 
-- [Unraid Template Schema](https://github.com/Squidly271/docker.templates)
-- [Community Applications Guidelines](https://forums.unraid.net/topic/57181-docker-faq/)
+*Note: External Unraid documentation links have been removed due to link rot. Refer to official Unraid documentation for current template specifications.*
