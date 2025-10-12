@@ -36,6 +36,7 @@ This PR implements configurable concurrent processing for episode identification
 ### Real-World Impact
 
 For a batch of 1,000 video files:
+
 - **Sequential** (concurrency=1): ~84 seconds
 - **Optimized** (concurrency=8): ~13 seconds
 - **Time Savings**: 71 seconds (84% faster)
@@ -89,6 +90,7 @@ c2cfac9 010: async-processing-where: finalize MaxConcurrency pass-through semant
 ## Pre-PR Checklist
 
 ### Code Quality
+
 - [x] All tests passing (9/9 performance tests green)
 - [x] Code follows project conventions
 - [x] No compilation warnings (except known legacy issues)
@@ -97,6 +99,7 @@ c2cfac9 010: async-processing-where: finalize MaxConcurrency pass-through semant
 - [ ] **Action Needed**: Remove deleted files from git
 
 ### Documentation
+
 - [x] Performance report generated
 - [x] Configuration examples provided
 - [x] Test documentation complete
@@ -104,6 +107,7 @@ c2cfac9 010: async-processing-where: finalize MaxConcurrency pass-through semant
 - [ ] **Optional**: Update CONFIGURATION_GUIDE.md with maxConcurrency details
 
 ### Testing
+
 - [x] Unit tests passing
 - [x] Integration tests passing
 - [x] Performance tests complete
@@ -111,6 +115,7 @@ c2cfac9 010: async-processing-where: finalize MaxConcurrency pass-through semant
 - [ ] **Optional**: Test on different hardware configurations
 
 ### Repository
+
 - [x] Branch up to date with latest commits
 - [x] Performance test commit added
 - [ ] **Action Needed**: Clean up uncommitted changes
@@ -239,6 +244,7 @@ None - default behavior unchanged (sequential processing)
 **Recommendation**: Commit the refactoring (Option A above) as it appears to be a positive change that simplifies the architecture.
 
 Once that's done, you're ready to:
+
 1. Push the branch
 2. Create the PR
 3. Request reviews

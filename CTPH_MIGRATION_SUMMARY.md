@@ -11,6 +11,7 @@ Successfully migrated the entire EpisodeIdentifier system from legacy word-frequ
 ## Changes Made
 
 ### 1. Configuration Changes
+
 **File**: `src/EpisodeIdentifier.Core/Models/Configuration/Configuration.cs`
 
 - **Removed**: `HashingAlgorithm` enum values for MD5 (0) and SHA1 (1)
@@ -20,6 +21,7 @@ Successfully migrated the entire EpisodeIdentifier system from legacy word-frequ
 ### 2. Service Layer Refactoring
 
 #### EpisodeIdentificationService
+
 **File**: `src/EpisodeIdentifier.Core/Services/EpisodeIdentificationService.cs`
 
 - **Removed**: `ISubtitleMatcher` dependency and `_legacyMatcher` field
@@ -28,35 +30,39 @@ Successfully migrated the entire EpisodeIdentifier system from legacy word-frequ
 - **Behavior**: Returns CONFIGURATION_ERROR if CTPH is unavailable instead of falling back
 
 #### FuzzyHashService
+
 **File**: `src/EpisodeIdentifier.Core/Services/FuzzyHashService.cs`
 
 - **Added**: `using SSDEEP.NET` namespace
 - **Refactored**: `GenerateFuzzyHash()` method to use CTPH hashing on text
-  - Old: Generated word-frequency hashes like `"words:-->:13|the:5|flight:4|..."`
-  - New: Generates CTPH hashes like `"768:W8vleG5oHfvLJ+AIRXFt..."`
+    - Old: Generated word-frequency hashes like `"words:-->:13|the:5|flight:4|..."`
+    - New: Generates CTPH hashes like `"768:W8vleG5oHfvLJ+AIRXFt..."`
 - **Removed**: Legacy hash generation methods:
-  - `GenerateWordBasedHash()`
-  - `GenerateNGramHash()`
-  - `GenerateShingleHash()`
+    - `GenerateWordBasedHash()`
+    - `GenerateNGramHash()`
+    - `GenerateShingleHash()`
 - **Removed**: Legacy hash comparison methods:
-  - `ParseNewFuzzyHash()`
-  - `CompareWordHashes()`
-  - `ParseWordHash()`
-  - `CompareSetHashes()`
+    - `ParseNewFuzzyHash()`
+    - `CompareWordHashes()`
+    - `ParseWordHash()`
+    - `CompareSetHashes()`
 - **Updated**: `CompareFuzzyHashes()` to use ssdeep's built-in `Comparer.Compare()`
 
 #### SubtitleWorkflowCoordinator
+
 **File**: `src/EpisodeIdentifier.Core/Services/SubtitleWorkflowCoordinator.cs`
 
 - **Replaced**: `SubtitleMatcher` dependency with `IEpisodeIdentificationService`
 - **Updated**: All calls from `_matcher.IdentifyEpisode()` to `_identificationService.IdentifyEpisodeAsync()`
 
 ### 3. Dependency Injection Changes
+
 **File**: `src/EpisodeIdentifier.Core/Extensions/ServiceCollectionExtensions.cs`
 
 - **Removed**: `services.AddScoped<ISubtitleMatcher, SubtitleMatcher>()` registration
 
 ### 4. Program.cs Updates
+
 **File**: `src/EpisodeIdentifier.Core/Program.cs`
 
 - **Removed**: `SubtitleMatcher` instantiation line
@@ -72,17 +78,20 @@ Successfully migrated the entire EpisodeIdentifier system from legacy word-frequ
 **Tool Created**: `tools/MigrateToCTPhHashes/`
 
 Created a standalone migration tool that:
+
 - Reads all 316 records from the production database
 - Regenerates CTPH hashes from stored subtitle text
 - Updates all four hash columns (OriginalHash, NoTimecodesHash, NoHtmlHash, CleanHash)
 
 **Migration Results**:
+
 - **Total Records**: 316 (245 Bones + 71 Star Trek TOS)
 - **Successfully Migrated**: 316 records
 - **Failed**: 0 records
 - **Backup Created**: `production_hashes.db.backup_before_ctph_20251010_192507`
 
 **Hash Format Change**:
+
 ```
 Before: words:-->:13|the:5|flight:4|board:3|...
 After:  768:W8vleG5oHfvLJ+AIRXFtHasVdsOrkJTfPQ2dqb7RQhc17u...
@@ -104,12 +113,14 @@ The text fallback feature remains intact and continues to work as designed:
 ## Testing
 
 ### Build Status
+
 ```
 ✅ Build: Success (0 Warnings, 0 Errors)
 ✅ Time: 10.02s - 13.30s
 ```
 
 ### Test Results
+
 ```
 ✅ Total Tests: 107
 ✅ Passed: 107
@@ -119,6 +130,7 @@ The text fallback feature remains intact and continues to work as designed:
 ```
 
 All tests pass including:
+
 - Configuration validation tests (now only accept CTPH)
 - CTPH hashing and comparison tests
 - Hot-reload configuration tests
@@ -128,6 +140,7 @@ All tests pass including:
 ## Architecture Benefits
 
 ### Before (Legacy System)
+
 ```
 ┌─────────────────────────────┐
 │   HashingAlgorithm Enum     │
@@ -165,6 +178,7 @@ All tests pass including:
 ```
 
 ### After (CTPH-Only System)
+
 ```
 ┌─────────────────────────────┐
 │   HashingAlgorithm Enum     │
@@ -201,15 +215,18 @@ All tests pass including:
 ## Performance Characteristics
 
 ### Hash Generation
+
 - **CTPH on Text**: ~1-5ms for typical subtitle text
 - **CTPH on Files**: ~20-400ms depending on file size
 - **Memory**: Minimal overhead, O(n) for text size
 
 ### Hash Comparison
+
 - **CTPH Compare**: < 1ms using ssdeep's native comparison
 - **Storage**: CTPH hashes are more compact than word-frequency hashes
 
 ### Text Fallback
+
 - **Trigger**: When CTPH match < threshold
 - **Performance**: ~10-50ms depending on candidate count
 - **Accuracy**: High similarity detection using FuzzySharp TokenSetRatio
@@ -217,14 +234,16 @@ All tests pass including:
 ## Database Statistics
 
 **Production Database**: `production_hashes.db`
+
 - **Total Size**: 51 MB
 - **Total Records**: 316
-  - Bones: 245 episodes
-  - Star Trek TOS: 71 episodes
+    - Bones: 245 episodes
+    - Star Trek TOS: 71 episodes
 - **Hash Format**: 100% CTPH (ssdeep) format
 - **Legacy Hashes**: 0 (successfully migrated)
 
 **Sample Hash Verification**:
+
 ```sql
 SELECT COUNT(*) FROM SubtitleHashes 
 WHERE OriginalHash LIKE '%:%' 
@@ -235,11 +254,13 @@ AND OriginalHash NOT LIKE 'words:%';
 ## Backwards Compatibility
 
 ### Breaking Changes
+
 - ❌ MD5 and SHA1 are no longer valid configuration values
 - ❌ SubtitleMatcher class removed (use IEpisodeIdentificationService)
 - ❌ Legacy hash format no longer supported in database
 
 ### Migration Path
+
 1. **Configuration**: Update `episodeidentifier.config.json` to use `"hashingAlgorithm": "CTPH"`
 2. **Database**: Run migration tool to convert legacy hashes to CTPH
 3. **Code**: Update any direct references to SubtitleMatcher to use IEpisodeIdentificationService
@@ -247,12 +268,14 @@ AND OriginalHash NOT LIKE 'words:%';
 ## Future Enhancements
 
 ### Potential Improvements
+
 1. **Configurable Hash Mode**: Allow users to choose FuzzyHashMode (EliminateSequences vs DoNotEliminateSequences)
 2. **Batch Hash Generation**: Optimize database regeneration for large datasets
 3. **Hash Caching**: Implement in-memory cache for frequently accessed hashes
 4. **Performance Metrics**: Add telemetry for hash generation and comparison times
 
 ### Monitoring
+
 - Track text fallback usage rate
 - Monitor CTPH match success rate vs. text fallback success rate
 - Log performance metrics for hash generation and comparison
@@ -260,6 +283,7 @@ AND OriginalHash NOT LIKE 'words:%';
 ## Deployment Notes
 
 ### Pre-Deployment Checklist
+
 - ✅ All tests passing (107/107)
 - ✅ Build successful with no warnings
 - ✅ Database migration tool tested and verified
@@ -267,6 +291,7 @@ AND OriginalHash NOT LIKE 'words:%';
 - ✅ Text fallback feature confirmed working
 
 ### Deployment Steps
+
 1. **Backup**: Create database backup before migration
 2. **Run Migration**: Execute `tools/MigrateToCTPhHashes` on production database
 3. **Verify**: Check hash format using sample queries
@@ -274,7 +299,9 @@ AND OriginalHash NOT LIKE 'words:%';
 5. **Monitor**: Watch for any issues in production logs
 
 ### Rollback Plan
+
 If issues occur:
+
 1. Stop application
 2. Restore database from backup
 3. Revert to previous code version

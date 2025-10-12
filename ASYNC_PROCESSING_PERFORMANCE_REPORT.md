@@ -50,6 +50,7 @@ Concurrency 8: ██████                                     254ms  (6.
 ```
 
 **Observations:**
+
 - Nearly **perfect linear scaling** from 1 to 4 concurrent operations
 - Continued strong scaling at 8 concurrent operations (83% efficiency)
 - Throughput increased from **11.87 files/sec** to **78.74 files/sec**
@@ -81,6 +82,7 @@ All concurrency levels processed the correct number of files:
 ## Detailed Test Results
 
 ### Test 1: Different Concurrency Levels
+
 **Purpose**: Measure performance across various concurrency settings  
 **Files**: 20 test video files  
 **Result**: ✅ PASSED
@@ -93,6 +95,7 @@ MaxConcurrency:  8, Time:   258ms, Throughput: 77.52 files/sec
 ```
 
 ### Test 2: Concurrency Comparison
+
 **Purpose**: Verify scalability trends and performance improvements  
 **Files**: 20 test video files  
 **Result**: ✅ PASSED
@@ -103,6 +106,7 @@ MaxConcurrency:  8, Time:   258ms, Throughput: 77.52 files/sec
 - Performance improved in 3/3 scaling steps
 
 ### Test 3: Consistent File Count
+
 **Purpose**: Ensure all files are processed regardless of concurrency  
 **Files**: 10 test video files per concurrency level  
 **Result**: ✅ PASSED (all 3 variants)
@@ -112,6 +116,7 @@ MaxConcurrency:  8, Time:   258ms, Throughput: 77.52 files/sec
 - Concurrency 8: 10/10 files processed ✅
 
 ### Test 4: Repeatable Performance
+
 **Purpose**: Verify consistent performance across multiple runs  
 **Files**: 10 test video files, 3 runs  
 **Result**: ✅ PASSED
@@ -138,6 +143,7 @@ The async processing implementation demonstrates **excellent scalability**:
 Peak throughput achieved: **78.74 files/second** (concurrency=8)
 
 For a typical batch of 1,000 video files:
+
 - Sequential (concurrency=1): ~84 seconds
 - Optimized (concurrency=8): ~13 seconds
 - **Time savings: 71 seconds (84% faster)**
@@ -154,41 +160,49 @@ For a typical batch of 1,000 video files:
 Based on performance test results:
 
 ### Conservative (Default)
+
 ```json
 {
   "maxConcurrency": 1
 }
 ```
+
 - **Use case**: Maximum safety, minimal resource usage
 - **Performance**: Baseline (11.87 files/sec)
 - **Best for**: Single-user systems, limited resources
 
 ### Balanced
+
 ```json
 {
   "maxConcurrency": 4
 }
 ```
+
 - **Use case**: Good balance of speed and resource usage
 - **Performance**: 4x faster (47.51 files/sec)
 - **Best for**: 4-core systems, typical workloads
 
 ### Optimized
+
 ```json
 {
   "maxConcurrency": 8
 }
 ```
+
 - **Use case**: Maximum performance
 - **Performance**: 6.63x faster (78.74 files/sec)
 - **Best for**: 8+ core systems, batch processing
 
 ### Adaptive (Future Enhancement)
+
 ```json
 {
   "maxConcurrency": "auto"  // Could be Environment.ProcessorCount / 2
 }
 ```
+
 - **Use case**: Automatic tuning based on system capabilities
 - **Best for**: Unknown hardware environments
 
@@ -204,12 +218,14 @@ Based on performance test results:
 ## Memory and Resource Analysis
 
 ### Memory Usage
+
 - No memory leaks observed
 - Semaphore properly limits concurrent operations
 - Garbage collection remains manageable
 - Test files cleaned up properly
 
 ### Thread Safety
+
 - ✅ Proper synchronization with SemaphoreSlim
 - ✅ Thread-safe file operations
 - ✅ No race conditions detected
@@ -218,13 +234,16 @@ Based on performance test results:
 ## Test Infrastructure
 
 ### Test Files Created
+
 - **Count**: 20 test video files (.mkv)
 - **Size**: ~10KB each (simulated content)
 - **Naming**: Sequential (test_video_01.mkv to test_video_20.mkv)
 - **Cleanup**: Automatic disposal after tests
 
 ### Simulation Approach
+
 Tests simulate I/O-bound operations:
+
 1. **File Reading**: 50ms delay (subtitle extraction simulation)
 2. **Processing**: 30ms delay (hash computation simulation)
 3. **Semaphore Control**: Limits concurrent operations as configured
@@ -235,7 +254,7 @@ Tests simulate I/O-bound operations:
 1. **Test Simulation**: Uses Task.Delay instead of actual video processing
    - Real-world performance may vary
    - Actual subtitle extraction/hashing may have different characteristics
-   
+
 2. **Hardware Dependency**: Performance scales with available CPU cores
    - Results based on test environment
    - User hardware may differ

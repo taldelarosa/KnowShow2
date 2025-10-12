@@ -14,34 +14,40 @@
 ## Test Results
 
 ### Test 1: Single-Threaded Processing (maxConcurrency=1)
+
 ```bash
 dotnet run -- --bulk-identify "/mnt/bones-videos/BONES_S11_D1-JnjdmK" --hash-db production_hashes.db
 ```
 
 **Results**:
+
 - **Total Time**: 10m54s (654 seconds)
 - **Files Processed**: 5/5 success
 - **Individual Times**: 20.7s - 54.7s per file
 - **Average**: ~130 seconds/file
 
 **Configuration Verification**:
+
 ```
 MaxConcurrency: 1
 Batch Size: 5
 ```
 
 ### Test 2: Concurrent Processing (maxConcurrency=4)
+
 ```bash
 dotnet run -- --bulk-identify "/mnt/bones-videos/BONES_S11_D1-JnjdmK" --hash-db production_hashes.db
 ```
 
 **Results**:
+
 - **Total Time**: 9m24s (564 seconds)
 - **Files Processed**: 5/5 success
 - **Individual Times**: 4.9s - 55.4s per file
 - **Average**: ~112 seconds/file
 
 **Configuration Verification**:
+
 ```
 MaxConcurrency: 4
 Batch Size: 5
@@ -50,6 +56,7 @@ Batch Size: 5
 ## Performance Analysis
 
 ### Raw Speedup
+
 - **Time Saved**: 90 seconds (654s → 564s)
 - **Speedup Factor**: 1.16x (16% improvement)
 - **Files Processed Concurrently**: Verified 4 files started simultaneously
@@ -82,6 +89,7 @@ The modest 16% improvement (vs. expected 4x from synthetic tests) is due to:
 ✅ Hot-reload of configuration works during runtime
 
 **Evidence from Logs**:
+
 - Four `Progress: 0/1 files (0.0%) - Processing` messages appear simultaneously
 - Fastest file in concurrent run (4.9s) is **4.2x faster** than sequential average
 - Configuration loads show correct `MaxConcurrency` values
@@ -98,6 +106,7 @@ The modest 16% improvement (vs. expected 4x from synthetic tests) is due to:
 ## Recommendations
 
 ### For Users
+
 1. **Optimal maxConcurrency**: 2-4 for network-stored files
    - Higher values won't improve performance due to I/O bottleneck
    - May increase contention on network/disk resources
@@ -108,6 +117,7 @@ The modest 16% improvement (vs. expected 4x from synthetic tests) is due to:
    - Large batches (50+ files): Better amortization of startup costs
 
 3. **Configuration Tuning**:
+
    ```json
    {
      "maxConcurrency": 4,  // Sweet spot for most scenarios
@@ -116,6 +126,7 @@ The modest 16% improvement (vs. expected 4x from synthetic tests) is due to:
    ```
 
 ### For Developers
+
 1. Consider async I/O optimizations:
    - Parallel subtitle extraction with buffering
    - Async database operations
@@ -131,6 +142,7 @@ The modest 16% improvement (vs. expected 4x from synthetic tests) is due to:
 **Feature Status**: ✅ **VERIFIED WORKING**
 
 The async concurrent processing feature is functioning correctly:
+
 - Configuration properly loads and applies
 - SemaphoreSlim correctly throttles concurrency
 - Parallel execution is observable and measurable
