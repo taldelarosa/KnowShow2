@@ -102,7 +102,4 @@
     </Variable>
   </Environment>
   <Labels/>
-  <Config Name="Host Path 1" Target="/data/videos" Default="" Mode="rw" Description="" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/media/videos</Config>
-  <Config Name="Host Path 2" Target="/data/database" Default="" Mode="rw" Description="" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/episodeidentifier/database</Config>
-  <Config Name="Host Path 3" Target="/data/config" Default="" Mode="rw" Description="" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/episodeidentifier/config</Config>
 </Container>
