@@ -1,18 +1,35 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.IO.Abstractions;
+using System.Linq;
 using System.Threading.Tasks;
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Jobs;
+using EpisodeIdentifier.Core.Interfaces;
+using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Services;
+using EpisodeIdentifier.Core.Services.Hashing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace EpisodeIdentifier.Tests.Performance;
 
+/// <summary>
+/// BenchmarkDotNet performance benchmarks for subtitle processing operations.
+/// Measures real-world performance of core subtitle extraction and identification workflows.
+/// </summary>
 [MemoryDiagnoser]
-[SimpleJob(BenchmarkDotNet.Jobs.RuntimeMoniker.Net80)]
+[SimpleJob(RuntimeMoniker.Net80)]
 public class SubtitleProcessingBenchmarks
 {
     private ServiceProvider _serviceProvider = null!;
-    private SubtitleWorkflowCoordinator _coordinator = null!;
+    private IEpisodeIdentificationService _episodeIdentificationService = null!;
     private VideoFormatValidator _validator = null!;
-    private ITextSubtitleExtractor _textExtractor = null!;
+    private VideoTextSubtitleExtractor _textExtractor = null!;
+    private SubtitleExtractor _subtitleExtractor = null!;
     private string _testVideoPath = null!;
+    private string _testSubtitleText = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -22,28 +39,55 @@ public class SubtitleProcessingBenchmarks
         // Add logging with minimal output for benchmarks
         services.AddLogging(builder => builder.SetMinimumLevel(LogLevel.Warning));
         
+        // Add file system abstraction
+        services.AddSingleton<IFileSystem, FileSystem>();
+        
         // Add core services
         services.AddTransient<VideoFormatValidator>();
         services.AddTransient<SubtitleExtractor>();
-        services.AddTransient<ITextSubtitleExtractor, TextSubtitleExtractor>();
+        services.AddTransient<VideoTextSubtitleExtractor>();
         services.AddTransient<PgsRipService>();
-        services.AddTransient<EnhancedPgsToTextConverter>();
         services.AddTransient<PgsToTextConverter>();
-        services.AddTransient<SubtitleMatcher>();
+        services.AddTransient<EnhancedPgsToTextConverter>();
         services.AddTransient<SubtitleNormalizationService>();
+        
+        // Add CTPH hashing services
+        services.AddTransient<CTPhHashingService>();
+        services.AddTransient<EnhancedCTPhHashingService>();
+        
+        // Add configuration service (mock for benchmarks)
+        services.AddTransient<ConfigurationService>(provider =>
+        {
+            var logger = provider.GetRequiredService<ILogger<ConfigurationService>>();
+            return new ConfigurationService(logger);
+        });
+        
+        // Add fuzzy hash service with in-memory database
         services.AddTransient<FuzzyHashService>(provider => 
             new FuzzyHashService(
                 ":memory:", // Use in-memory SQLite database for tests
                 provider.GetRequiredService<ILogger<FuzzyHashService>>(),
                 provider.GetRequiredService<SubtitleNormalizationService>()));
-        services.AddTransient<SubtitleWorkflowCoordinator>();
+        
+        // Add episode identification service
+        services.AddTransient<IEpisodeIdentificationService, EpisodeIdentificationService>();
         
         _serviceProvider = services.BuildServiceProvider();
-        _coordinator = _serviceProvider.GetRequiredService<SubtitleWorkflowCoordinator>();
+        _episodeIdentificationService = _serviceProvider.GetRequiredService<IEpisodeIdentificationService>();
         _validator = _serviceProvider.GetRequiredService<VideoFormatValidator>();
-        _textExtractor = _serviceProvider.GetRequiredService<ITextSubtitleExtractor>();
+        _textExtractor = _serviceProvider.GetRequiredService<VideoTextSubtitleExtractor>();
+        _subtitleExtractor = _serviceProvider.GetRequiredService<SubtitleExtractor>();
         
         _testVideoPath = "/mnt/c/src/KnowShow/TestData/media/Episode S02E01.mkv";
+        
+        // Sample subtitle text for identification benchmarks
+        _testSubtitleText = @"1
+00:00:01,000 --> 00:00:04,000
+Welcome to the show
+
+2
+00:00:05,000 --> 00:00:08,000
+This is episode one of season two";
     }
 
     [GlobalCleanup]
@@ -53,98 +97,78 @@ public class SubtitleProcessingBenchmarks
     }
 
     [Benchmark]
-    public async Task<IdentificationResult> ProcessVideo_FullWorkflow()
+    public async Task<IdentificationResult> IdentifyEpisode_FromSubtitleText()
     {
-        if (!File.Exists(_testVideoPath))
-        {
-            return new IdentificationResult
-            {
-                Error = new IdentificationError { Code = "FILE_NOT_FOUND", Message = "Test file not available" }
-            };
-        }
-
-        return await _coordinator.ProcessVideoAsync(_testVideoPath);
+        return await _episodeIdentificationService.IdentifyEpisodeAsync(_testSubtitleText);
     }
 
     [Benchmark]
-    public async Task<IList<SubtitleTrackInfo>> DetectSubtitleTracks()
+    public async Task<bool> ValidateVideoFormat()
     {
         if (!File.Exists(_testVideoPath))
         {
-            return new List<SubtitleTrackInfo>();
+            return false;
         }
 
-        return await _validator.GetSubtitleTracks(_testVideoPath);
+        return await _validator.IsValidForProcessing(_testVideoPath);
     }
 
     [Benchmark]
-    public async Task<IReadOnlyList<TextSubtitleTrack>> DetectTextTracks()
+    public async Task<string?> ExtractTextSubtitle()
     {
         if (!File.Exists(_testVideoPath))
         {
-            return new List<TextSubtitleTrack>().AsReadOnly();
+            return null;
         }
 
-        return await _textExtractor.DetectTextSubtitleTracksAsync(_testVideoPath);
-    }
-
-    [Benchmark]
-    public async Task<TextSubtitleExtractionResult> ExtractTextSubtitle()
-    {
-        if (!File.Exists(_testVideoPath))
-        {
-            return new TextSubtitleExtractionResult
-            {
-                Status = ProcessingStatus.Failed,
-                ErrorMessage = "Test file not available"
-            };
-        }
-
-        var tracks = await _textExtractor.DetectTextSubtitleTracksAsync(_testVideoPath);
-        if (!tracks.Any())
-        {
-            return new TextSubtitleExtractionResult
-            {
-                Status = ProcessingStatus.Failed,
-                ErrorMessage = "No text tracks found"
-            };
-        }
-
-        return await _textExtractor.ExtractTextSubtitleContentAsync(_testVideoPath, tracks.First());
+        return await _textExtractor.ExtractTextSubtitleFromVideo(_testVideoPath, 0, "eng");
     }
 
     /// <summary>
-    /// Benchmarks workflow coordination overhead
+    /// Benchmarks PGS subtitle extraction from video file
     /// </summary>
     [Benchmark]
-    public async Task<IdentificationResult> WorkflowCoordination_PgsFirst()
+    public async Task<byte[]> ExtractPgsSubtitles()
     {
         if (!File.Exists(_testVideoPath))
         {
-            return new IdentificationResult
-            {
-                Error = new IdentificationError { Code = "FILE_NOT_FOUND", Message = "Test file not available" }
-            };
+            return Array.Empty<byte>();
         }
 
-        // This will test the coordination logic without language preference
-        return await _coordinator.ProcessVideoAsync(_testVideoPath);
+        return await _subtitleExtractor.ExtractPgsSubtitles(_testVideoPath, "eng");
     }
 
     /// <summary>
-    /// Benchmarks workflow coordination with language preference
+    /// Benchmarks subtitle extraction and conversion
     /// </summary>
     [Benchmark]
-    public async Task<IdentificationResult> WorkflowCoordination_WithLanguage()
+    public async Task<string> ExtractAndConvertSubtitles()
     {
         if (!File.Exists(_testVideoPath))
         {
-            return new IdentificationResult
-            {
-                Error = new IdentificationError { Code = "FILE_NOT_FOUND", Message = "Test file not available" }
-            };
+            return string.Empty;
         }
 
-        return await _coordinator.ProcessVideoAsync(_testVideoPath, "eng");
+        return await _subtitleExtractor.ExtractAndConvertSubtitles(_testVideoPath, "eng");
+    }
+
+    /// <summary>
+    /// Benchmarks episode identification with source file path (for CTPH hashing)
+    /// </summary>
+    [Benchmark]
+    public async Task<IdentificationResult> IdentifyEpisode_WithSourcePath()
+    {
+        return await _episodeIdentificationService.IdentifyEpisodeAsync(_testSubtitleText, _testVideoPath);
+    }
+
+    /// <summary>
+    /// Benchmarks episode identification with minimum confidence threshold
+    /// </summary>
+    [Benchmark]
+    public async Task<IdentificationResult> IdentifyEpisode_WithConfidenceThreshold()
+    {
+        return await _episodeIdentificationService.IdentifyEpisodeAsync(_testSubtitleText, null, 0.75);
     }
 }
+
+

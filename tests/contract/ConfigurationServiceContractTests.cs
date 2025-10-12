@@ -34,6 +34,7 @@ public class ConfigurationServiceContractTests
         _validConfig = new Configuration
         {
             Version = "2.0",
+            MaxConcurrency = 1,
             MatchConfidenceThreshold = 0.8m,
             RenameConfidenceThreshold = 0.85m,
             FuzzyHashThreshold = 75,
@@ -225,5 +226,121 @@ public class ConfigurationServiceContractTests
         result.IsValid.Should().BeFalse();
         result.Errors.Should().NotBeEmpty();
         result.Errors.Count.Should().BeGreaterThan(0);
+    }
+
+    [Theory]
+    [InlineData(1, true)]
+    [InlineData(25, true)]
+    [InlineData(50, true)]
+    [InlineData(100, true)]
+    [InlineData(0, false)]
+    [InlineData(101, false)]
+    [InlineData(-1, false)]
+    public void ValidateConfiguration_WithMaxConcurrency_ValidatesRange(int maxConcurrency, bool shouldBeValid)
+    {
+        // Arrange
+        var config = new Configuration
+        {
+            Version = "2.0",
+            MaxConcurrency = maxConcurrency,
+            MatchConfidenceThreshold = 0.8m,
+            RenameConfidenceThreshold = 0.85m,
+            FuzzyHashThreshold = 75,
+            HashingAlgorithm = HashingAlgorithm.CTPH,
+            FilenamePatterns = new FilenamePatterns
+            {
+                PrimaryPattern = @"^(?<SeriesName>.+?)\sS(?<Season>\d+)E(?<Episode>\d+)(?:[\s\.\-]+(?<EpisodeName>.+?))?$"
+            },
+            FilenameTemplate = "{SeriesName} - S{Season}E{Episode} - {EpisodeName}{FileExtension}"
+        };
+
+        // Act
+        var result = _configurationService.ValidateConfiguration(config);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsValid.Should().Be(shouldBeValid);
+
+        if (shouldBeValid)
+        {
+            result.Errors.Should().BeEmpty();
+        }
+        else
+        {
+            result.Errors.Should().NotBeEmpty();
+            result.Errors.Should().Contain(error => error.Contains("MaxConcurrency"));
+        }
+    }
+
+    [Fact]
+    public async Task LoadConfiguration_WithValidMaxConcurrency_LoadsCorrectly()
+    {
+        // Arrange
+        var configWithMaxConcurrency = new Configuration
+        {
+            Version = "2.0",
+            MaxConcurrency = 25,
+            MatchConfidenceThreshold = 0.8m,
+            RenameConfidenceThreshold = 0.85m,
+            FuzzyHashThreshold = 75,
+            HashingAlgorithm = HashingAlgorithm.CTPH,
+            FilenamePatterns = new FilenamePatterns
+            {
+                PrimaryPattern = @"^(?<SeriesName>.+?)\sS(?<Season>\d+)E(?<Episode>\d+)(?:[\s\.\-]+(?<EpisodeName>.+?))?$"
+            },
+            FilenameTemplate = "{SeriesName} - S{Season}E{Episode} - {EpisodeName}{FileExtension}"
+        };
+
+        var configJson = JsonSerializer.Serialize(configWithMaxConcurrency, new JsonSerializerOptions { WriteIndented = true });
+        var testFileSystem = new MockFileSystem();
+        var testConfigPath = Path.Combine(Path.GetTempPath(), "test_config_maxconcurrency.json");
+        testFileSystem.AddFile(testConfigPath, new MockFileData(configJson));
+        var testService = new ConfigurationService(_logger, testFileSystem, testConfigPath);
+
+        // Act
+        var result = await testService.LoadConfiguration();
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsValid.Should().BeTrue();
+        result.Configuration.Should().NotBeNull();
+        result.Configuration!.MaxConcurrency.Should().Be(25);
+        result.Errors.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task LoadConfiguration_WithInvalidMaxConcurrency_FallsBackToDefault()
+    {
+        // Arrange
+        var configWithInvalidMaxConcurrency = new Configuration
+        {
+            Version = "2.0",
+            MaxConcurrency = 150, // Invalid - exceeds max of 100, should fallback to default (1)
+            MatchConfidenceThreshold = 0.8m,
+            RenameConfidenceThreshold = 0.85m,
+            FuzzyHashThreshold = 75,
+            HashingAlgorithm = HashingAlgorithm.CTPH,
+            FilenamePatterns = new FilenamePatterns
+            {
+                PrimaryPattern = @"^(?<SeriesName>.+?)\sS(?<Season>\d+)E(?<Episode>\d+)(?:[\s\.\-]+(?<EpisodeName>.+?))?$"
+            },
+            FilenameTemplate = "{SeriesName} - S{Season}E{Episode} - {EpisodeName}{FileExtension}"
+        };
+
+        var configJson = JsonSerializer.Serialize(configWithInvalidMaxConcurrency, new JsonSerializerOptions { WriteIndented = true });
+        var testFileSystem = new MockFileSystem();
+        var testConfigPath = Path.Combine(Path.GetTempPath(), "test_config_invalid_maxconcurrency.json");
+        testFileSystem.AddFile(testConfigPath, new MockFileData(configJson));
+        var testService = new ConfigurationService(_logger, testFileSystem, testConfigPath);
+
+        // Act
+        var result = await testService.LoadConfiguration();
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsValid.Should().BeTrue(); // Should be valid after fallback
+        result.Configuration.Should().NotBeNull();
+        result.Configuration!.MaxConcurrency.Should().Be(1); // Should fallback to default
+        result.Errors.Should().BeEmpty(); // No validation errors after fallback
     }
 }

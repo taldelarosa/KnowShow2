@@ -160,9 +160,6 @@ namespace EpisodeIdentifier.Core.Services.Hashing
                 var fileSize1 = fileInfo1.Length;
                 var fileSize2 = fileInfo2.Length;
 
-                _logger.LogDebug("Starting file comparison - Operation: {OperationId}, File1: {FilePath1} ({FileSize1} bytes), File2: {FilePath2} ({FileSize2} bytes)",
-                    operationId, filePath1, fileSize1, filePath2, fileSize2);
-
                 // Compute hashes for both files
                 var hashStartTime = stopwatch.ElapsedMilliseconds;
                 var hash1 = await ComputeFuzzyHash(filePath1);
@@ -260,7 +257,27 @@ namespace EpisodeIdentifier.Core.Services.Hashing
                     operationId, hash1, hash2);
 
                 // Use ssdeep to compare the hashes
-                var similarity = Comparer.Compare(hash1, hash2);
+                int similarity;
+                try
+                {
+                    similarity = Comparer.Compare(hash1, hash2);
+                }
+                catch (Exception ssdeepEx)
+                {
+                    // SSDEEP.NET throws when block sizes are too different or hashes are not comparable.
+                    // Treat as 0 similarity and log at Warning to avoid noisy failures in non-comparable cases without masking unexpected errors.
+                    var message = ssdeepEx.Message ?? string.Empty;
+                    if (message.Contains("cannot be compared", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logger.LogWarning("Hashes not comparable per ssdeep - Operation: {OperationId}. Treating similarity as 0. Hash1Len: {H1Len}, Hash2Len: {H2Len}",
+                            operationId, hash1.Length, hash2.Length);
+                        similarity = 0;
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
                 stopwatch.Stop();
 
                 _logger.LogInformation("Hash comparison completed - Operation: {OperationId}, Hash1: {Hash1}, Hash2: {Hash2}, Similarity: {Similarity}%, Duration: {Duration}ms",

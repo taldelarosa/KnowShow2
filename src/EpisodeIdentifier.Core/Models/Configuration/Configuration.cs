@@ -58,6 +58,16 @@ public class Configuration
     public string FilenameTemplate { get; set; } = string.Empty;
 
     /// <summary>
+    /// Maximum number of concurrent episode identification operations.
+    /// Range: 1-100, Default: 1 for backward compatibility.
+    /// Controls how many files can be processed simultaneously during bulk operations.
+    /// Values outside the range are automatically clamped during loading.
+    /// </summary>
+    // Validation attribute ensures contract tests recognize the expected range; service also clamps on initial loads
+    [Range(1, 100)]
+    public int MaxConcurrency { get; set; } = 1;
+
+    /// <summary>
     /// Configuration settings for bulk processing operations.
     /// Optional - when null, defaults are used.
     /// </summary>
@@ -82,19 +92,9 @@ public class Configuration
 public enum HashingAlgorithm
 {
     /// <summary>
-    /// Legacy MD5 hashing (backward compatibility).
-    /// </summary>
-    MD5 = 0,
-
-    /// <summary>
-    /// Legacy SHA1 hashing (backward compatibility).
-    /// </summary>
-    SHA1 = 1,
-
-    /// <summary>
     /// Context-triggered piecewise hashing (fuzzy matching).
     /// </summary>
-    CTPH = 2
+    CTPH = 0
 }
 
 /// <summary>
@@ -227,7 +227,7 @@ public class ConfigurationValidator : AbstractValidator<Configuration>
 
         RuleFor(x => x.HashingAlgorithm)
             .IsInEnum()
-            .WithMessage("HashingAlgorithm must be a valid value (MD5, SHA1, or CTPH)");
+            .WithMessage("HashingAlgorithm must be CTPH");
 
         RuleFor(x => x.FilenamePatterns)
             .NotNull()
@@ -239,6 +239,12 @@ public class ConfigurationValidator : AbstractValidator<Configuration>
             .WithMessage("FilenameTemplate is required")
             .Must(ContainRequiredPlaceholders)
             .WithMessage("FilenameTemplate must contain required placeholders: {SeriesName}, {Season}, {Episode}");
+
+        // Concurrent processing validation
+        // Values outside 1-100 are invalid at the validation layer; initial loads may clamp before validation
+        RuleFor(x => x.MaxConcurrency)
+            .InclusiveBetween(1, 100)
+            .WithMessage("MaxConcurrency must be between 1 and 100");
 
         // Bulk processing configuration validation rules
         When(x => x.BulkProcessing != null, () =>
@@ -356,6 +362,18 @@ public class ConfigurationResult
     public bool IsValid { get; set; }
     public Configuration? Configuration { get; set; }
     public List<string> Errors { get; set; } = new();
+    // Metadata to aid consumers in making safe choices
+    // Captures the originally provided MaxConcurrency value before any clamping/fallback
+    public int? OriginalMaxConcurrency { get; set; }
+    // True if the originally provided MaxConcurrency was outside [1,100]
+    public bool OriginalMaxConcurrencyOutOfRange { get; set; }
+    // True if MaxConcurrency was clamped to fit the valid range
+    public bool WasMaxConcurrencyClamped { get; set; }
+    // True if MaxConcurrency was forcibly defaulted to 1 (explicit fallback)
+    public bool WasMaxConcurrencyDefaulted { get; set; }
+    // Parsing/flow hints
+    public bool WasLenientParse { get; set; }
+    public bool WasReloadOperation { get; set; }
 
     public static ConfigurationResult Success(Configuration configuration)
     {

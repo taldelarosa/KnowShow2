@@ -14,7 +14,7 @@ static string DebugFilenameGeneration()
     var seriesName = new string('B', 150);
     var episodeName = new string('C', 150);
     var maxLength = 100;
-    
+
     // Simulate the exact filename generation logic from the real service
     var filename = $"{seriesName} - S01E01 - {episodeName}.mkv";
     Console.WriteLine($"Original filename length: {filename.Length}");

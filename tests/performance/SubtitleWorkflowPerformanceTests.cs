@@ -1,45 +1,79 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Abstractions;
+using System.Linq;
 using System.Threading.Tasks;
+using EpisodeIdentifier.Core.Interfaces;
+using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Services;
+using EpisodeIdentifier.Core.Services.Hashing;
+using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Xunit;
 
 namespace EpisodeIdentifier.Tests.Performance;
 
+/// <summary>
+/// Performance tests for the complete subtitle processing workflow.
+/// Tests end-to-end performance from video file to episode identification.
+/// </summary>
 public class SubtitleWorkflowPerformanceTests : IDisposable
 {
     private readonly ServiceProvider _serviceProvider;
-    private readonly SubtitleWorkflowCoordinator _coordinator;
+    private readonly IEpisodeIdentificationService _episodeIdentificationService;
     private readonly VideoFormatValidator _validator;
-    private readonly ITextSubtitleExtractor _textExtractor;
-    private readonly string _testVideoPath;
+    private readonly VideoTextSubtitleExtractor _textExtractor;
+    private readonly SubtitleExtractor _subtitleExtractor;
+    private readonly string? _testVideoPath;
 
     public SubtitleWorkflowPerformanceTests()
     {
         var services = new ServiceCollection();
         
         // Add logging
-        services.AddLogging(builder => builder.AddConsole());
+        services.AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Information));
+        
+        // Add file system abstraction
+        services.AddSingleton<IFileSystem, FileSystem>();
         
         // Add core services
         services.AddTransient<VideoFormatValidator>();
         services.AddTransient<SubtitleExtractor>();
-        services.AddTransient<ITextSubtitleExtractor, TextSubtitleExtractor>();
+        services.AddTransient<VideoTextSubtitleExtractor>();
         services.AddTransient<PgsRipService>();
         services.AddTransient<EnhancedPgsToTextConverter>();
         services.AddTransient<PgsToTextConverter>();
-        services.AddTransient<SubtitleMatcher>();
         services.AddTransient<SubtitleNormalizationService>();
+        
+        // Add CTPH hashing services
+        services.AddTransient<CTPhHashingService>();
+        services.AddTransient<EnhancedCTPhHashingService>();
+        
+        // Add configuration service
+        services.AddTransient<ConfigurationService>(provider =>
+        {
+            var logger = provider.GetRequiredService<ILogger<ConfigurationService>>();
+            return new ConfigurationService(logger);
+        });
+        
+        // Add fuzzy hash service with in-memory database
         services.AddTransient<FuzzyHashService>(provider => 
             new FuzzyHashService(
                 ":memory:", // Use in-memory SQLite database for tests
                 provider.GetRequiredService<ILogger<FuzzyHashService>>(),
                 provider.GetRequiredService<SubtitleNormalizationService>()));
-        services.AddTransient<SubtitleWorkflowCoordinator>();
+        
+        // Add episode identification service
+        services.AddTransient<IEpisodeIdentificationService, EpisodeIdentificationService>();
         
         _serviceProvider = services.BuildServiceProvider();
-        _coordinator = _serviceProvider.GetRequiredService<SubtitleWorkflowCoordinator>();
+        _episodeIdentificationService = _serviceProvider.GetRequiredService<IEpisodeIdentificationService>();
         _validator = _serviceProvider.GetRequiredService<VideoFormatValidator>();
-        _textExtractor = _serviceProvider.GetRequiredService<ITextSubtitleExtractor>();
+        _textExtractor = _serviceProvider.GetRequiredService<VideoTextSubtitleExtractor>();
+        _subtitleExtractor = _serviceProvider.GetRequiredService<SubtitleExtractor>();
         
         _testVideoPath = Environment.GetEnvironmentVariable("TEST_VIDEO_PATH");
     }
@@ -57,8 +91,9 @@ public class SubtitleWorkflowPerformanceTests : IDisposable
         // Arrange
         var stopwatch = Stopwatch.StartNew();
 
-        // Act
-        var result = await _coordinator.ProcessVideoAsync(_testVideoPath);
+        // Act - Extract and convert subtitles, then identify
+        var subtitleText = await _subtitleExtractor.ExtractAndConvertSubtitles(_testVideoPath, "eng");
+        var result = await _episodeIdentificationService.IdentifyEpisodeAsync(subtitleText, _testVideoPath);
 
         // Assert
         stopwatch.Stop();
@@ -68,7 +103,7 @@ public class SubtitleWorkflowPerformanceTests : IDisposable
         
         Console.WriteLine($"Video processing took: {stopwatch.ElapsedMilliseconds}ms");
         
-        if (!result.HasError)
+        if (!result.IsAmbiguous && result.Series != null)
         {
             Console.WriteLine($"Successfully identified: {result.Series} S{result.Season}E{result.Episode} " +
                             $"with {result.MatchConfidence:P1} confidence");
@@ -79,7 +114,7 @@ public class SubtitleWorkflowPerformanceTests : IDisposable
     public async Task SubtitleDetection_Performance_FastDetection()
     {
         // Skip if test file not available
-        if (!File.Exists(_testVideoPath))
+        if (string.IsNullOrEmpty(_testVideoPath) || !File.Exists(_testVideoPath))
         {
             Assert.True(true, "Test video file not available");
             return;
@@ -89,55 +124,47 @@ public class SubtitleWorkflowPerformanceTests : IDisposable
         var stopwatch = Stopwatch.StartNew();
 
         // Act
-        var tracks = await _validator.GetSubtitleTracks(_testVideoPath);
+        var isValid = await _validator.IsValidForProcessing(_testVideoPath);
 
         // Assert
         stopwatch.Stop();
         
-        tracks.Should().NotBeNull();
-        stopwatch.ElapsedMilliseconds.Should().BeLessThan(5000); // Should detect within 5 seconds
+        stopwatch.ElapsedMilliseconds.Should().BeLessThan(5000); // Should validate within 5 seconds
         
-        Console.WriteLine($"Subtitle track detection took: {stopwatch.ElapsedMilliseconds}ms");
-        Console.WriteLine($"Found {tracks.Count} subtitle tracks");
+        Console.WriteLine($"Video validation took: {stopwatch.ElapsedMilliseconds}ms");
+        Console.WriteLine($"Video is {(isValid ? "valid" : "invalid")} for processing");
     }
 
     [Fact]
     public async Task TextSubtitleExtraction_Performance_EfficientExtraction()
     {
         // Skip if test file not available
-        if (!File.Exists(_testVideoPath))
+        if (string.IsNullOrEmpty(_testVideoPath) || !File.Exists(_testVideoPath))
         {
             Assert.True(true, "Test video file not available");
             return;
         }
 
         // Arrange
-        var tracks = await _textExtractor.DetectTextSubtitleTracksAsync(_testVideoPath);
-        
-        if (!tracks.Any())
-        {
-            Assert.True(true, "No text tracks available for performance test");
-            return;
-        }
-
-        var track = tracks.First();
         var stopwatch = Stopwatch.StartNew();
 
         // Act
-        var result = await _textExtractor.ExtractTextSubtitleContentAsync(_testVideoPath, track);
+        var subtitleText = await _textExtractor.ExtractTextSubtitleFromVideo(_testVideoPath, 0, "eng");
 
         // Assert
         stopwatch.Stop();
         
-        result.Should().NotBeNull();
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(10000); // Should extract within 10 seconds
         
         Console.WriteLine($"Text subtitle extraction took: {stopwatch.ElapsedMilliseconds}ms");
         
-        if (result.Status == ProcessingStatus.Completed && result.ExtractedTracks.Any())
+        if (subtitleText != null)
         {
-            var extractedTrack = result.ExtractedTracks.First();
-            Console.WriteLine($"Extracted {extractedTrack.Content?.Length ?? 0} characters");
+            Console.WriteLine($"Extracted {subtitleText.Length} characters");
+        }
+        else
+        {
+            Console.WriteLine("No text subtitles found");
         }
     }
 
@@ -145,7 +172,7 @@ public class SubtitleWorkflowPerformanceTests : IDisposable
     public async Task MultipleProcessing_Performance_ConsistentTiming()
     {
         // Skip if test file not available
-        if (!File.Exists(_testVideoPath))
+        if (string.IsNullOrEmpty(_testVideoPath) || !File.Exists(_testVideoPath))
         {
             Assert.True(true, "Test video file not available");
             return;
@@ -158,7 +185,8 @@ public class SubtitleWorkflowPerformanceTests : IDisposable
         for (int i = 0; i < iterations; i++)
         {
             var stopwatch = Stopwatch.StartNew();
-            var result = await _coordinator.ProcessVideoAsync(_testVideoPath);
+            var subtitleText = await _subtitleExtractor.ExtractAndConvertSubtitles(_testVideoPath, "eng");
+            var result = await _episodeIdentificationService.IdentifyEpisodeAsync(subtitleText, _testVideoPath);
             stopwatch.Stop();
             
             timings.Add(stopwatch.ElapsedMilliseconds);
@@ -182,7 +210,7 @@ public class SubtitleWorkflowPerformanceTests : IDisposable
     public async Task MemoryUsage_Performance_NoMemoryLeaks()
     {
         // Skip if test file not available
-        if (!File.Exists(_testVideoPath))
+        if (string.IsNullOrEmpty(_testVideoPath) || !File.Exists(_testVideoPath))
         {
             Assert.True(true, "Test video file not available");
             return;
@@ -198,7 +226,8 @@ public class SubtitleWorkflowPerformanceTests : IDisposable
         // Act - Process video multiple times
         for (int i = 0; i < 5; i++)
         {
-            var result = await _coordinator.ProcessVideoAsync(_testVideoPath);
+            var subtitleText = await _subtitleExtractor.ExtractAndConvertSubtitles(_testVideoPath, "eng");
+            var result = await _episodeIdentificationService.IdentifyEpisodeAsync(subtitleText, _testVideoPath);
             result.Should().NotBeNull();
         }
 
@@ -225,7 +254,7 @@ public class SubtitleWorkflowPerformanceTests : IDisposable
     public async Task ConcurrentProcessing_Performance_HandlesMultipleRequests()
     {
         // Skip if test file not available
-        if (!File.Exists(_testVideoPath))
+        if (string.IsNullOrEmpty(_testVideoPath) || !File.Exists(_testVideoPath))
         {
             Assert.True(true, "Test video file not available");
             return;
@@ -235,9 +264,13 @@ public class SubtitleWorkflowPerformanceTests : IDisposable
         const int concurrentRequests = 3;
         var stopwatch = Stopwatch.StartNew();
 
-        // Act
+        // Act - Process concurrently
         var tasks = Enumerable.Range(0, concurrentRequests)
-            .Select(_ => _coordinator.ProcessVideoAsync(_testVideoPath))
+            .Select(async _ =>
+            {
+                var subtitleText = await _subtitleExtractor.ExtractAndConvertSubtitles(_testVideoPath, "eng");
+                return await _episodeIdentificationService.IdentifyEpisodeAsync(subtitleText, _testVideoPath);
+            })
             .ToArray();
 
         var results = await Task.WhenAll(tasks);
@@ -250,7 +283,7 @@ public class SubtitleWorkflowPerformanceTests : IDisposable
         
         Console.WriteLine($"Concurrent processing ({concurrentRequests} requests) took: {stopwatch.ElapsedMilliseconds}ms");
         
-        var successfulResults = results.Where(r => !r.HasError).ToArray();
+        var successfulResults = results.Where(r => !r.IsAmbiguous && r.Series != null).ToArray();
         Console.WriteLine($"{successfulResults.Length}/{results.Length} requests succeeded");
     }
 

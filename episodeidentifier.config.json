@@ -1,5 +1,6 @@
 {
   "version": "2.0",
+  "maxConcurrency": 3,
   "matchConfidenceThreshold": 0.6,
   "renameConfidenceThreshold": 0.7,
   "fuzzyHashThreshold": 75,

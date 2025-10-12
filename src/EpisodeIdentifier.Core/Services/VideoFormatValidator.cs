@@ -2,70 +2,66 @@ using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Text.Json;
 using EpisodeIdentifier.Core.Models;
+using System.IO.Abstractions;
 
 namespace EpisodeIdentifier.Core.Services;
 
 public class VideoFormatValidator
 {
     private readonly ILogger<VideoFormatValidator> _logger;
+    private readonly IFileSystem _fileSystem;
 
-    public VideoFormatValidator(ILogger<VideoFormatValidator> logger)
+    public VideoFormatValidator(ILogger<VideoFormatValidator> logger, IFileSystem fileSystem)
     {
         _logger = logger;
+        _fileSystem = fileSystem;
     }
 
-    public async Task<bool> IsAV1Encoded(string videoPath)
+    // Backward-compatible constructor for callers not using DI or IFileSystem
+    public VideoFormatValidator(ILogger<VideoFormatValidator> logger)
+        : this(logger, new FileSystem())
     {
-        _logger.LogInformation("Validating AV1 encoding for {VideoPath}", videoPath);
+    }
+
+    public async Task<bool> IsValidForProcessing(string videoPath)
+    {
+        _logger.LogInformation("Validating video file for processing: {VideoPath}", videoPath);
 
         // Check if file exists first
-        if (!File.Exists(videoPath))
+        if (!_fileSystem.File.Exists(videoPath))
         {
             _logger.LogWarning("Video file not found: {VideoPath}", videoPath);
             return false;
         }
 
+        // Check if file is an MKV
+        var extension = Path.GetExtension(videoPath).ToLowerInvariant();
+        if (extension != ".mkv")
+        {
+            _logger.LogInformation("Unsupported file format: {Extension}. Only .mkv files are supported.", extension);
+            return false;
+        }
+
         try
         {
-            using var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "ffprobe",
-                    Arguments = $"-v quiet -print_format json -show_streams \"{videoPath}\"",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
+            // Check if file has subtitle tracks (PGS or text-based)
+            var subtitleTracks = await GetSubtitleTracks(videoPath);
+            var hasSubtitles = subtitleTracks.Any();
 
-            process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
-            await process.WaitForExitAsync();
+            _logger.LogInformation("File {VideoPath}: MKV={IsMkv}, Subtitles={HasSubtitles} (Count: {SubtitleCount})",
+                videoPath, true, hasSubtitles, subtitleTracks.Count);
 
-            if (process.ExitCode != 0)
+            if (hasSubtitles)
             {
-                _logger.LogWarning("ffprobe failed with exit code {ExitCode}", process.ExitCode);
-                return false;
+                var subtitleTypes = subtitleTracks.Select(t => t.CodecName).Distinct().ToArray();
+                _logger.LogInformation("Subtitle types found: {SubtitleTypes}", string.Join(", ", subtitleTypes));
+            }
+            else
+            {
+                _logger.LogWarning("No subtitle tracks found in {VideoPath}", videoPath);
             }
 
-            using var document = JsonDocument.Parse(output);
-            var streams = document.RootElement.GetProperty("streams");
-
-            foreach (var stream in streams.EnumerateArray())
-            {
-                if (stream.TryGetProperty("codec_type", out var codecType) &&
-                    codecType.GetString() == "video" &&
-                    stream.TryGetProperty("codec_name", out var codecName))
-                {
-                    var codec = codecName.GetString();
-                    _logger.LogInformation("Found video codec: {Codec}", codec);
-                    return codec == "av01" || codec == "libaom-av1" || codec == "av1";
-                }
-            }
-
-            return false;
+            return hasSubtitles;
         }
         catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2)
         {
@@ -74,7 +70,7 @@ public class VideoFormatValidator
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error validating AV1 encoding for {VideoPath}", videoPath);
+            _logger.LogError(ex, "Error validating video for processing: {VideoPath}", videoPath);
             return false;
         }
     }
@@ -84,7 +80,7 @@ public class VideoFormatValidator
         _logger.LogInformation("Getting subtitle tracks for {VideoPath}", videoPath);
 
         // Check if file exists first
-        if (!File.Exists(videoPath))
+        if (!_fileSystem.File.Exists(videoPath))
         {
             _logger.LogWarning("Video file not found: {VideoPath}", videoPath);
             return new List<SubtitleTrackInfo>();

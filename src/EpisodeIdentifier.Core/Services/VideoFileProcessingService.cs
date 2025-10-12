@@ -67,8 +67,8 @@ public class VideoFileProcessingService : IVideoFileProcessingService
         {
             _logger.LogDebug("Starting video file processing: {FilePath}", filePath);
 
-            // Step 1: Validate AV1 encoding
-            if (!await _videoFormatValidator.IsAV1Encoded(filePath))
+            // Step 1: Validate file format
+            if (!await _videoFormatValidator.IsValidForProcessing(filePath))
             {
                 result.Error = IdentificationError.UnsupportedFileType;
                 result.ProcessingCompleted = DateTime.UtcNow;

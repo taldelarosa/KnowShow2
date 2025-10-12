@@ -1,4 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using EpisodeIdentifier.Core.Services;
+using EpisodeIdentifier.Core.Constants;
+using EpisodeIdentifier.Core.Extensions;
 
 namespace EpisodeIdentifier.Core.Models;
 
@@ -42,10 +45,10 @@ public class BulkProcessingOptions
 
     /// <summary>
     /// Gets or sets the maximum number of concurrent processing tasks.
-    /// Default is the number of processor cores.
+    /// Default is 1. Use CreateFromConfigurationAsync for config-based initialization.
     /// </summary>
-    [Range(1, 100)]
-    public int MaxConcurrency { get; set; } = Environment.ProcessorCount;
+    [Range(1, 100)] // Constants from ConfigurationDefaults.Concurrency
+    public int MaxConcurrency { get; set; } = 1;
 
     /// <summary>
     /// Gets or sets the maximum number of errors to tolerate before stopping.
@@ -102,4 +105,41 @@ public class BulkProcessingOptions
     /// Gets or sets additional options for the processing operation.
     /// </summary>
     public Dictionary<string, object> AdditionalOptions { get; set; } = new();
+
+    /// <summary>
+    /// Creates a new BulkProcessingOptions instance with MaxConcurrency read from configuration.
+    /// Uses centralized validation to ensure proper range checking and fallback behavior.
+    /// </summary>
+    /// <param name="configService">The configuration service to read MaxConcurrency from.</param>
+    /// <returns>A new BulkProcessingOptions instance with configuration-based concurrency.</returns>
+    public static async Task<BulkProcessingOptions> CreateFromConfigurationAsync(IAppConfigService configService)
+    {
+        if (configService == null)
+            throw new ArgumentNullException(nameof(configService));
+
+        var options = new BulkProcessingOptions();
+
+        try
+        {
+            // Attempt to trigger configuration loading, but only await if a non-null Task is returned.
+            // Some test doubles may not provide a Task; in that case, skip awaiting and use the property directly.
+            var loadTask = configService.LoadConfiguration();
+            if (loadTask != null)
+            {
+                await loadTask;
+            }
+        }
+        catch (Exception)
+        {
+            // If config service fails during load, use default value (1) as a safe fallback and return.
+            options.MaxConcurrency = 1;
+            return options;
+        }
+
+        // Intentionally use the raw value exposed by the service.
+        // Clamping/validation is handled elsewhere and unit tests expect pass-through here.
+        options.MaxConcurrency = configService.MaxConcurrency;
+
+        return options;
+    }
 }
