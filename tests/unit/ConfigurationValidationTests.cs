@@ -198,34 +198,16 @@ public class ConfigurationValidationTests
         Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("FuzzyHashThreshold is required when HashingAlgorithm is CTPH"));
     }
 
-    [Fact]
-    public void FuzzyHashThreshold_ZeroWithNonCTPhAlgorithm_ShouldNotHaveValidationError()
-    {
-        // Arrange
-        var config = CreateValidConfiguration();
-        config.HashingAlgorithm = HashingAlgorithm.MD5;
-        config.FuzzyHashThreshold = 0;
-
-        // Act
-        var result = _validator.Validate(config);
-
-        // Assert
-        Assert.True(result.IsValid || !result.Errors.Any(e => e.ErrorMessage.Contains("FuzzyHashThreshold is required when HashingAlgorithm is CTPH")));
-    }
-
     #endregion
 
     #region Hashing Algorithm Tests
 
-    [Theory]
-    [InlineData(HashingAlgorithm.MD5)]
-    [InlineData(HashingAlgorithm.SHA1)]
-    [InlineData(HashingAlgorithm.CTPH)]
-    public void HashingAlgorithm_ValidEnumValues_ShouldNotHaveValidationError(HashingAlgorithm algorithm)
+    [Fact]
+    public void HashingAlgorithm_CTPH_ShouldNotHaveValidationError()
     {
         // Arrange
         var config = CreateValidConfiguration();
-        config.HashingAlgorithm = algorithm;
+        config.HashingAlgorithm = HashingAlgorithm.CTPH;
 
         // Act
         var result = _validator.Validate(config);
@@ -468,7 +450,7 @@ public class ConfigurationValidationTests
             MatchConfidenceThreshold = 0.7m,
             RenameConfidenceThreshold = 0.8m,
             FuzzyHashThreshold = 50,
-            HashingAlgorithm = HashingAlgorithm.MD5,
+            HashingAlgorithm = HashingAlgorithm.CTPH,
             FilenamePatterns = new FilenamePatterns
             {
                 PrimaryPattern = @"(?<SeriesName>.+)\.S(?<Season>\d+)E(?<Episode>\d+)"
