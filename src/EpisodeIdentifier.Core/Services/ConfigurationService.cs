@@ -15,6 +15,13 @@ namespace EpisodeIdentifier.Core.Services;
 /// </summary>
 public partial class ConfigurationService : IConfigurationService, IAppConfigService, IDisposable
 {
+    /// <summary>
+    /// Polling interval in milliseconds for the background configuration monitor.
+    /// A fast but lightweight interval to catch rapid configuration updates during testing
+    /// while minimizing CPU overhead in production scenarios.
+    /// </summary>
+    private const int BackgroundMonitorPollingIntervalMs = 15;
+
     private readonly ILogger<ConfigurationService> _logger;
     private readonly IFileSystem _fileSystem;
     private readonly ConfigurationValidator _validator;
@@ -782,7 +789,7 @@ public partial class ConfigurationService
 
                 try
                 {
-                    await Task.Delay(15, ct); // fast but lightweight polling to catch rapid test updates
+                    await Task.Delay(BackgroundMonitorPollingIntervalMs, ct);
                 }
                 catch (TaskCanceledException)
                 {
