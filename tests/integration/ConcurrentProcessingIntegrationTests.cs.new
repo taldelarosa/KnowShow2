@@ -75,28 +75,21 @@ public class ConcurrentProcessingIntegrationTests
             Path.Combine(AppContext.BaseDirectory, "Series.S01E04.mkv")
         };
         
-        // Create configuration with maxConcurrency = 3
-        var config = new AppConfiguration
-        {
-            BulkProcessing = new BulkProcessingOptions { MaxConcurrency = 3 },
-            HashingOptions = new HashingOptions
-            {
-                PrimaryMode = "CTPH",
-                SimilarityThreshold = 0.8
+        // Create configuration JSON with maxConcurrency = 3
+        var configJson = @"{
+            ""version"": ""2.0"",
+            ""matchConfidenceThreshold"": 0.8,
+            ""renameConfidenceThreshold"": 0.85,
+            ""fuzzyHashThreshold"": 75,
+            ""hashingAlgorithm"": ""CTPH"",
+            ""maxConcurrency"": 3,
+            ""filenamePatterns"": {
+                ""primaryPattern"": ""^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$""
             },
-            IdentificationOptions = new IdentificationOptions
-            {
-                EnableFuzzyMatching = true,
-                ConfidenceThreshold = 0.8
-            },
-            OutputOptions = new OutputOptions 
-            { 
-                RenameFiles = true,
-                OutputFormat = "detailed" 
-            }
-        };
+            ""filenameTemplate"": ""{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}""
+        }";
         
-        _fileSystem.AddFile(configPath, System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        _fileSystem.AddFile(configPath, configJson);
         foreach (var file in testFiles)
         {
             _fileSystem.AddFile(file, "test episode content");
@@ -108,7 +101,7 @@ public class ConcurrentProcessingIntegrationTests
         var configService = serviceProvider.GetRequiredService<IConfigurationService>();
         var configResult = await configService.LoadConfiguration();
         configResult.Should().NotBeNull();
-        configResult.Configuration?.BulkProcessing?.MaxConcurrency.Should().Be(3);
+        configResult.Configuration?.MaxConcurrency.Should().Be(3);
 
         // Act & Assert - Process multiple files concurrently
         var bulkProcessor = serviceProvider.GetRequiredService<IBulkProcessor>();
@@ -148,27 +141,20 @@ public class ConcurrentProcessingIntegrationTests
             _fileSystem.AddFile(filePath, "test episode content");
         }
         
-        var config = new AppConfiguration
-        {
-            BulkProcessing = new BulkProcessingOptions { MaxConcurrency = maxConcurrency },
-            HashingOptions = new HashingOptions
-            {
-                PrimaryMode = "CTPH",
-                SimilarityThreshold = 0.8
-            },
-            IdentificationOptions = new IdentificationOptions
-            {
-                EnableFuzzyMatching = true,
-                ConfidenceThreshold = 0.8
-            },
-            OutputOptions = new OutputOptions 
-            { 
-                RenameFiles = true,
-                OutputFormat = "detailed" 
-            }
-        };
+        var configJson = $@"{{
+            ""version"": ""2.0"",
+            ""matchConfidenceThreshold"": 0.8,
+            ""renameConfidenceThreshold"": 0.85,
+            ""fuzzyHashThreshold"": 75,
+            ""hashingAlgorithm"": ""CTPH"",
+            ""maxConcurrency"": {maxConcurrency},
+            ""filenamePatterns"": {{
+                ""primaryPattern"": ""^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$""
+            }},
+            ""filenameTemplate"": ""{{SeriesName}} - S{{Season:D2}}E{{Episode:D2}} - {{EpisodeName}}{{FileExtension}}""
+        }}";
         
-        _fileSystem.AddFile(configPath, System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        _fileSystem.AddFile(configPath, configJson);
 
         // Setup service provider with proven pattern
         using var serviceProvider = CreateServiceProvider(configPath);
@@ -176,7 +162,7 @@ public class ConcurrentProcessingIntegrationTests
         var configService = serviceProvider.GetRequiredService<IConfigurationService>();
         var configResult = await configService.LoadConfiguration();
         configResult.Should().NotBeNull();
-        configResult.Configuration?.BulkProcessing?.MaxConcurrency.Should().Be(maxConcurrency);
+        configResult.Configuration?.MaxConcurrency.Should().Be(maxConcurrency);
 
         // Act
         var bulkProcessor = serviceProvider.GetRequiredService<IBulkProcessor>();
@@ -212,27 +198,20 @@ public class ConcurrentProcessingIntegrationTests
             _fileSystem.AddFile(filePath, "test episode content");
         }
         
-        var config = new AppConfiguration
-        {
-            BulkProcessing = new BulkProcessingOptions { MaxConcurrency = 3 },
-            HashingOptions = new HashingOptions
-            {
-                PrimaryMode = "CTPH",
-                SimilarityThreshold = 0.8
+        var configJson = @"{
+            ""version"": ""2.0"",
+            ""matchConfidenceThreshold"": 0.8,
+            ""renameConfidenceThreshold"": 0.85,
+            ""fuzzyHashThreshold"": 75,
+            ""hashingAlgorithm"": ""CTPH"",
+            ""maxConcurrency"": 3,
+            ""filenamePatterns"": {
+                ""primaryPattern"": ""^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$""
             },
-            IdentificationOptions = new IdentificationOptions
-            {
-                EnableFuzzyMatching = true,
-                ConfidenceThreshold = 0.8
-            },
-            OutputOptions = new OutputOptions 
-            { 
-                RenameFiles = true,
-                OutputFormat = "detailed" 
-            }
-        };
+            ""filenameTemplate"": ""{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}""
+        }";
         
-        _fileSystem.AddFile(configPath, System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        _fileSystem.AddFile(configPath, configJson);
 
         // Setup service provider with proven pattern
         using var serviceProvider = CreateServiceProvider(configPath);
@@ -240,7 +219,7 @@ public class ConcurrentProcessingIntegrationTests
         var configService = serviceProvider.GetRequiredService<IConfigurationService>();
         var configResult = await configService.LoadConfiguration();
         configResult.Should().NotBeNull();
-        configResult.Configuration?.BulkProcessing?.MaxConcurrency.Should().Be(3);
+        configResult.Configuration?.MaxConcurrency.Should().Be(3);
 
         // Act
         var bulkProcessor = serviceProvider.GetRequiredService<IBulkProcessor>();
@@ -281,27 +260,20 @@ public class ConcurrentProcessingIntegrationTests
             Path.Combine(AppContext.BaseDirectory, "Series.S01E03.mkv")
         };
         
-        var config = new AppConfiguration
-        {
-            BulkProcessing = new BulkProcessingOptions { MaxConcurrency = 3 },
-            HashingOptions = new HashingOptions
-            {
-                PrimaryMode = "CTPH",
-                SimilarityThreshold = 0.8
+        var configJson = @"{
+            ""version"": ""2.0"",
+            ""matchConfidenceThreshold"": 0.8,
+            ""renameConfidenceThreshold"": 0.85,
+            ""fuzzyHashThreshold"": 75,
+            ""hashingAlgorithm"": ""CTPH"",
+            ""maxConcurrency"": 3,
+            ""filenamePatterns"": {
+                ""primaryPattern"": ""^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$""
             },
-            IdentificationOptions = new IdentificationOptions
-            {
-                EnableFuzzyMatching = true,
-                ConfidenceThreshold = 0.8
-            },
-            OutputOptions = new OutputOptions 
-            { 
-                RenameFiles = true,
-                OutputFormat = "detailed" 
-            }
-        };
+            ""filenameTemplate"": ""{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}""
+        }";
         
-        _fileSystem.AddFile(configPath, System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        _fileSystem.AddFile(configPath, configJson);
         foreach (var file in testFiles)
         {
             _fileSystem.AddFile(file, "test episode content");
@@ -313,7 +285,7 @@ public class ConcurrentProcessingIntegrationTests
         var configService = serviceProvider.GetRequiredService<IConfigurationService>();
         var configResult = await configService.LoadConfiguration();
         configResult.Should().NotBeNull();
-        configResult.Configuration?.BulkProcessing?.MaxConcurrency.Should().Be(3);
+        configResult.Configuration?.MaxConcurrency.Should().Be(3);
 
         // Setup progress tracking
         var progressUpdates = new List<BulkProcessingProgress>();
