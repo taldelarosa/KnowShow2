@@ -25,11 +25,13 @@
 6. Or manually configure:
 
 **Container Settings**:
+
 - **Name**: `episode-identifier`
 - **Repository**: `taldelarosa/episode-identifier:latest`
 - **Network Type**: `Bridge`
 
 **Volume Mappings**:
+
 ```
 Container Path: /videos       → Host Path: /mnt/user/media/videos        (Read/Write)
 Container Path: /data         → Host Path: /mnt/user/appdata/episode-identifier  (Read/Write)
@@ -37,6 +39,7 @@ Container Path: /config       → Host Path: /mnt/user/appdata/episode-identifie
 ```
 
 **Environment Variables**:
+
 ```
 PUID=99
 PGID=100
@@ -50,7 +53,8 @@ TZ=UTC
 3. Container status should show **Started** with green icon
 4. Health check should show **Healthy** (wait 30 seconds after start)
 
-**Validation**: 
+**Validation**:
+
 ```bash
 docker ps | grep episode-identifier
 # Should show: UP, healthy
@@ -94,12 +98,14 @@ EOF
 ### Step 3.1: Prepare Test Video
 
 Place a known episode in videos directory:
+
 ```bash
 # Example: Copy Bones S01E01 to videos directory
 cp "/path/to/Bones S01E01.mkv" /mnt/user/media/videos/
 ```
 
 **Requirements**:
+
 - Video MUST have PGS subtitles
 - Filename should indicate series/season/episode (for learning)
 
@@ -119,6 +125,7 @@ docker exec episode-identifier \
 ```
 
 **Expected Output**:
+
 ```
 Extracting subtitles from video...
 Calculating fuzzy hash...
@@ -127,6 +134,7 @@ Storing hash for Bones S01E01
 ```
 
 **Validation**:
+
 ```bash
 # Check database was created
 ls -lh /mnt/user/appdata/episode-identifier/production_hashes.db
@@ -136,11 +144,13 @@ ls -lh /mnt/user/appdata/episode-identifier/production_hashes.db
 ### Step 3.3: Identify Unknown Episode
 
 Copy an unidentified episode (same series, different episode):
+
 ```bash
 cp "/path/to/unknown_episode.mkv" /mnt/user/media/videos/test_video.mkv
 ```
 
 Run identification:
+
 ```bash
 docker exec episode-identifier \
   dotnet /app/EpisodeIdentifier.Core.dll \
@@ -149,6 +159,7 @@ docker exec episode-identifier \
 ```
 
 **Expected Output** (if match found):
+
 ```
 Extracting subtitles from video...
 Calculating fuzzy hash...
@@ -157,6 +168,7 @@ Comparing against database...
 ```
 
 **Expected Output** (if no match):
+
 ```
 Extracting subtitles from video...
 Calculating fuzzy hash...
@@ -178,6 +190,7 @@ docker exec episode-identifier \
 ```
 
 **Expected Output**:
+
 ```
 Processing 5 video files...
 [1/5] Bones S01E01.mkv → Already known
@@ -198,6 +211,7 @@ docker exec episode-identifier \
 ```
 
 **Expected Behavior**:
+
 - Files with confident matches are renamed
 - Original files preserved (rename, not move)
 - Unmatched files left unchanged
@@ -222,6 +236,7 @@ docker exec episode-identifier \
 
 **Cause**: PUID/PGID mismatch with file ownership  
 **Solution**:
+
 ```bash
 # Check file ownership
 ls -ln /mnt/user/media/videos
@@ -235,6 +250,7 @@ chown -R 99:100 /mnt/user/media/videos
 
 **Cause**: Video file lacks PGS subtitle track  
 **Solution**:
+
 ```bash
 # Check subtitle tracks
 docker exec episode-identifier mkvmerge -i /videos/video.mkv
@@ -246,6 +262,7 @@ docker exec episode-identifier mkvmerge -i /videos/video.mkv
 
 **Cause**: Application crashed or dependencies missing  
 **Solution**:
+
 ```bash
 # Check container logs
 docker logs episode-identifier
@@ -258,6 +275,7 @@ docker exec episode-identifier dotnet /app/EpisodeIdentifier.Core.dll --version
 
 **Cause**: /data volume not mounted correctly  
 **Solution**:
+
 - Verify volume mapping in container settings
 - Check host path exists: `ls -la /mnt/user/appdata/episode-identifier`
 
@@ -291,6 +309,7 @@ After successful quickstart:
 ## Cleanup (Optional)
 
 To remove test container:
+
 ```bash
 # Stop container
 docker stop episode-identifier

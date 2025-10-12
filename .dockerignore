@@ -1,0 +1,70 @@
+# Build artifacts
+bin/
+obj/
+publish/
+
+# Test results
+TestResults/
+TestResults_*/
+test_*.log
+*.log
+
+# Debug files
+debug_*.cs
+debug_*.db*
+temp_*.cs
+
+# Database files (will be in volumes)
+*.db
+*.db-shm
+*.db-wal
+*.db.backup
+
+# Configuration files (will be in volumes)
+episodeidentifier.config.json
+!episodeidentifier.config.example.json
+
+# IDE files
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Documentation drafts
+*_SUMMARY.md
+*_RESULTS.md
+*_REPORT.md
+*_GUIDE.md
+!README.md
+!SETUP.md
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+
+# Specs and planning
+specs/
+memory/
+performance_results/
+
+# Tools and scripts
+tools/
+scripts/
+*.sh
+!docker-entrypoint.sh
+
+# Template projects
+DebugFilename/
+DebugFuzzyHash/
+DebugMaxConcurrency/
+
+# Infrastructure
+infrastructure/
+
+# OS files
+.DS_Store
+Thumbs.db

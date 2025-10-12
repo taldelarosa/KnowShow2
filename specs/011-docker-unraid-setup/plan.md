@@ -108,9 +108,9 @@ Package the Episode Identifier .NET application as a Docker container optimized 
 **Testing (NON-NEGOTIABLE)**:
 
 - RED-GREEN-Refactor cycle enforced? MODIFIED for infrastructure:
-  - Contract tests: Verify container exposes expected volumes, env vars
-  - Integration tests: Verify app runs identically in container vs native
-  - No unit tests needed for Dockerfile/template XML
+    - Contract tests: Verify container exposes expected volumes, env vars
+    - Integration tests: Verify app runs identically in container vs native
+    - No unit tests needed for Dockerfile/template XML
 - Git commits show tests before implementation? YES - write validation scripts first
 - Order: Contract→Integration→E2E→Unit strictly followed? YES (limited to applicable test types)
 - Real dependencies used? YES - testing on actual Unraid or Docker environment
@@ -279,13 +279,15 @@ KnowShow_Specd/
 - **Phase D** (Sequential): Build → Test → Publish
 
 **Dependencies**:
+
 - Template depends on: Dockerfile (to know volume paths)
 - Integration tests depend on: Built image
 - Publish depends on: All tests passing
 
 **Estimated Output**: 20-25 numbered, ordered tasks in tasks.md
 
-**Parallelization**: 
+**Parallelization**:
+
 - Tasks marked [P] can execute in parallel (independent files)
 - Test execution must be sequential (shares Docker environment)
 
@@ -304,6 +306,7 @@ KnowShow_Specd/
 *Fill ONLY if Constitution Check has violations that must be justified*
 
 **No violations** - This feature follows constitutional principles:
+
 - Single project (packaging only)
 - Uses Docker standards directly (no wrappers)
 - Tests before implementation (contract → integration)
@@ -334,6 +337,7 @@ No complexity deviations to document.
 - [x] Complexity deviations documented (none)
 
 **Artifacts Generated**:
+
 - [x] research.md (7 research areas, all decisions documented)
 - [x] data-model.md (5 entities with validation rules)
 - [x] contracts/dockerfile.contract.md (build stages, file system, health check)
