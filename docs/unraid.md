@@ -451,11 +451,9 @@ Edit `/mnt/user/appdata/episodeidentifier/config/episodeidentifier.config.json`:
 
 1. Verify PUID/PGID match your Unraid user
 2. Check host directory permissions:
-
    ```bash
    ls -la /mnt/user/media/videos
    ```
-
 3. Update container environment variables if needed
 4. Restart container after changes
 
@@ -511,13 +509,11 @@ The container includes English and Japanese by default. For other languages, you
 **Troubleshooting steps:**
 
 1. **Verify database has known episodes:**
-
    ```bash
    sqlite3 /data/database/production_hashes.db "SELECT COUNT(*) FROM subtitle_hashes;"
    ```
 
 2. **Store known episodes first:**
-
    ```bash
    # Store the correct episode
    dotnet /app/EpisodeIdentifier.Core.dll --store \
@@ -528,7 +524,6 @@ The container includes English and Japanese by default. For other languages, you
 
 3. **Adjust matching thresholds:**
    Edit config and lower thresholds:
-
    ```json
    {
      "thresholds": {
@@ -540,7 +535,6 @@ The container includes English and Japanese by default. For other languages, you
    ```
 
 4. **Check subtitle extraction:**
-
    ```bash
    docker exec EpisodeIdentifier bash -c "
    pgsrip /data/videos/yourfile.mkv -o /tmp/test.sup
@@ -571,7 +565,6 @@ Run separate instances for different libraries:
 For accessing the container from other containers:
 
 1. Create custom Docker network:
-
    ```bash
    docker network create media-network
    ```
@@ -580,7 +573,6 @@ For accessing the container from other containers:
    - Network Type: `media-network`
 
 3. Access from other containers:
-
    ```bash
    docker exec OtherContainer curl http://episodeidentifier:8080
    ```
@@ -630,7 +622,6 @@ Schedule via User Scripts plugin.
 
 - **Project Repository**: <https://github.com/taldelarosa/KnowShow2>
 - **Issue Tracker**: <https://github.com/taldelarosa/KnowShow2/issues>
-- **Docker Hub**: <https://hub.docker.com/r/episodeidentifier/episodeidentifier>
 - **Configuration Examples**: See `/data/config/episodeidentifier.config.example.json`
 
 ## Support
