@@ -2,7 +2,7 @@
 <Container version="2">
   <Name>EpisodeIdentifier</Name>
   <Repository>episodeidentifier/episodeidentifier</Repository>
-  <Registry>https://hub.docker.com/r/episodeidentifier/episodeidentifier</Registry>
+  <Registry/>
   <Network>bridge</Network>
   <MyIP/>
   <Shell>bash</Shell>
@@ -12,8 +12,8 @@
   <Overview>Episode Identifier - Identify TV episodes from video files using PGS subtitle hashing and OCR. Automatically matches episodes without relying on filenames. Supports bulk processing, auto-rename, and fuzzy hashing (CTPH/ssdeep) for robust identification.</Overview>
   <Category>MediaApp:Video MediaServer:Video Tools:</Category>
   <WebUI/>
-  <TemplateURL>https://raw.githubusercontent.com/taldelarosa/KnowShow2/main/unraid-template.xml</TemplateURL>
-  <Icon>https://raw.githubusercontent.com/taldelarosa/KnowShow2/main/icon.png</Icon>
+  <TemplateURL/>
+  <Icon/>
   <ExtraParams/>
   <PostArgs/>
   <CPUset/>

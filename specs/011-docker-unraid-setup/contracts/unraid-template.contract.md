@@ -12,18 +12,18 @@ The Unraid template XML MUST conform to Unraid Community Applications schema ver
 ```xml
 <?xml version="1.0"?>
 <Container version="2">
-  <Name>Episode Identifier</Name>
+    <Name>EpisodeIdentifier</Name>
   <Repository>taldelarosa/episode-identifier</Repository>
-  <Registry>https://hub.docker.com/r/taldelarosa/episode-identifier</Registry>
+  <Registry></Registry>
   <Network>bridge</Network>
   <Privileged>false</Privileged>
   <Support>https://github.com/taldelarosa/KnowShow2/issues</Support>
   <Project>https://github.com/taldelarosa/KnowShow2</Project>
-  <Overview>Identifies TV episodes from video files using PGS subtitle matching</Overview>
-  <Category>MediaApp:Video Tools:</Category>
-  <WebUI/>
-  <TemplateURL/>
-  <Icon>https://raw.githubusercontent.com/taldelarosa/KnowShow2/main/docs/icon.png</Icon>
+  <Overview>Brief description of what the container does</Overview>
+  <Category>MediaApp:Video</Category>
+  <WebUI></WebUI>
+  <TemplateURL></TemplateURL>
+  <Icon></Icon>
   <ExtraParams/>
   <Description>...</Description>
   
