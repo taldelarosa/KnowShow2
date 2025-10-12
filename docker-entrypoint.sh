@@ -33,30 +33,14 @@ CONFIG_PATH=${CONFIG_PATH:-/data/config/episodeidentifier.config.json}
 # Create default config if it doesn't exist
 if [ ! -f "${CONFIG_PATH}" ]; then
     echo "Creating default configuration file at ${CONFIG_PATH}..."
-    cat > "${CONFIG_PATH}" <<'EOF'
-{
-  "thresholds": {
-    "minimumTextMatchRatio": 0.65,
-    "minimumFuzzyHashSimilarity": 85,
-    "minimumTotalScore": 75
-  },
-  "bulkProcessing": {
-    "maxConcurrency": 4
-  },
-  "filenamePatterns": {
-    "standardPatterns": [
-      "(?<series>.+?)[._ ]S(?<season>\\d{2})E(?<episode>\\d{2})",
-      "(?<series>.+?)[._ ](?<season>\\d{1,2})x(?<episode>\\d{2})"
-    ],
-    "animePatterns": [
-      "(?<series>.+?)[._ ]-[._ ](?<episode>\\d{2,3})"
-    ]
-  },
-  "logging": {
-    "logLevel": "Information"
-  }
-}
-EOF
+    # Copy from the template included in the container image
+    if [ -f "/app/config.template.json" ]; then
+        cp /app/config.template.json "${CONFIG_PATH}"
+        echo "Configuration copied from template"
+    else
+        echo "ERROR: Template configuration not found at /app/config.template.json"
+        exit 1
+    fi
     chown appuser:appuser "${CONFIG_PATH}" 2>/dev/null || true
 fi
 
