@@ -123,8 +123,6 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
 </Container>
 ```
 
-**Reference**: <https://unraid.net/community/apps/templates>
-
 ---
 
 ### 5. PUID/PGID Implementation for File Permissions
