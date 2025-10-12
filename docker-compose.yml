@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  episodeidentifier:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: episodeidentifier
+    image: episodeidentifier:latest
+    
+    # Unraid-compatible user/group settings
+    environment:
+      - PUID=99                    # User ID (99 = nobody on Unraid)
+      - PGID=100                   # Group ID (100 = users on Unraid)
+      - CONFIG_PATH=/data/config/episodeidentifier.config.json
+      - HASH_DB_PATH=/data/database/production_hashes.db
+      - LOG_LEVEL=Information      # Options: Trace, Debug, Information, Warning, Error, Critical
+    
+    # Volume mappings
+    volumes:
+      # Video files directory (read/write for auto-rename)
+      - ./test-videos:/data/videos:rw
+      
+      # Persistent database storage
+      - ./docker-data/database:/data/database:rw
+      
+      # Configuration files
+      - ./docker-data/config:/data/config:rw
+    
+    # Network configuration
+    network_mode: bridge
+    
+    # Resource limits (optional)
+    # Uncomment to set limits
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '4.0'
+    #       memory: 4G
+    #     reservations:
+    #       cpus: '1.0'
+    #       memory: 1G
+    
+    # Keep container running (for exec commands)
+    # Override with specific command when needed
+    command: tail -f /dev/null
+    
+    # Restart policy
+    restart: unless-stopped
+
+# Alternative service for one-shot identification
+  episodeidentifier-oneshot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: episodeidentifier:latest
+    
+    environment:
+      - PUID=99
+      - PGID=100
+      - CONFIG_PATH=/data/config/episodeidentifier.config.json
+      - HASH_DB_PATH=/data/database/production_hashes.db
+    
+    volumes:
+      - ./test-videos:/data/videos:rw
+      - ./docker-data/database:/data/database:rw
+      - ./docker-data/config:/data/config:rw
+    
+    # Example: Identify a specific file
+    # Customize command as needed
+    command: >
+      --input /data/videos/sample.mkv
+      --hash-db /data/database/production_hashes.db
+    
+    # Don't restart for one-shot execution
+    restart: "no"
+    
+    # Start only when explicitly called
+    profiles:
+      - oneshot
+
+# Alternative service for bulk processing
+  episodeidentifier-bulk:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: episodeidentifier:latest
+    
+    environment:
+      - PUID=99
+      - PGID=100
+      - CONFIG_PATH=/data/config/episodeidentifier.config.json
+      - HASH_DB_PATH=/data/database/production_hashes.db
+    
+    volumes:
+      - ./test-videos:/data/videos:rw
+      - ./docker-data/database:/data/database:rw
+      - ./docker-data/config:/data/config:rw
+    
+    # Example: Bulk process a directory
+    command: >
+      --bulk-identify /data/videos
+      --hash-db /data/database/production_hashes.db
+    
+    restart: "no"
+    
+    profiles:
+      - bulk
+
+networks:
+  default:
+    name: episodeidentifier-network
