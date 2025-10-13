@@ -30,27 +30,23 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     tesseract-ocr-eng \
     tesseract-ocr-jpn \
+    # Python for pgsrip
+    python3 \
+    python3-pip \
     # Additional utilities
     curl \
     wget \
     ca-certificates \
     sqlite3 \
     gosu \
-    # Build tools for pgsrip
-    git \
-    gcc \
-    make \
-    libc6-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pgsrip from source
-WORKDIR /tmp
-RUN git clone https://github.com/ratoaq2/pgsrip.git && \
-    cd pgsrip && \
-    make && \
-    make install && \
-    cd / && \
-    rm -rf /tmp/pgsrip
+# Note: pgsrip is a Python tool, install via pip instead of compiling
+RUN pip3 install --no-cache-dir pgsrip || \
+    (apt-get update && apt-get install -y python3-pip && \
+     pip3 install --no-cache-dir pgsrip && \
+     rm -rf /var/lib/apt/lists/*)
 
 # Create app user and directories
 RUN groupadd -g 99 appuser && \
