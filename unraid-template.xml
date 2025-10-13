@@ -4,7 +4,6 @@
   <Repository>ghcr.io/taldelarosa/knowshow2:latest</Repository>
   <Registry>https://ghcr.io/</Registry>
   <Network>bridge</Network>
-  <Shell>sh</Shell>
   <Privileged>false</Privileged>
   <Support>https://github.com/taldelarosa/KnowShow2/issues</Support>
   <Project>https://github.com/taldelarosa/KnowShow2</Project>
