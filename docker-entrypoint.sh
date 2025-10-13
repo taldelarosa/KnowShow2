@@ -70,8 +70,19 @@ echo ""
 if [ "$1" = "sleep" ]; then
     echo "Container running in daemon mode for Unraid."
     echo "Use 'docker exec' or Unraid console to run commands:"
+    echo ""
+    echo "  Quick tip: Create an alias for easier usage:"
+    echo "  alias episodeidentifier='dotnet /app/EpisodeIdentifier.Core.dll'"
+    echo ""
+    echo "  Then you can use: episodeidentifier --help"
+    echo ""
+    echo "  Or use the full command:"
     echo "  dotnet /app/EpisodeIdentifier.Core.dll --help"
     echo ""
+    
+    # Create convenience alias for the appuser's shell
+    echo "alias episodeidentifier='dotnet /app/EpisodeIdentifier.Core.dll'" >> /home/appuser/.bashrc
+    
     exec gosu appuser sleep infinity
 fi
 
