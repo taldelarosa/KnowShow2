@@ -27,6 +27,7 @@
   <Support>https://github.com/taldelarosa/KnowShow2/issues</Support>
   <Project>https://github.com/taldelarosa/KnowShow2</Project>
   <Overview>Episode Identifier - Identify TV episodes from video files using PGS subtitle hashing and OCR. Matches episodes without relying on filenames. Supports bulk processing, auto-rename, and fuzzy hashing (CTPH/ssdeep) for robust identification.</Overview>
+  <Overview>Episode Identifier - Identify TV episodes from video files using PGS subtitle hashing and OCR. Automatically matches episodes without relying on filenames. Supports bulk processing, auto-rename, and fuzzy hashing (CTPH/ssdeep) for robust identification.</Overview>
   <Category>MediaApp:Video MediaServer:Video Tools:</Category>
   <WebUI/>
   <TemplateURL/>
