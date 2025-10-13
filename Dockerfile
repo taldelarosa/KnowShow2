@@ -42,11 +42,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pgsrip from source
-# Note: pgsrip is a Python tool, install via pip instead of compiling
-RUN pip3 install --no-cache-dir pgsrip || \
-    (apt-get update && apt-get install -y python3-pip && \
-     pip3 install --no-cache-dir pgsrip && \
-     rm -rf /var/lib/apt/lists/*)
+# Note: pgsrip is a Python tool, use --break-system-packages for Docker container
+RUN pip3 install --no-cache-dir --break-system-packages pgsrip
 
 # Create app user and directories
 RUN groupadd -g 99 appuser && \
