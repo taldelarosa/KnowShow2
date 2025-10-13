@@ -78,8 +78,9 @@ VOLUME ["/data/videos", "/data/database", "/data/config"]
 # Set entrypoint
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
-# Default command (shows help)
-CMD ["--help"]
+# Default command: Keep container running for manual execution (Unraid compatible)
+# Users can exec into the container to run commands
+CMD ["sleep", "infinity"]
 
 # Labels for Docker/Unraid metadata
 LABEL maintainer="Episode Identifier Team" \

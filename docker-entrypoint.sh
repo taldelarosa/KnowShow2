@@ -66,6 +66,15 @@ echo "Episode Identifier Ready"
 echo "========================================="
 echo ""
 
+# If sleep command, keep container running for Unraid
+if [ "$1" = "sleep" ]; then
+    echo "Container running in daemon mode for Unraid."
+    echo "Use 'docker exec' or Unraid console to run commands:"
+    echo "  dotnet /app/EpisodeIdentifier.Core.dll --help"
+    echo ""
+    exec gosu appuser sleep infinity
+fi
+
 # If no arguments provided, show help
 if [ $# -eq 0 ]; then
     echo "No command provided. Showing help..."
