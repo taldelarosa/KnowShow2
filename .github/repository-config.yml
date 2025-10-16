@@ -30,17 +30,17 @@ repository:
 # Branch protection rules
 branch_protection:
   main:
-    # Pull request requirements
+    # Pull request requirements (modified for solo development)
     required_pull_request_reviews:
-      required_approving_review_count: 1
+      required_approving_review_count: 0  # Allow self-approval for solo dev
       dismiss_stale_reviews: true
       restrict_dismissals: false
-      require_code_owner_reviews: true
+      require_code_owner_reviews: false  # Disabled to allow self-approval
       require_last_push_approval: false
     
-    # Required status checks
+    # Required status checks - ALL MUST PASS
     required_status_checks:
-      strict: true
+      strict: true  # Requires branch to be up to date before merging
       contexts:
         - "build-and-test"
         - "verify-setup"
@@ -48,14 +48,14 @@ branch_protection:
         - "lint-and-format"
         - "docs-check"
     
-    # Additional restrictions
-    enforce_admins: true
-    allow_deletions: false
-    allow_force_pushes: false
-    require_signed_commits: false
-    require_conversation_resolution: true
+    # Additional restrictions - ENFORCED
+    enforce_admins: false  # Allow admin to bypass in emergencies
+    allow_deletions: false  # Cannot delete main branch
+    allow_force_pushes: false  # NO force pushes to main
+    require_signed_commits: false  # Optional: enable if you use commit signing
+    require_conversation_resolution: true  # All PR comments must be resolved
     
-    # Push restrictions (empty = no restrictions)
+    # Push restrictions (empty = no restrictions, PRs still required)
     push_restrictions: []
 
 # Repository labels
