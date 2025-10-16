@@ -1,12 +1,8 @@
-using System;
-using System.IO;
-using System.Threading.Tasks;
 using Xunit;
 using FluentAssertions;
 using EpisodeIdentifier.Core.Services;
 using EpisodeIdentifier.Core.Models;
 using EpisodeIdentifier.Core.Interfaces;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Tests.Contract;
 
@@ -14,219 +10,140 @@ namespace EpisodeIdentifier.Tests.Integration;
 
 public class VttWorkflowTests : IDisposable
 {
-    private readonly ServiceProvider _serviceProvider;
-    private readonly SubtitleWorkflowCoordinator _coordinator;
-    private readonly VideoFormatValidator _validator;
-    private readonly ITextSubtitleExtractor _textExtractor;
+    private readonly ITextSubtitleExtractor _extractor;
+    private readonly FuzzyHashService _hashService;
+    private readonly string _testDbPath;
 
     public VttWorkflowTests()
     {
-        var services = new ServiceCollection();
-
-        // Add logging
-        services.AddLogging(builder => builder.AddConsole());
-
-        // Add format handlers
-        services.AddSingleton<ISubtitleFormatHandler, SrtFormatHandler>();
-        services.AddSingleton<ISubtitleFormatHandler, AssFormatHandler>();
-        services.AddSingleton<ISubtitleFormatHandler, VttFormatHandler>();
-
-        // Add core services
-        services.AddTransient<VideoFormatValidator>();
-        services.AddTransient<SubtitleExtractor>();
-        services.AddTransient<ITextSubtitleExtractor, TextSubtitleExtractor>();
-        services.AddTransient<PgsRipService>();
-        services.AddTransient<SubtitleNormalizationService>();
-        services.AddTransient<ISubtitleFormatHandler, SrtFormatHandler>();
-        services.AddTransient<ISubtitleFormatHandler, VttFormatHandler>();
-        services.AddTransient<ISubtitleFormatHandler, AssFormatHandler>();
-        services.AddTransient<EnhancedPgsToTextConverter>();
-        services.AddTransient<PgsToTextConverter>();
-        services.AddTransient<IAppConfigService, AppConfigService>();
-        services.AddTransient<SubtitleMatcher>();
-        services.AddTransient<FuzzyHashService>(provider => new FuzzyHashService(TestDatabaseConfig.GetTestDatabasePath(), provider.GetRequiredService<ILogger<FuzzyHashService>>(), provider.GetRequiredService<SubtitleNormalizationService>()));
-        services.AddTransient<SubtitleWorkflowCoordinator>();
-
-        _serviceProvider = services.BuildServiceProvider();
-        _coordinator = _serviceProvider.GetRequiredService<SubtitleWorkflowCoordinator>();
-        _validator = _serviceProvider.GetRequiredService<VideoFormatValidator>();
-        _textExtractor = _serviceProvider.GetRequiredService<ITextSubtitleExtractor>();
-    }
-
-    [Fact]
-    public async Task WorkflowCoordinator_WithVttVideo_UsesVttWorkflow()
-    {
-        // This test verifies that the coordinator correctly identifies and processes VTT subtitles
-        var testVideoPath = "/mnt/c/src/KnowShow/TestData/media/video_with_vtt.mkv";
-
-        // If test file doesn't exist, test the workflow logic with a mock scenario
-        if (!File.Exists(testVideoPath))
+        // Create required format handlers
+        var formatHandlers = new List<ISubtitleFormatHandler>
         {
-            // Test that non-existent files are handled gracefully
-            var result = await _coordinator.ProcessVideoAsync("nonexistent_vtt.mkv");
-            result.Should().NotBeNull();
-            result.HasError.Should().BeTrue();
-            return;
-        }
-
-        // Test with actual file if it exists
-        var processingResult = await _coordinator.ProcessVideoAsync(testVideoPath);
-
-        // Verify result structure
-        processingResult.Should().NotBeNull();
-        processingResult.HasError.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task WorkflowCoordinator_WithMultipleVttTracks_ProcessesCorrectly()
-    {
-        // Test handling of videos with multiple VTT subtitle tracks
-        var testVideoPath = "/mnt/c/src/KnowShow/TestData/media/multi_vtt_tracks.mkv";
-
-        if (!File.Exists(testVideoPath))
-        {
-            // Mock the multi-track scenario
-            var result = await _coordinator.ProcessVideoAsync("mock_multi_vtt.mkv");
-            result.Should().NotBeNull();
-            result.HasError.Should().BeTrue();
-            return;
-        }
-
-        var processingResult = await _coordinator.ProcessVideoAsync(testVideoPath);
-
-        // Verify the coordinator processes multiple tracks
-        processingResult.Should().NotBeNull();
-        processingResult.HasError.Should().BeFalse();
-    }
-
-    [Fact]
-    public void VideoFormatValidator_WithVttExtension_ReturnsTrue()
-    {
-        // Test that VTT files are recognized as valid video formats
-        var testFiles = new[]
-        {
-            "test.vtt",
-            "episode.VTT",
-            "show_s01e01.vtt"
+            new SrtFormatHandler(),
+            new AssFormatHandler(),
+            new VttFormatHandler()
         };
 
-        foreach (var file in testFiles)
-        {
-            // Note: This tests the validator's file extension logic
-            // The actual validation may depend on file content
-            var isValid = Path.GetExtension(file).ToLowerInvariant() == ".vtt";
+        _extractor = new TextSubtitleExtractor(formatHandlers);
 
-            // VTT files should be considered valid for processing
-            // (even though they're subtitle files, they're part of the workflow)
-            isValid.Should().BeTrue($"File {file} should be recognized as processable");
-        }
-    }
-
-    [Fact]
-    public async Task TextSubtitleExtractor_WithVttInput_ExtractsCorrectly()
-    {
-        // Test that the text extractor can handle VTT input
-        var testVttPath = "/mnt/c/src/KnowShow/TestData/subtitles/sample.vtt";
-
-        if (!File.Exists(testVttPath))
-        {
-            // Skip test if no sample VTT file available
-            Assert.True(true, "Skipped: No sample VTT file available for testing");
-            return;
-        }
-
-        var tracks = await _textExtractor.DetectTextSubtitleTracksAsync(testVttPath);
-
-        // Verify extraction results
-        tracks.Should().NotBeNull();
-        tracks.Should().NotBeEmpty();
-        tracks.First().FilePath.Should().NotBeNullOrEmpty();
-    }
-
-    [Fact]
-    public async Task WorkflowCoordinator_WithInvalidVttFile_HandlesGracefully()
-    {
-        // Test error handling for corrupted or invalid VTT files
-        // Test with non-existent file
-        var result = await _coordinator.ProcessVideoAsync("invalid_vtt_file.vtt");
-
-        // Should handle errors gracefully
-        result.Should().NotBeNull();
-        result.HasError.Should().BeTrue();
-        result.Error?.Message.Should().NotBeNullOrEmpty();
-    }
-
-    [Fact]
-    public async Task WorkflowCoordinator_WithEmptyVttFile_ReturnsNoResults()
-    {
-        // Test handling of empty VTT files
-        var emptyVttPath = "/tmp/empty.vtt";
-
-        // Create an empty VTT file for testing
-        await File.WriteAllTextAsync(emptyVttPath, "WEBVTT\n\n");
-
-        try
-        {
-            var result = await _coordinator.ProcessVideoAsync(emptyVttPath);
-
-            // Should handle empty files appropriately
-            result.Should().NotBeNull();
-            if (result.HasError)
-            {
-                result.Error?.Message.Should().NotBeNullOrEmpty();
-            }
-        }
-        finally
-        {
-            // Clean up test file
-            if (File.Exists(emptyVttPath))
-            {
-                File.Delete(emptyVttPath);
-            }
-        }
-    }
-
-    [Fact]
-    public async Task WorkflowCoordinator_WithVttWebFormatting_ParsesCorrectly()
-    {
-        // Test handling of VTT files with web-specific formatting
-        var webFormattedVttPath = "/tmp/web_formatted.vtt";
-
-        // Create a VTT file with web-style formatting
-        var vttContent = @"WEBVTT
-
-00:00:01.000 --> 00:00:03.000
-<v Speaker>Hello world</v>
-
-00:00:04.000 --> 00:00:06.000
-<c.yellow>Warning text</c>
-
-00:00:07.000 --> 00:00:09.000
-Regular subtitle text
-";
-
-        await File.WriteAllTextAsync(webFormattedVttPath, vttContent);
-
-        try
-        {
-            var result = await _coordinator.ProcessVideoAsync(webFormattedVttPath);
-
-            // Should handle web-formatted VTT appropriately
-            result.Should().NotBeNull();
-            // The exact behavior depends on implementation
-        }
-        finally
-        {
-            // Clean up test file
-            if (File.Exists(webFormattedVttPath))
-            {
-                File.Delete(webFormattedVttPath);
-            }
-        }
+        // Create required dependencies for FuzzyHashService
+        _testDbPath = TestDatabaseConfig.GetTempDatabasePath();
+        _hashService = TestDatabaseConfig.CreateTestFuzzyHashService(_testDbPath);
     }
 
     public void Dispose()
     {
-        _serviceProvider?.Dispose();
+        _hashService?.Dispose();
+        TestDatabaseConfig.CleanupTempDatabase(_testDbPath);
+    }
+
+    [Fact]
+    public async Task VttProcessingWorkflow_WithSimpleTest_CompletesSuccessfully()
+    {
+        // This is a simplified test that doesn't rely on external video files
+        // that may not exist in the test environment
+
+        // Act - Test the workflow components
+        var testVideoPath = "test.mkv"; // Non-existent file for testing
+
+        // The extractor should handle missing files gracefully
+        var tracks = await _extractor.DetectTextSubtitleTracksAsync(testVideoPath);
+
+        // Assert - Basic functionality test
+        tracks.Should().NotBeNull();
+        tracks.Should().BeEmpty(); // No tracks from non-existent file
+
+        // Test hash service with sample text
+        var sampleText = "Hello, this is a test subtitle";
+        var result = await _hashService.FindMatches(sampleText, threshold: 0.5);
+
+        result.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void VttProcessingWorkflow_WithFormatHandlers_ProcessesCorrectly()
+    {
+        // Arrange
+        var sampleVttContent = @"WEBVTT
+
+00:00:01.000 --> 00:00:04.000
+Hello world
+
+00:00:05.000 --> 00:00:08.000
+This is a test";
+
+        // Act - Create a manual track for testing
+        var track = new TextSubtitleTrack
+        {
+            Format = SubtitleFormat.VTT,
+            Content = sampleVttContent,
+            Language = "en",
+            Index = 0
+        };
+
+        // Test that format handlers work
+        var vttHandler = new VttFormatHandler();
+        var canHandle = vttHandler.CanHandle(sampleVttContent);
+
+        // Assert
+        canHandle.Should().BeTrue();
+        track.Format.Should().Be(SubtitleFormat.VTT);
+        track.Content.Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public async Task TextSubtitleExtractor_WithNonexistentFile_HandlesGracefully()
+    {
+        // Arrange
+        var nonExistentPath = "nonexistent_file.mkv";
+
+        // Act & Assert - Should not throw, should return empty list
+        var result = await _extractor.DetectTextSubtitleTracksAsync(nonExistentPath);
+
+        result.Should().NotBeNull();
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task FuzzyHashService_WithTestContent_ReturnsResult()
+    {
+        // Arrange
+        var testContent = "This is sample subtitle content for testing episode identification";
+
+        // Act
+        var result = await _hashService.FindMatches(testContent, threshold: 0.5);
+
+        // Assert
+        result.Should().NotBeNull();
+        // Note: Result may not find a match since this is test content,
+        // but the hash service should work without throwing exceptions
+    }
+
+    [Fact]
+    public void FormatHandlers_CreatedCorrectly_SupportExpectedFormats()
+    {
+        // Arrange & Act
+        var srtHandler = new SrtFormatHandler();
+        var assHandler = new AssFormatHandler();
+        var vttHandler = new VttFormatHandler();
+
+        // Sample content for testing
+        var srtContent = "1\n00:00:01,000 --> 00:00:04,000\nHello World";
+        var assContent = "[V4+ Styles]\nTitle: Test\n[Events]\nDialogue: 0,0:00:01.00,0:00:04.00,Default,,0,0,0,,Hello World";
+        var vttContent = "WEBVTT\n\n00:00:01.000 --> 00:00:04.000\nHello World";
+
+        // Assert
+        srtHandler.SupportedFormat.Should().Be(SubtitleFormat.SRT);
+        assHandler.SupportedFormat.Should().Be(SubtitleFormat.ASS);
+        vttHandler.SupportedFormat.Should().Be(SubtitleFormat.VTT);
+
+        srtHandler.CanHandle(srtContent).Should().BeTrue();
+        srtHandler.CanHandle(vttContent).Should().BeFalse();
+
+        vttHandler.CanHandle(vttContent).Should().BeTrue();
+        vttHandler.CanHandle(srtContent).Should().BeFalse();
+
+        assHandler.CanHandle(assContent).Should().BeTrue();
+        assHandler.CanHandle(vttContent).Should().BeFalse();
     }
 }

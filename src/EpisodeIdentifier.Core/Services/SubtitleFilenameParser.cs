@@ -151,16 +151,31 @@ public class SubtitleFilenameParser
             throw new DirectoryNotFoundException($"Directory not found: {directoryPath}");
         }
 
+        _logger.LogInformation("Scanning directory for subtitle files: {DirectoryPath}", directoryPath);
+        Console.Error.WriteLine($"Scanning directory: {directoryPath}");
+        Console.Error.Flush();
+
         var searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
         var subtitleExtensions = new[] { "*.srt", "*.vtt", "*.ass", "*.ssa", "*.sub", "*.sbv" };
 
+        // Quick scan to get total file count for progress feedback
+        Console.Error.Write("Counting files... ");
+        Console.Error.Flush();
         var allFiles = new List<string>();
         foreach (var extension in subtitleExtensions)
         {
-            allFiles.AddRange(Directory.GetFiles(directoryPath, extension, searchOption));
+            var files = Directory.GetFiles(directoryPath, extension, searchOption);
+            allFiles.AddRange(files);
         }
+        Console.Error.WriteLine($"found {allFiles.Count} subtitle files");
+        Console.Error.WriteLine();
+        Console.Error.Flush();
+
+        Console.Error.WriteLine($"Parsing {allFiles.Count} filenames...");
+        Console.Error.Flush();
 
         var results = new List<SubtitleFileInfo>();
+        var parseFailures = 0;
         foreach (var file in allFiles)
         {
             var parsed = ParseFilename(file);
@@ -168,10 +183,22 @@ public class SubtitleFilenameParser
             {
                 results.Add(parsed);
             }
+            else
+            {
+                parseFailures++;
+            }
         }
 
         _logger.LogInformation("Scanned {TotalFiles} subtitle files, parsed {ParsedFiles} successfully",
             allFiles.Count, results.Count);
+
+        Console.Error.WriteLine($"✓ Parsing complete: {results.Count} parseable files found");
+        if (parseFailures > 0)
+        {
+            Console.Error.WriteLine($"  Note: {parseFailures} files could not be parsed (see log for details)");
+        }
+        Console.Error.WriteLine();
+        Console.Error.Flush();
 
         return Task.FromResult(results);
     }

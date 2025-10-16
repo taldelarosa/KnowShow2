@@ -1,8 +1,11 @@
 # Data Model: NonPGS Subtitle Workflow
 
+
 ## Core Entities
 
+
 ### TextSubtitleTrack
+
 
 Represents a text-based subtitle track within a video file.
 
@@ -17,6 +20,7 @@ Represents a text-based subtitle track within a video file.
 
 ### SubtitleFormat (Enum)
 
+
 Supported text subtitle formats.
 
 **Values**:
@@ -26,6 +30,7 @@ Supported text subtitle formats.
 - `VTT = 3` - WebVTT format (.vtt)
 
 ### TextSubtitleContent
+
 
 Extracted and processed text content from subtitle tracks.
 
@@ -40,6 +45,7 @@ Extracted and processed text content from subtitle tracks.
 
 ### SubtitleProcessingResult
 
+
 Extended result containing metadata about processing method.
 
 **Properties** (extends existing IdentificationResult):
@@ -51,6 +57,7 @@ Extended result containing metadata about processing method.
 
 ### SubtitleSourceType (Enum)
 
+
 Indicates which subtitle extraction method was used.
 
 **Values**:
@@ -60,7 +67,9 @@ Indicates which subtitle extraction method was used.
 
 ## Enhanced Existing Models
 
+
 ### IdentificationResult (Modified)
+
 
 Add properties to track subtitle source information:
 
@@ -71,6 +80,7 @@ Add properties to track subtitle source information:
 
 ### LabelledSubtitle (Enhanced)
 
+
 Extend to support text subtitle sources:
 
 **New Properties**:
@@ -79,6 +89,7 @@ Extend to support text subtitle sources:
 - `SourceTrackIndex`: int? - Track index if from text subtitle
 
 ## Relationships
+
 
 ```
 VideoFile
@@ -89,9 +100,12 @@ VideoFile
             └── IdentificationResult
 ```
 
+
 ## Validation Rules
 
+
 ### TextSubtitleTrack
+
 
 - `Index` must be >= 0
 - `Format` must be valid enum value
@@ -99,11 +113,13 @@ VideoFile
 
 ### TextSubtitleContent
 
+
 - `ExtractedText` must not be empty or whitespace
 - `LineCount` must be > 0
 - `Duration` must be positive if provided
 
 ### SubtitleProcessingResult
+
 
 - Must have at least one ProcessedTrack
 - If match found, SuccessfulTrack must be in ProcessedTracks
@@ -111,7 +127,9 @@ VideoFile
 
 ## State Transitions
 
+
 ### Track Processing Flow
+
 
 ```
 TextSubtitleTrack
@@ -120,7 +138,9 @@ TextSubtitleTrack
 └─ Skipped (if previous track succeeded)
 ```
 
+
 ### Content Processing Flow
+
 
 ```
 TextSubtitleContent
@@ -128,3 +148,4 @@ TextSubtitleContent
 │                         └─ NotMatched
 └─ Invalid (corrupted or empty content)
 ```
+

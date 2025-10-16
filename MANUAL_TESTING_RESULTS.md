@@ -1,10 +1,12 @@
 # Manual Testing Results - Async Concurrent Processing
 
-**Date**: 2025-01-XX  
-**Feature**: 010-async-processing-where (Configurable maxConcurrency)  
+
+**Date**: 2025-01-XX
+**Feature**: 010-async-processing-where (Configurable maxConcurrency)
 **Test Environment**: Real Bones Season 11 video files from network storage
 
 ## Test Configuration
+
 
 - **Test Files**: 5 Bones Season 11 episodes (.mkv format)
 - **File Source**: Network-mounted SMB share (`/mnt/bones-videos/BONES_S11_D1-JnjdmK/`)
@@ -13,11 +15,14 @@
 
 ## Test Results
 
+
 ### Test 1: Single-Threaded Processing (maxConcurrency=1)
+
 
 ```bash
 dotnet run -- --bulk-identify "/mnt/bones-videos/BONES_S11_D1-JnjdmK" --hash-db production_hashes.db
 ```
+
 
 **Results**:
 
@@ -33,11 +38,14 @@ MaxConcurrency: 1
 Batch Size: 5
 ```
 
+
 ### Test 2: Concurrent Processing (maxConcurrency=4)
+
 
 ```bash
 dotnet run -- --bulk-identify "/mnt/bones-videos/BONES_S11_D1-JnjdmK" --hash-db production_hashes.db
 ```
+
 
 **Results**:
 
@@ -53,15 +61,19 @@ MaxConcurrency: 4
 Batch Size: 5
 ```
 
+
 ## Performance Analysis
 
+
 ### Raw Speedup
+
 
 - **Time Saved**: 90 seconds (654s → 564s)
 - **Speedup Factor**: 1.16x (16% improvement)
 - **Files Processed Concurrently**: Verified 4 files started simultaneously
 
 ### Why Limited Speedup?
+
 
 The modest 16% improvement (vs. expected 4x from synthetic tests) is due to:
 
@@ -81,11 +93,12 @@ The modest 16% improvement (vs. expected 4x from synthetic tests) is due to:
 
 ### Validation of Concurrency Implementation
 
+
 **Confirmed Working**:
-✅ Configuration correctly loaded from `episodeidentifier.config.json`  
-✅ `SemaphoreSlim` properly initialized with `maxConcurrency` value  
-✅ Multiple files start processing simultaneously (visible in Progress logs)  
-✅ Individual file processing times show clear parallelism benefits  
+✅ Configuration correctly loaded from `episodeidentifier.config.json`
+✅ `SemaphoreSlim` properly initialized with `maxConcurrency` value
+✅ Multiple files start processing simultaneously (visible in Progress logs)
+✅ Individual file processing times show clear parallelism benefits
 ✅ Hot-reload of configuration works during runtime
 
 **Evidence from Logs**:
@@ -96,6 +109,7 @@ The modest 16% improvement (vs. expected 4x from synthetic tests) is due to:
 
 ## Comparison: Synthetic vs. Real-World Performance
 
+
 | Test Type | maxConcurrency=1 | maxConcurrency=4 | Speedup |
 |-----------|------------------|------------------|---------|
 | **Synthetic** (memory-only) | 1,685ms | 254ms | **6.6x** |
@@ -105,7 +119,9 @@ The modest 16% improvement (vs. expected 4x from synthetic tests) is due to:
 
 ## Recommendations
 
+
 ### For Users
+
 
 1. **Optimal maxConcurrency**: 2-4 for network-stored files
    - Higher values won't improve performance due to I/O bottleneck
@@ -127,6 +143,7 @@ The modest 16% improvement (vs. expected 4x from synthetic tests) is due to:
 
 ### For Developers
 
+
 1. Consider async I/O optimizations:
    - Parallel subtitle extraction with buffering
    - Async database operations
@@ -138,6 +155,7 @@ The modest 16% improvement (vs. expected 4x from synthetic tests) is due to:
    - Identify bottleneck phases (extraction vs. OCR vs. matching)
 
 ## Conclusion
+
 
 **Feature Status**: ✅ **VERIFIED WORKING**
 

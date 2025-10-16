@@ -1,5 +1,6 @@
 # Feature Specification: Async Processing with Configurable Concurrency
 
+
 **Feature Branch**: `010-async-processing-where`
 **Created**: September 15, 2025
 **Status**: Draft
@@ -7,48 +8,61 @@
 
 ## Execution Flow (main)
 
+
 ```
+
 1. Parse user description from Input
    → Extracted: async file processing with configurable concurrency control
 
+
 2. Extract key concepts from description
    → Actors: System, Administrator/User configuring concurrency
+
    → Actions: Process files asynchronously, Configure concurrency limits
    → Data: Files to be processed, Configuration settings
    → Constraints: Configurable simultaneous processing limit
 
 3. For each unclear aspect:
    → Processing type clarified: Full episode identification workflow (subtitle ripping, hashing, database checking, renaming)
+
    → Configuration method clarified: User updates default value of 1 in existing episodeidentifier.config.json
    → Configuration timing clarified: Runtime adjustable via existing hot-reload process
    → Failure handling clarified: Use existing process - continue processing and output successes/failures in JSON at job completion
 
 4. Fill User Scenarios & Testing section
    → Primary flow: Configure concurrency → Queue files → Process asynchronously
+
    → Testing scenarios defined based on concurrency limits and processing outcomes
 
 5. Generate Functional Requirements
    → Each requirement focused on async behavior and configuration capabilities
+
    → Requirements marked where clarification needed
 
 6. Identify Key Entities
    → ProcessingJob, ConcurrencyConfiguration, FileProcessingQueue
 
+
 7. Run Review Checklist
    → WARN "Spec has uncertainties - multiple [NEEDS CLARIFICATION] markers present"
 
+
 8. Return: SUCCESS (spec ready for planning after clarifications)
 ```
+
 
 ---
 
 ## User Scenarios & Testing
 
+
 ### Primary User Story
+
 
 A user wants to process a large batch of video files efficiently through the complete episode identification workflow (subtitle ripping, hashing, database checking, and renaming) by configuring the concurrency setting in `episodeidentifier.config.json` (default value 1) to allow multiple files to be processed simultaneously, balancing performance with system resources.
 
 ### Acceptance Scenarios
+
 
 1. **Given** a collection of 100 video files and concurrency set to 5 in `episodeidentifier.config.json`, **When** episode identification processing starts, **Then** exactly 5 files undergo the full workflow (ripping, hashing, DB checking, renaming) simultaneously until all are complete
 2. **Given** concurrency is set to 3 in the config file and 10 files are queued for episode identification, **When** one file completes the full workflow, **Then** the next queued file immediately begins the identification process to maintain 3 concurrent operations
@@ -56,6 +70,7 @@ A user wants to process a large batch of video files efficiently through the com
 4. **Given** episode identification is running on multiple files, **When** individual files fail at any stage (ripping, hashing, DB lookup, renaming), **Then** other concurrent identification operations continue unaffected and all successes and failures are reported in JSON output at job completion
 
 ### Edge Cases
+
 
 - What happens when concurrency is set to 0 or negative values in `episodeidentifier.config.json`?
 - How does system handle when more files are queued than the concurrency limit allows?
@@ -67,7 +82,9 @@ A user wants to process a large batch of video files efficiently through the com
 
 ## Requirements
 
+
 ### Functional Requirements
+
 
 - **FR-001**: System MUST support asynchronous execution of the complete episode identification workflow (subtitle ripping, hashing, database checking, renaming) on multiple files simultaneously
 - **FR-002**: System MUST read concurrency configuration from the existing `episodeidentifier.config.json` file with a default value of 1
@@ -86,6 +103,7 @@ A user wants to process a large batch of video files efficiently through the com
 
 ### Key Entities
 
+
 - **EpisodeIdentificationJob**: Represents a single video file undergoing the complete identification workflow with status tracking for each stage (ripping, hashing, DB checking, renaming)
 - **ConcurrencyConfiguration**: Settings stored in `episodeidentifier.config.json` that define maximum simultaneous episode identification operations (default: 1)
 - **IdentificationQueue**: Manages the ordered list of video files awaiting episode identification processing when concurrency limits are reached
@@ -95,14 +113,17 @@ A user wants to process a large batch of video files efficiently through the com
 
 ## Review & Acceptance Checklist
 
+
 ### Content Quality
 
+
 - [x] No implementation details (languages, frameworks, APIs)
-- [x] Focused on user value and business needs  
+- [x] Focused on user value and business needs
 - [x] Written for non-technical stakeholders
 - [x] All mandatory sections completed
 
 ### Requirement Completeness
+
 
 - [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
@@ -113,6 +134,7 @@ A user wants to process a large batch of video files efficiently through the com
 ---
 
 ## Execution Status
+
 
 - [x] User description parsed
 - [x] Key concepts extracted

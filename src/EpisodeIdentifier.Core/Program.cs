@@ -304,15 +304,34 @@ public class Program
                     return 1;
                 }
 
+                // Log initial scan results
+                Console.Error.WriteLine($"Found {subtitleFiles.Count} subtitle files to import");
+                Console.Error.WriteLine($"Starting bulk import from: {bulkStoreDirectory.FullName}");
+                Console.Error.WriteLine();
+                Console.Error.Flush();
+
                 var successCount = 0;
                 var failureCount = 0;
                 var results = new List<object>();
+                var totalFiles = subtitleFiles.Count;
+                var overallTimer = System.Diagnostics.Stopwatch.StartNew();
 
                 foreach (var subtitleFile in subtitleFiles)
                 {
+                    var currentIndex = successCount + failureCount + 1;
+                    var fileTimer = System.Diagnostics.Stopwatch.StartNew();
+
                     try
                     {
+                        // Log progress for each file
+                        Console.Error.WriteLine($"[{currentIndex}/{totalFiles}] Processing: {Path.GetFileName(subtitleFile.FilePath)}");
+                        Console.Error.WriteLine($"           Series: {subtitleFile.Series}, S{subtitleFile.Season:D2}E{subtitleFile.Episode:D2}");
+                        Console.Error.Flush();
+
+                        var readTimer = System.Diagnostics.Stopwatch.StartNew();
                         var subtitleText = await File.ReadAllTextAsync(subtitleFile.FilePath);
+                        readTimer.Stop();
+
                         var subtitle = new LabelledSubtitle
                         {
                             Series = subtitleFile.Series,
@@ -322,8 +341,16 @@ public class Program
                             SubtitleText = subtitleText
                         };
 
+                        var storeTimer = System.Diagnostics.Stopwatch.StartNew();
                         await hashService.StoreHash(subtitle);
+                        storeTimer.Stop();
+
                         successCount++;
+                        fileTimer.Stop();
+                        Console.Error.WriteLine($"           ✓ Successfully stored (read: {readTimer.ElapsedMilliseconds}ms, store: {storeTimer.ElapsedMilliseconds}ms, total: {fileTimer.ElapsedMilliseconds}ms)");
+                        Console.Error.WriteLine();
+                        Console.Error.Flush();
+
                         results.Add(new
                         {
                             status = "success",
@@ -336,6 +363,11 @@ public class Program
                     catch (Exception ex)
                     {
                         failureCount++;
+                        fileTimer.Stop();
+                        Console.Error.WriteLine($"           ✗ Failed after {fileTimer.ElapsedMilliseconds}ms: {ex.Message}");
+                        Console.Error.WriteLine();
+                        Console.Error.Flush();
+
                         results.Add(new
                         {
                             status = "failed",
@@ -344,6 +376,23 @@ public class Program
                         });
                     }
                 }
+
+                overallTimer.Stop();
+
+                // Log final summary to stderr
+                Console.Error.WriteLine("=".PadRight(60, '='));
+                Console.Error.WriteLine($"Bulk Import Summary:");
+                Console.Error.WriteLine($"  Total Files:  {totalFiles}");
+                Console.Error.WriteLine($"  Successful:   {successCount}");
+                Console.Error.WriteLine($"  Failed:       {failureCount}");
+                Console.Error.WriteLine($"  Total Time:   {overallTimer.Elapsed.TotalSeconds:F2}s");
+                if (successCount > 0)
+                {
+                    Console.Error.WriteLine($"  Avg per file: {overallTimer.Elapsed.TotalMilliseconds / successCount:F0}ms");
+                }
+                Console.Error.WriteLine("=".PadRight(60, '='));
+                Console.Error.WriteLine();
+                Console.Error.Flush();
 
                 Console.WriteLine(JsonSerializer.Serialize(new
                 {

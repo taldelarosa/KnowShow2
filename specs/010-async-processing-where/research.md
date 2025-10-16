@@ -1,15 +1,19 @@
 # Research: Async Processing with Configurable Concurrency
 
+
 **Date**: September 15, 2025
 **Feature**: 010-async-processing-where
 
 ## Research Summary
 
+
 Research focused on integrating configurable concurrency into existing episode identification system by extending current configuration and bulk processing infrastructure.
 
 ## Key Findings
 
+
 ### Configuration Integration
+
 
 **Decision**: Extend existing `episodeidentifier.config.json` with `maxConcurrency` property
 
@@ -28,6 +32,7 @@ Research focused on integrating configurable concurrency into existing episode i
 
 ### Concurrency Implementation
 
+
 **Decision**: Modify existing BulkProcessingOptions.MaxConcurrency to read from config instead of Environment.ProcessorCount
 
 **Rationale**:
@@ -44,6 +49,7 @@ Research focused on integrating configurable concurrency into existing episode i
 - Thread pool management: Rejected as existing Task-based approach is sufficient
 
 ### Configuration Validation
+
 
 **Decision**: Implement validation with range 1-100, default value 1 for backward compatibility
 
@@ -62,6 +68,7 @@ Research focused on integrating configurable concurrency into existing episode i
 
 ### Hot-Reload Integration
 
+
 **Decision**: Utilize existing configuration service hot-reload mechanism
 
 **Rationale**:
@@ -78,6 +85,7 @@ Research focused on integrating configurable concurrency into existing episode i
 - File system watcher: Rejected as existing service already provides this
 
 ### Error Handling Strategy
+
 
 **Decision**: Extend existing JSON result aggregation to handle concurrent operation results
 
@@ -96,7 +104,9 @@ Research focused on integrating configurable concurrency into existing episode i
 
 ## Technical Decisions
 
+
 ### Configuration Schema Extension
+
 
 Add to existing `episodeidentifier.config.json`:
 
@@ -108,7 +118,9 @@ Add to existing `episodeidentifier.config.json`:
 }
 ```
 
+
 ### Integration Points
+
 
 1. **IAppConfigService**: Extend to include MaxConcurrency property
 2. **BulkProcessingOptions**: Modify constructor/initialization to read from config
@@ -117,6 +129,7 @@ Add to existing `episodeidentifier.config.json`:
 
 ### Testing Strategy
 
+
 1. **Configuration tests**: Validate config loading, validation, and defaults
 2. **Hot-reload tests**: Verify runtime configuration changes take effect
 3. **Concurrency tests**: Validate different concurrency levels work correctly
@@ -124,6 +137,7 @@ Add to existing `episodeidentifier.config.json`:
 5. **Error handling tests**: Verify individual failures don't stop concurrent operations
 
 ## Implementation Approach
+
 
 Minimal changes approach leveraging existing infrastructure:
 
@@ -134,6 +148,7 @@ Minimal changes approach leveraging existing infrastructure:
 5. Update documentation
 
 ## Risk Assessment
+
 
 **Low Risk**:
 

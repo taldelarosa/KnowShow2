@@ -1,12 +1,16 @@
 # PGS Subtitle Extraction Enhancement
 
+
 ## Overview
+
 
 This enhancement replaces your current PGS subtitle extraction with a superior approach using the open-source `pgsrip` library, while maintaining backward compatibility with your existing implementation.
 
 ## Key Improvements
 
+
 ### Before (Your Original Implementation)
+
 
 - ❌ Fixed 3-second subtitle durations
 - ❌ FFmpeg burn-in artifacts
@@ -15,6 +19,7 @@ This enhancement replaces your current PGS subtitle extraction with a superior a
 - ❌ No native PGS format understanding
 
 ### After (with pgsrip Integration)
+
 
 - ✅ **Accurate timing**: Preserves original subtitle timestamps
 - ✅ **90%+ OCR accuracy**: Advanced image processing and optimization
@@ -25,7 +30,9 @@ This enhancement replaces your current PGS subtitle extraction with a superior a
 
 ## Files Added
 
+
 ### Core Services
+
 
 1. **`PgsRipService.cs`** - Wrapper for pgsrip functionality
 2. **`EnhancedPgsToTextConverter.cs`** - Enhanced converter with fallback
@@ -33,16 +40,20 @@ This enhancement replaces your current PGS subtitle extraction with a superior a
 
 ### Scripts and Documentation
 
+
 4. **`pgsrip-converter.sh`** - Command-line conversion tool
 5. **`PGSRIP_INTEGRATION_GUIDE.md`** - Detailed integration guide
 
 ## Quick Start
 
+
 ### 1. Install pgsrip
+
 
 ```bash
 
 # Install pgsrip using uv (much faster than pip)
+
 
 
 
@@ -60,9 +71,11 @@ uv pip install --system pgsrip
 
 
 
+
 sudo apt-get install mkvtoolnix tesseract-ocr
 
 # Optional: Install better tessdata for improved OCR
+
 
 
 
@@ -77,11 +90,14 @@ export TESSDATA_PREFIX=/usr/share/tessdata_best
 echo 'export TESSDATA_PREFIX=/usr/share/tessdata_best' >> ~/.bashrc
 ```
 
+
 ### 2. Test the Enhancement
+
 
 ```bash
 
 # Make the test script executable
+
 
 
 
@@ -99,6 +115,7 @@ chmod +x scripts/pgsrip-converter.sh
 
 
 
+
 ./scripts/pgsrip-converter.sh your-video.mkv
 
 # Test with a SUP file
@@ -109,10 +126,13 @@ chmod +x scripts/pgsrip-converter.sh
 
 
 
+
 ./scripts/pgsrip-converter.sh -l deu subtitles.sup
 ```
 
+
 ### 3. Update Your Application
+
 
 Replace your current service registration:
 
@@ -126,6 +146,7 @@ services.AddScoped<PgsRipService>();
 services.AddScoped<EnhancedPgsToTextConverter>();
 ```
 
+
 Use the enhanced converter:
 
 ```csharp
@@ -136,7 +157,9 @@ private readonly EnhancedPgsToTextConverter _converter;
 var result = await _converter.ConvertPgsToText(pgsData, "eng");
 ```
 
+
 ## Performance Comparison
+
 
 | Metric | Original Method | pgsrip Method | Improvement |
 |--------|----------------|---------------|-------------|
@@ -148,7 +171,9 @@ var result = await _converter.ConvertPgsToText(pgsData, "eng");
 
 ## Usage Examples
 
+
 ### Basic Conversion
+
 
 ```csharp
 var enhancedConverter = serviceProvider.GetService<EnhancedPgsToTextConverter>();
@@ -160,14 +185,18 @@ var srtText = await enhancedConverter.ConvertPgsToText(pgsData, "eng");
 var videoSrt = await enhancedConverter.ConvertPgsFromVideoToText(videoPath, 0, "deu");
 ```
 
+
 ### Quality Information
+
 
 ```csharp
 var qualityInfo = await enhancedConverter.GetQualityInfoAsync();
 Console.WriteLine(qualityInfo.ToString());
 ```
 
+
 ### Automatic Installation
+
 
 ```csharp
 if (!qualityInfo.PgsRipAvailable)
@@ -180,11 +209,14 @@ if (!qualityInfo.PgsRipAvailable)
 }
 ```
 
+
 ### Command Line Testing
+
 
 ```bash
 
 # Test German subtitles with 2 workers
+
 
 
 
@@ -202,6 +234,7 @@ if (!qualityInfo.PgsRipAvailable)
 
 
 
+
 ./scripts/pgsrip-converter.sh --force subtitle.sup
 
 # Get help
@@ -212,10 +245,13 @@ if (!qualityInfo.PgsRipAvailable)
 
 
 
+
 ./scripts/pgsrip-converter.sh --help
 ```
 
+
 ## Integration Strategy
+
 
 The enhancement uses a **graceful degradation** approach:
 
@@ -232,7 +268,9 @@ This means:
 
 ## Real-World Benefits
 
+
 ### Timing Accuracy Example
+
 
 ```
 Before: All subtitles 3 seconds long
@@ -250,7 +288,9 @@ Hello world
 How are you?
 ```
 
+
 ### OCR Quality Example
+
 
 ```
 Before (burn-in artifacts):
@@ -262,13 +302,17 @@ Hello world     # Clean, accurate text
 How are you?    # Perfect character recognition
 ```
 
+
 ## Troubleshooting
 
+
 ### pgsrip Not Found
+
 
 ```bash
 
 # Install pgsrip
+
 
 
 
@@ -286,14 +330,18 @@ pip install pgsrip
 
 
 
+
 pgsrip --version
 ```
 
+
 ### Missing Dependencies
+
 
 ```bash
 
 # Ubuntu/Debian
+
 
 
 
@@ -311,11 +359,14 @@ sudo apt-get install mkvtoolnix tesseract-ocr
 
 
 
+
 mkvextract --version
 tesseract --version
 ```
 
+
 ### Poor OCR Quality
+
 
 ```bash
 
@@ -327,11 +378,14 @@ tesseract --version
 
 
 
+
 git clone https://github.com/tesseract-ocr/tessdata_best.git
 export TESSDATA_PREFIX=/path/to/tessdata_best
 ```
 
+
 ## Testing Your Integration
+
 
 1. **Compare quality**: Run both methods on the same file
 2. **Check timing**: Verify timestamps are preserved
@@ -340,9 +394,11 @@ export TESSDATA_PREFIX=/path/to/tessdata_best
 
 ### Test Script
 
+
 ```bash
 
 # Compare original vs enhanced
+
 
 
 
@@ -361,7 +417,9 @@ export TESSDATA_PREFIX=/path/to/tessdata_best
 
 
 
+
 # Compare the files
+
 
 
 
@@ -371,7 +429,9 @@ export TESSDATA_PREFIX=/path/to/tessdata_best
 
 ```
 
+
 ## Next Steps
+
 
 1. **Install pgsrip** following the guide above
 2. **Test the enhancement** with your existing subtitle files

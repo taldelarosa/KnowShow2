@@ -8,10 +8,11 @@ using EpisodeIdentifier.Tests.Contract;
 
 namespace EpisodeIdentifier.Tests.Integration;
 
-public class AssWorkflowTests
+public class AssWorkflowTests : IDisposable
 {
     private readonly ITextSubtitleExtractor _extractor;
-    private readonly ISubtitleMatcher _matcher;
+    private readonly FuzzyHashService _hashService;
+    private readonly string _testDbPath;
 
     public AssWorkflowTests()
     {
@@ -25,19 +26,15 @@ public class AssWorkflowTests
 
         _extractor = new TextSubtitleExtractor(formatHandlers);
 
-        // Create required dependencies for SubtitleMatcher
-        var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-        var fuzzyLogger = loggerFactory.CreateLogger<FuzzyHashService>();
-        var normalizationLogger = loggerFactory.CreateLogger<SubtitleNormalizationService>();
-        var matcherLogger = loggerFactory.CreateLogger<SubtitleMatcher>();
-        var configLogger = loggerFactory.CreateLogger<AppConfigService>();
+        // Create required dependencies for FuzzyHashService
+        _testDbPath = TestDatabaseConfig.GetTempDatabasePath();
+        _hashService = TestDatabaseConfig.CreateTestFuzzyHashService(_testDbPath);
+    }
 
-        var normalizationService = new SubtitleNormalizationService(normalizationLogger);
-        var testDbPath = TestDatabaseConfig.GetTestDatabasePath(); // Use centralized configuration
-        var hashService = new FuzzyHashService(testDbPath, fuzzyLogger, normalizationService);
-        var configService = new AppConfigService(configLogger);
-
-        _matcher = new SubtitleMatcher(hashService, matcherLogger, configService);
+    public void Dispose()
+    {
+        _hashService?.Dispose();
+        TestDatabaseConfig.CleanupTempDatabase(_testDbPath);
     }
 
     [Fact]
@@ -56,9 +53,9 @@ public class AssWorkflowTests
         tracks.Should().NotBeNull();
         tracks.Should().BeEmpty(); // No tracks from non-existent file
 
-        // Test matcher with sample text
+        // Test hash service with sample text
         var sampleText = "Hello, this is a test subtitle";
-        var result = await _matcher.IdentifyEpisode(sampleText);
+        var result = await _hashService.FindMatches(sampleText, threshold: 0.5);
 
         result.Should().NotBeNull();
     }
@@ -109,18 +106,18 @@ Dialogue: 0,0:00:05.00,0:00:08.00,Default,,0,0,0,,This is a test";
     }
 
     [Fact]
-    public async Task SubtitleMatcher_WithTestContent_ReturnsResult()
+    public async Task FuzzyHashService_WithTestContent_ReturnsResult()
     {
         // Arrange
         var testContent = "This is sample subtitle content for testing episode identification";
 
         // Act
-        var result = await _matcher.IdentifyEpisode(testContent);
+        var result = await _hashService.FindMatches(testContent, threshold: 0.5);
 
         // Assert
         result.Should().NotBeNull();
         // Note: Result may not find a match since this is test content,
-        // but the matcher should work without throwing exceptions
+        // but the hash service should work without throwing exceptions
     }
 
     [Fact]

@@ -1,8 +1,11 @@
 # TextSubtitleExtractor Contract
 
+
 ## Interface: ITextSubtitleExtractor
 
+
 ### DetectTextSubtitleTracks
+
 
 **Purpose**: Detect all text-based subtitle tracks in a video file.
 
@@ -11,6 +14,7 @@
 ```csharp
 Task&lt;List&lt;TextSubtitleTrack&gt;&gt; DetectTextSubtitleTracksAsync(string videoFilePath)
 ```
+
 
 **Input**:
 
@@ -39,6 +43,7 @@ Task&lt;List&lt;TextSubtitleTrack&gt;&gt; DetectTextSubtitleTracksAsync(string v
 
 ### ExtractTextSubtitleContent
 
+
 **Purpose**: Extract and clean text content from a specific subtitle track.
 
 **Signature**:
@@ -48,6 +53,7 @@ Task&lt;TextSubtitleContent&gt; ExtractTextSubtitleContentAsync(
     string videoFilePath,
     TextSubtitleTrack track)
 ```
+
 
 **Input**:
 
@@ -78,6 +84,7 @@ Task&lt;TextSubtitleContent&gt; ExtractTextSubtitleContentAsync(
 
 ### TryExtractAllTextSubtitles
 
+
 **Purpose**: Attempt to extract text from all tracks until successful match or exhaustion.
 
 **Signature**:
@@ -87,6 +94,7 @@ Task&lt;SubtitleProcessingResult&gt; TryExtractAllTextSubtitlesAsync(
     string videoFilePath,
     CancellationToken cancellationToken = default)
 ```
+
 
 **Input**:
 

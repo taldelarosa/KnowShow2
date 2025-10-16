@@ -1,26 +1,33 @@
 # Tasks: Async Processing with Configurable Concurr## Phase 3.1: Setup
 
+
 - [x] T001 Add maxConcurrency property to existing configuration schema in src/EpisodeIdentifier.Core/Models/Configuration/Configuration.cs
 - [x] T002 [P] Set up configuration validation framework for concurrency range (1-100) in src/EpisodeIdentifier.Core/Models/Configuration/Configuration.cs (ConfigurationValidator)
 - [x] T003 [P] Prepare test infrastructure with sample config files in tests/data/sample-configs/
 **Input**: Design documents from `/specs/010-async-processing-where/`
+
 **Prerequisites**: plan.md (required), research.md, data-model.md, contracts/
 
 ## Execution Flow (main)
 
+
 ```
+
 1. Load plan.md from feature directory
    → Found: C# .NET 8.0, System.CommandLine, Microsoft.Extensions.Logging
+
    → Tech stack: Existing EpisodeIdentifier.Core CLI application extension
    → Structure: Single project with src/EpisodeIdentifier.Core
 
 2. Load optional design documents:
    → data-model.md: Extract entities - ConcurrencyConfiguration extension, BulkProcessingOptions modification
+
    → contracts/: api-contracts.md - Configuration schema, CLI enhancements, service contracts
    → research.md: Minimal changes approach leveraging existing infrastructure
 
 3. Generate tasks by category:
    → Setup: Configuration extension, validation setup
+
    → Tests: Contract tests for config and processing, integration tests for concurrency scenarios
    → Core: Configuration service extension, BulkProcessingOptions modification
    → Integration: Hot-reload integration, progress reporting enhancements
@@ -28,6 +35,7 @@
 
 4. Apply task rules:
    → Different files = mark [P] for parallel (config models, test files)
+
    → Same file = sequential (BulkProcessingOptions modifications)
    → Tests before implementation (TDD)
 
@@ -36,29 +44,35 @@
 7. Create parallel execution examples
 8. Validate task completeness:
    → All contracts have tests? YES - configuration and processing contracts
+
    → All entities have models? YES - configuration extension
    → All functionality implemented? YES - config reading, hot-reload, concurrent processing
 
 9. Return: SUCCESS (tasks ready for execution)
 ```
 
+
 ## Format: `[ID] [P?] Description`
+
 
 - **[P]**: Can run in parallel (different files, no dependencies)
 - Include exact file paths in descriptions
 
 ## Path Conventions
 
+
 - **Single project**: `src/EpisodeIdentifier.Core/`, `tests/` at repository root
 - Tests organized as: `tests/contract/`, `tests/integration/`, `tests/unit/`
 
 ## Phase 3.1: Setup
+
 
 - [x] T001 Add maxConcurrency property to existing configuration schema in src/EpisodeIdentifier.Core/Models/Configuration/AppConfiguration.cs
 - [ ] T002 [P] Set up configuration validation framework for concurrency range (1-100) in src/EpisodeIdentifier.Core/Services/ConfigurationValidationService.cs
 - [ ] T003 [P] Prepare test infrastructure with sample config files in tests/data/sample-configs/
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
+
 
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
@@ -74,6 +88,7 @@
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
+
 - [x] T013 Extend IAppConfigService interface with MaxConcurrency property in src/EpisodeIdentifier.Core/Interfaces/IAppConfigService.cs
 - [x] T014 Implement MaxConcurrency property in AppConfigService in src/EpisodeIdentifier.Core/Services/AppConfigService.cs
 - [x] T015 Add maxConcurrency validation logic in AppConfigService.LoadConfiguration method in src/EpisodeIdentifier.Core/Services/AppConfigService.cs
@@ -84,12 +99,14 @@
 
 ## Phase 3.4: Integration
 
+
 - [x] T020 Integrate hot-reload detection for maxConcurrency changes in existing configuration service hot-reload mechanism
 - [x] T021 Add graceful handling of invalid configurations with fallback to default (1)
 - [x] T022 Update JSON result aggregation to properly handle concurrent operation results
 - [x] T023 Ensure database connection pooling works efficiently with concurrent operations
 
 ## Phase 3.5: Polish
+
 
 - [x] T024 [P] Unit tests for configuration validation edge cases in tests/unit/ConfigurationValidationUnitTests.cs
 - [x] T025 [P] Unit tests for BulkProcessingOptions initialization logic in tests/unit/BulkProcessingOptionsUnitTests.cs
@@ -101,7 +118,9 @@
 
 ## Dependencies
 
+
 ### Critical Path
+
 
 - Tests (T004-T012) before implementation (T013-T023)
 - T013 (interface extension) blocks T014-T017 (implementations)
@@ -111,11 +130,13 @@
 
 ### Configuration Dependencies
 
+
 - T001 (schema) blocks T004-T007 (contract tests)
 - T002 (validation framework) blocks T005 (validation tests)
 - T014-T015 (config service) blocks T020-T021 (integration)
 
 ### Processing Dependencies
+
 
 - T007 (BulkProcessingOptions contract) blocks T016 (implementation)
 - T016 (options implementation) blocks T017 (Program.cs integration)
@@ -123,27 +144,35 @@
 
 ## Parallel Example
 
+
 ```
+
 # Phase 3.2 - Launch contract tests together (all different files):
+
 Task: "Contract test for maxConcurrency configuration loading in tests/contract/ConfigurationLoadingContractTests.cs"
 Task: "Contract test for configuration validation in tests/contract/ConfigurationValidationContractTests.cs"
 Task: "Contract test for hot-reload behavior in tests/contract/ConfigurationHotReloadContractTests.cs"
 Task: "Integration test for concurrent processing in tests/integration/ConcurrentProcessingIntegrationTests.cs"
 
 # Phase 3.3 - After interface extension (T013), parallel implementation:
+
 Task: "Add maxConcurrency validation logic in AppConfigService.LoadConfiguration"
 Task: "Add configuration validation error logging in AppConfigService"
 Task: "Enhance progress reporting to include concurrent operation details"
 
 # Phase 3.5 - Polish tasks in parallel (different files):
+
 Task: "Unit tests for configuration validation edge cases in tests/unit/ConfigurationValidationUnitTests.cs"
 Task: "Performance tests comparing concurrency levels in tests/performance/ConcurrencyPerformanceTests.cs"
 Task: "Update README.md with concurrency configuration instructions"
 ```
 
+
 ## Implementation Strategy
 
+
 ### Minimal Change Approach
+
 
 - Extend existing configuration infrastructure rather than creating new systems
 - Leverage existing BulkProcessingOptions.MaxConcurrency property
@@ -152,13 +181,15 @@ Task: "Update README.md with concurrency configuration instructions"
 
 ### Test-Driven Development
 
+
 - All tests must be written first and MUST FAIL
 - Contract tests validate interface specifications
-- Integration tests validate end-to-end behavior  
+- Integration tests validate end-to-end behavior
 - Unit tests validate edge cases and error conditions
 - Performance tests validate concurrent processing efficiency
 
 ### Key Integration Points
+
 
 1. **Configuration Extension**: Add maxConcurrency to existing JSON schema
 2. **Service Integration**: Extend IAppConfigService with new property
@@ -167,6 +198,7 @@ Task: "Update README.md with concurrency configuration instructions"
 5. **Progress Integration**: Enhance existing progress reporting
 
 ## Validation Checklist
+
 
 *GATE: Checked before task execution*
 
@@ -180,6 +212,7 @@ Task: "Update README.md with concurrency configuration instructions"
 - [x] Constitutional compliance (TDD, library-first, minimal complexity)
 
 ## Notes
+
 
 - Focus on extending existing infrastructure rather than building new systems
 - Default maxConcurrency = 1 ensures no breaking changes

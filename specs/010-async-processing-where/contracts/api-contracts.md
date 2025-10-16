@@ -1,11 +1,14 @@
 # API Contracts: Async Processing with Configurable Concurrency
 
+
 **Date**: September 15, 2025
 **Feature**: 010-async-processing-where
 
 ## Configuration Contract
 
+
 ### Configuration Schema Extension
+
 
 **File**: `episodeidentifier.config.json`
 
@@ -62,9 +65,12 @@
 }
 ```
 
+
 ## CLI Contract Extension
 
+
 ### Bulk Identify Command Enhancement
+
 
 **Command**: `--bulk-identify <directory>`
 
@@ -79,16 +85,20 @@
 
 ```
 Required:
+
 - directory: string (path to directory containing video files)
 
 Optional (existing):
+
 - --recursive: boolean (process subdirectories)
 - --dry-run: boolean (simulate without making changes)
 - --output: string (output file for results)
 
 Configuration (from episodeidentifier.config.json):
+
 - maxConcurrency: integer (1-100, default: 1)
 ```
+
 
 **Output Contract** (unchanged):
 
@@ -133,15 +143,19 @@ Configuration (from episodeidentifier.config.json):
 }
 ```
 
+
 ## Configuration Service Contract
 
+
 ### IAppConfigService Enhancement
+
 
 **New Property**:
 
 ```csharp
 public int MaxConcurrency { get; }
 ```
+
 
 **Validation Contract**:
 
@@ -158,13 +172,16 @@ public int MaxConcurrency { get; }
 
 ## Processing Service Contract
 
+
 ### BulkProcessingOptions Enhancement
+
 
 **Modified Property**:
 
 ```csharp
 public int MaxConcurrency { get; set; }
 ```
+
 
 **Initialization Contract**:
 
@@ -181,7 +198,9 @@ public int MaxConcurrency { get; set; }
 
 ## Progress Reporting Contract
 
+
 ### Concurrent Progress Updates
+
 
 **Enhanced Progress Reports**:
 
@@ -194,12 +213,13 @@ public class BulkProcessingProgress
     public decimal PercentComplete { get; set; }
     public string CurrentPhase { get; set; }
     public string CurrentFile { get; set; }
-    
+
     // Enhanced for concurrency
     public int ActiveOperations { get; set; }  // New: current concurrent operations
     public int QueuedFiles { get; set; }       // New: files waiting in queue
 }
 ```
+
 
 **Progress Reporting Behavior**:
 
@@ -210,7 +230,9 @@ public class BulkProcessingProgress
 
 ## Error Handling Contract
 
+
 ### Concurrent Error Collection
+
 
 **Error Aggregation**:
 
@@ -227,7 +249,9 @@ public class BulkProcessingProgress
 
 ## Testing Contracts
 
+
 ### Configuration Testing
+
 
 - Validate config loading with various maxConcurrency values
 - Test hot-reload behavior and timing
@@ -235,11 +259,13 @@ public class BulkProcessingProgress
 
 ### Concurrency Testing
 
+
 - Test processing with different concurrency levels (1, 5, 10, max)
 - Verify queue management and FIFO ordering
 - Test concurrent operation independence (failure isolation)
 
 ### Integration Testing
+
 
 - Test full workflow with concurrent processing
 - Verify JSON output format with concurrent results
@@ -247,7 +273,9 @@ public class BulkProcessingProgress
 
 ## Backward Compatibility
 
+
 ### Existing Behavior Preservation
+
 
 - Default maxConcurrency = 1 maintains single-file processing
 - Existing configurations without maxConcurrency work unchanged
@@ -255,6 +283,7 @@ public class BulkProcessingProgress
 - JSON output format remains identical
 
 ### Migration Path
+
 
 - No migration required for existing users
 - Optional configuration enhancement

@@ -19,6 +19,7 @@ This application identifies Season and Episode numbers from AV1 encoded video fi
 
 
 
+
 ./scripts/setup-prerequisites.sh --check-only
 
 # Install everything automatically (requires sudo)
@@ -30,9 +31,11 @@ This application identifies Season and Episode numbers from AV1 encoded video fi
 
 
 
+
 ./scripts/setup-prerequisites.sh --install
 
 # Build and test
+
 
 
 
@@ -56,17 +59,22 @@ dotnet test
 
 ## Docker Deployment
 
+
 **🐳 Run in Docker (Recommended for Unraid/Production):**
 
 The Episode Identifier is available as a Docker container with all dependencies pre-installed. Perfect for Unraid servers and production deployments.
 
 ### Quick Start with Docker
 
+
 ```bash
+
 # Pull the image
+
 docker pull episodeidentifier/episodeidentifier:latest
 
 # Run the container
+
 docker run -d \
   --name episodeidentifier \
   -e PUID=99 -e PGID=100 \
@@ -77,18 +85,22 @@ docker run -d \
   tail -f /dev/null
 
 # Execute commands
+
 docker exec episodeidentifier dotnet /app/EpisodeIdentifier.Core.dll \
   --input /data/videos/yourfile.mkv \
   --hash-db /data/database/production_hashes.db
 ```
 
+
 ### Deployment Guides
+
 
 - **🏠 Unraid Users**: See [docs/unraid.md](docs/unraid.md) for complete Unraid setup guide
 - **🐳 Docker Users**: See [docs/DOCKER.md](docs/DOCKER.md) for Docker deployment options
 - **📦 Building from Source**: `docker build -t episodeidentifier:latest .`
 
 ### Key Features
+
 
 - ✅ All dependencies pre-installed (FFmpeg, Tesseract, pgsrip, etc.)
 - ✅ PUID/PGID support for proper file permissions
@@ -112,9 +124,11 @@ docker exec episodeidentifier dotnet /app/EpisodeIdentifier.Core.dll \
 
 
 
+
 git checkout -b 005-new-feature    # Create feature branch
 
 # Make changes...
+
 
 
 
@@ -135,6 +149,7 @@ git push origin 005-new-feature    # Push feature branch
 
 
 
+
 # Get code review → Merge via PR
 
 
@@ -145,7 +160,9 @@ git push origin 005-new-feature    # Push feature branch
 
 
 
+
 # ❌ Direct pushes to main are blocked
+
 
 
 
@@ -177,13 +194,16 @@ git push origin main  # This will fail!
 
 # C# code formatting
 
+
 dotnet format EpisodeIdentifier.sln
 
 # Markdown documentation linting (manual check)
 
+
 ./scripts/lint-markdown.sh --fix
 
 # or directly: markdownlint --config .markdownlint.json '**/*.md' --fix
+
 
 ```
 
@@ -279,9 +299,11 @@ dotnet format EpisodeIdentifier.sln
 
 
 
+
 sudo apt-get install ffmpeg mkvtoolnix-cli
 
 # OCR processing
+
 
 
 
@@ -301,9 +323,11 @@ sudo apt-get install tesseract-ocr tesseract-ocr-eng
 
 
 
+
 sudo apt-get install tesseract-ocr-spa tesseract-ocr-fra tesseract-ocr-deu
 
 # Advanced PGS processor (recommended)
+
 
 
 
@@ -332,19 +356,26 @@ pip install pgsrip
 
 ## Basic Identification
 
+
 ```bash
 dotnet run -- --input video.mkv --hash-db hashes.sqlite
 ```
 
+
 ### With Series/Season Filtering (Faster Search)
 
+
 ```bash
+
 # Filter by series only (~22% faster for multi-series databases)
+
 dotnet run -- --input video.mkv --hash-db hashes.sqlite --series "Bones"
 
 # Filter by series AND season (~93% faster for large databases)
+
 dotnet run -- --input video.mkv --hash-db hashes.sqlite --series "Bones" --season 1
 ```
+
 
 ### With Language Preference
 
@@ -396,24 +427,32 @@ dotnet run -- --input subtitle.txt --hash-db hashes.sqlite --store --series "Sho
 
 ### Bulk Processing
 
+
 Process multiple files efficiently with concurrent operations:
 
 ```bash
+
 # Identify all videos in a directory
+
 dotnet run -- --bulk-identify /path/to/videos --hash-db hashes.sqlite
 
 # Store all subtitles from a directory (extracts series/season/episode from filenames)
+
 dotnet run -- --bulk-store /path/to/subtitles --hash-db hashes.sqlite
 
 # Bulk identify with automatic renaming
+
 dotnet run -- --bulk-identify /path/to/videos --hash-db hashes.sqlite --rename
 ```
 
+
 ## Configuration
+
 
 The application uses `episodeidentifier.config.json` for advanced settings and performance tuning. Configuration changes are automatically detected and applied during runtime (hot-reload).
 
 ### Configuration File Location
+
 
 The application looks for the configuration file in this order:
 
@@ -421,6 +460,7 @@ The application looks for the configuration file in this order:
 2. Default built-in configuration if file not found
 
 ### Sample Configuration
+
 
 ```json
 {
@@ -434,7 +474,9 @@ The application looks for the configuration file in this order:
 }
 ```
 
+
 ### Concurrency Configuration
+
 
 The `maxConcurrency` setting controls how many files are processed simultaneously during bulk operations:
 
@@ -459,6 +501,7 @@ The `maxConcurrency` setting controls how many files are processed simultaneousl
 
 ### Other Configuration Options
 
+
 | Setting | Description | Valid Range | Default |
 |---------|-------------|-------------|---------|
 | `matchConfidenceThreshold` | Minimum confidence for episode matches | 0.0 - 1.0 | 0.6 |
@@ -469,15 +512,20 @@ The `maxConcurrency` setting controls how many files are processed simultaneousl
 **Example Configurations:**
 
 ```bash
+
 # Conservative (safe, slower)
+
 echo '{"maxConcurrency": 1, "matchConfidenceThreshold": 0.8}' > episodeidentifier.config.json
 
-# Balanced (recommended for most users)  
+# Balanced (recommended for most users)
+
 echo '{"maxConcurrency": 3, "matchConfidenceThreshold": 0.6}' > episodeidentifier.config.json
 
 # Aggressive (fast, requires good hardware)
+
 echo '{"maxConcurrency": 10, "matchConfidenceThreshold": 0.5}' > episodeidentifier.config.json
 ```
+
 
 ## Supported Languages
 
@@ -718,9 +766,11 @@ dotnet test tests/contract/
 
 
 
+
 ./scripts/setup-prerequisites.sh --check-only --verbose
 
 # Install any missing dependencies
+
 
 
 
@@ -738,6 +788,7 @@ dotnet test tests/contract/
 ```bash
 
 # Make the script executable
+
 
 
 

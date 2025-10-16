@@ -1,16 +1,20 @@
 # CTPH Migration Summary
 
-**Date**: October 10, 2025  
-**Branch**: 010-async-processing-where  
+
+**Date**: October 10, 2025
+**Branch**: 010-async-processing-where
 **Objective**: Remove all legacy hashing code paths and use only CTPH (Context-Triggered Piecewise Hashing) throughout the application.
 
 ## Overview
+
 
 Successfully migrated the entire EpisodeIdentifier system from legacy word-frequency hashing to CTPH (ssdeep) fuzzy hashing. This migration unifies the hashing approach, improves performance, and simplifies the codebase while maintaining the text fallback feature.
 
 ## Changes Made
 
+
 ### 1. Configuration Changes
+
 
 **File**: `src/EpisodeIdentifier.Core/Models/Configuration/Configuration.cs`
 
@@ -20,7 +24,9 @@ Successfully migrated the entire EpisodeIdentifier system from legacy word-frequ
 
 ### 2. Service Layer Refactoring
 
+
 #### EpisodeIdentificationService
+
 
 **File**: `src/EpisodeIdentifier.Core/Services/EpisodeIdentificationService.cs`
 
@@ -30,6 +36,7 @@ Successfully migrated the entire EpisodeIdentifier system from legacy word-frequ
 - **Behavior**: Returns CONFIGURATION_ERROR if CTPH is unavailable instead of falling back
 
 #### FuzzyHashService
+
 
 **File**: `src/EpisodeIdentifier.Core/Services/FuzzyHashService.cs`
 
@@ -50,6 +57,7 @@ Successfully migrated the entire EpisodeIdentifier system from legacy word-frequ
 
 #### SubtitleWorkflowCoordinator
 
+
 **File**: `src/EpisodeIdentifier.Core/Services/SubtitleWorkflowCoordinator.cs`
 
 - **Replaced**: `SubtitleMatcher` dependency with `IEpisodeIdentificationService`
@@ -57,11 +65,13 @@ Successfully migrated the entire EpisodeIdentifier system from legacy word-frequ
 
 ### 3. Dependency Injection Changes
 
+
 **File**: `src/EpisodeIdentifier.Core/Extensions/ServiceCollectionExtensions.cs`
 
 - **Removed**: `services.AddScoped<ISubtitleMatcher, SubtitleMatcher>()` registration
 
 ### 4. Program.cs Updates
+
 
 **File**: `src/EpisodeIdentifier.Core/Program.cs`
 
@@ -70,10 +80,12 @@ Successfully migrated the entire EpisodeIdentifier system from legacy word-frequ
 
 ### 5. Deleted Files
 
+
 - **Removed**: `src/EpisodeIdentifier.Core/Services/SubtitleMatcher.cs`
 - **Removed**: `src/EpisodeIdentifier.Core/Interfaces/ISubtitleMatcher.cs`
 
 ### 6. Database Migration
+
 
 **Tool Created**: `tools/MigrateToCTPhHashes/`
 
@@ -97,7 +109,9 @@ Before: words:-->:13|the:5|flight:4|board:3|...
 After:  768:W8vleG5oHfvLJ+AIRXFtHasVdsOrkJTfPQ2dqb7RQhc17u...
 ```
 
+
 ## Text Fallback Feature
+
 
 **Status**: ✅ Preserved and Fully Functional
 
@@ -112,14 +126,18 @@ The text fallback feature remains intact and continues to work as designed:
 
 ## Testing
 
+
 ### Build Status
+
 
 ```
 ✅ Build: Success (0 Warnings, 0 Errors)
 ✅ Time: 10.02s - 13.30s
 ```
 
+
 ### Test Results
+
 
 ```
 ✅ Total Tests: 107
@@ -128,6 +146,7 @@ The text fallback feature remains intact and continues to work as designed:
 ✅ Skipped: 0
 ✅ Duration: ~4 seconds
 ```
+
 
 All tests pass including:
 
@@ -139,7 +158,9 @@ All tests pass including:
 
 ## Architecture Benefits
 
+
 ### Before (Legacy System)
+
 
 ```
 ┌─────────────────────────────┐
@@ -177,7 +198,9 @@ All tests pass including:
             └────────────────────────────┘
 ```
 
+
 ### After (CTPH-Only System)
+
 
 ```
 ┌─────────────────────────────┐
@@ -212,9 +235,12 @@ All tests pass including:
             └────────────────────────────┘
 ```
 
+
 ## Performance Characteristics
 
+
 ### Hash Generation
+
 
 - **CTPH on Text**: ~1-5ms for typical subtitle text
 - **CTPH on Files**: ~20-400ms depending on file size
@@ -222,16 +248,19 @@ All tests pass including:
 
 ### Hash Comparison
 
+
 - **CTPH Compare**: < 1ms using ssdeep's native comparison
 - **Storage**: CTPH hashes are more compact than word-frequency hashes
 
 ### Text Fallback
+
 
 - **Trigger**: When CTPH match < threshold
 - **Performance**: ~10-50ms depending on candidate count
 - **Accuracy**: High similarity detection using FuzzySharp TokenSetRatio
 
 ## Database Statistics
+
 
 **Production Database**: `production_hashes.db`
 
@@ -245,15 +274,18 @@ All tests pass including:
 **Sample Hash Verification**:
 
 ```sql
-SELECT COUNT(*) FROM SubtitleHashes 
-WHERE OriginalHash LIKE '%:%' 
+SELECT COUNT(*) FROM SubtitleHashes
+WHERE OriginalHash LIKE '%:%'
 AND OriginalHash NOT LIKE 'words:%';
 -- Result: 316 (100% CTPH format)
 ```
 
+
 ## Backwards Compatibility
 
+
 ### Breaking Changes
+
 
 - ❌ MD5 and SHA1 are no longer valid configuration values
 - ❌ SubtitleMatcher class removed (use IEpisodeIdentificationService)
@@ -261,13 +293,16 @@ AND OriginalHash NOT LIKE 'words:%';
 
 ### Migration Path
 
+
 1. **Configuration**: Update `episodeidentifier.config.json` to use `"hashingAlgorithm": "CTPH"`
 2. **Database**: Run migration tool to convert legacy hashes to CTPH
 3. **Code**: Update any direct references to SubtitleMatcher to use IEpisodeIdentificationService
 
 ## Future Enhancements
 
+
 ### Potential Improvements
+
 
 1. **Configurable Hash Mode**: Allow users to choose FuzzyHashMode (EliminateSequences vs DoNotEliminateSequences)
 2. **Batch Hash Generation**: Optimize database regeneration for large datasets
@@ -276,13 +311,16 @@ AND OriginalHash NOT LIKE 'words:%';
 
 ### Monitoring
 
+
 - Track text fallback usage rate
 - Monitor CTPH match success rate vs. text fallback success rate
 - Log performance metrics for hash generation and comparison
 
 ## Deployment Notes
 
+
 ### Pre-Deployment Checklist
+
 
 - ✅ All tests passing (107/107)
 - ✅ Build successful with no warnings
@@ -292,6 +330,7 @@ AND OriginalHash NOT LIKE 'words:%';
 
 ### Deployment Steps
 
+
 1. **Backup**: Create database backup before migration
 2. **Run Migration**: Execute `tools/MigrateToCTPhHashes` on production database
 3. **Verify**: Check hash format using sample queries
@@ -299,6 +338,7 @@ AND OriginalHash NOT LIKE 'words:%';
 5. **Monitor**: Watch for any issues in production logs
 
 ### Rollback Plan
+
 
 If issues occur:
 
@@ -309,6 +349,7 @@ If issues occur:
 5. Re-test before attempting migration again
 
 ## Conclusion
+
 
 Successfully migrated the entire KnowShow_Specd application to use CTPH hashing exclusively. This migration:
 

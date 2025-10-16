@@ -1,8 +1,10 @@
 # KnowShow_Specd Development Guidelines
 
+
 Auto-generated from all feature plans. Last updated: 2025-09-15
 
 ## Active Technologies
+
 
 - C# .NET 8.0, System.CommandLine, Microsoft.Extensions.Logging, System.Text.Json
 - SQLite database for hash storage, JSON configuration with hot-reload
@@ -11,6 +13,7 @@ Auto-generated from all feature plans. Last updated: 2025-09-15
 - (010-async-processing-where) Configurable concurrent episode identification
 
 ## Project Structure
+
 
 ```
 src/
@@ -33,9 +36,12 @@ specs/
     contracts/
 ```
 
+
 ## Commands
 
+
 ### Bulk Processing
+
 
 - `--bulk-identify <directory>` - Process multiple files with configurable concurrency
 - Reads maxConcurrency from episodeidentifier.config.json (default: 1, range: 1-100)
@@ -43,9 +49,11 @@ specs/
 
 ## Code Style
 
+
 : Follow standard conventions
 
 ## Recent Changes
+
 
 - 008-fuzzy-hashing-plus: Added  +
 

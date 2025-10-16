@@ -1,10 +1,13 @@
 # GitHub Configuration for KnowShow2
 
+
 This directory contains GitHub-specific configuration files that enforce our development workflow and quality standards.
 
 ## Files Overview
 
+
 ### Workflow Files (`.github/workflows/`)
+
 
 **`ci.yml`** - Main CI/CD pipeline
 
@@ -23,6 +26,7 @@ This directory contains GitHub-specific configuration files that enforce our dev
 - Provides guidance on correct workflow
 
 ### Templates
+
 
 **`pull_request_template.md`** - Pull request template
 
@@ -47,6 +51,7 @@ This directory contains GitHub-specific configuration files that enforce our dev
 
 ### Configuration Files
 
+
 **`CODEOWNERS`** - Code ownership definitions
 
 - Defines who reviews what parts of the codebase
@@ -68,7 +73,9 @@ This directory contains GitHub-specific configuration files that enforce our dev
 
 ## Git Workflow Enforcement
 
+
 ### Required Workflow
+
 
 1. **Feature branches**: All development in `###-feature-name` branches
 2. **Pull requests**: Required for all merges to main
@@ -77,6 +84,7 @@ This directory contains GitHub-specific configuration files that enforce our dev
 5. **Linear history**: Enforced through branch protection
 
 ### Branch Protection Rules
+
 
 The `branch-protection-config.md` file documents the exact settings needed in GitHub repository settings. Key protections include:
 
@@ -89,6 +97,7 @@ The `branch-protection-config.md` file documents the exact settings needed in Gi
 
 ### Automated Enforcement
 
+
 The `branch-protection.yml` workflow:
 
 - Monitors for direct pushes to main
@@ -98,21 +107,26 @@ The `branch-protection.yml` workflow:
 
 ## Setup Instructions
 
+
 ### 1. Configure Branch Protection
+
 
 Follow the instructions in `branch-protection-config.md` to set up GitHub branch protection rules.
 
 ### 2. Enable Workflows
 
+
 Workflows are automatically enabled when files are pushed to the repository.
 
 ### 3. Configure Repository Settings
+
 
 - Set default branch to `main`
 - Enable "Automatically delete head branches"
 - Configure merge options (recommend squash merging only)
 
 ### 4. Set up Notifications
+
 
 Configure GitHub notifications for:
 
@@ -123,9 +137,11 @@ Configure GitHub notifications for:
 
 ## Quality Gates
 
+
 All pull requests must pass these checks:
 
 ### Build and Test
+
 
 - ✅ .NET application builds successfully
 - ✅ All unit tests pass
@@ -134,6 +150,7 @@ All pull requests must pass these checks:
 
 ### Code Quality
 
+
 - ✅ Code formatting standards met
 - ✅ No linting violations
 - ✅ Static analysis passes
@@ -141,11 +158,13 @@ All pull requests must pass these checks:
 
 ### Security
 
+
 - ✅ Trivy security scan passes
 - ✅ No high/critical vulnerabilities
 - ✅ Dependencies are up-to-date
 
 ### Documentation
+
 
 - ✅ Markdown files are well-formatted
 - ✅ No broken links
@@ -153,12 +172,15 @@ All pull requests must pass these checks:
 
 ### Setup Verification
 
+
 - ✅ Setup script works correctly
 - ✅ Prerequisites are properly documented
 
 ## Troubleshooting
 
+
 ### Workflow Failures
+
 
 1. Check the Actions tab for detailed logs
 2. Review the specific failing step
@@ -167,12 +189,14 @@ All pull requests must pass these checks:
 
 ### Branch Protection Issues
 
+
 1. Verify rules are configured correctly
 2. Check user permissions
 3. Ensure status checks are defined
 4. Review admin bypass settings
 
 ### CI/CD Problems
+
 
 1. Check .NET version compatibility
 2. Verify test dependencies
@@ -181,7 +205,9 @@ All pull requests must pass these checks:
 
 ## Customization
 
+
 ### Adding New Checks
+
 
 1. Add workflow steps to `ci.yml`
 2. Update branch protection requirements
@@ -190,6 +216,7 @@ All pull requests must pass these checks:
 
 ### Modifying Templates
 
+
 1. Update template files
 2. Test with sample issues/PRs
 3. Document changes
@@ -197,12 +224,14 @@ All pull requests must pass these checks:
 
 ### Security Configuration
 
+
 1. Review Trivy scan settings
 2. Update vulnerability policies
 3. Configure secret scanning
 4. Set up dependency alerts
 
 ## Related Documentation
+
 
 - [Git Workflow Requirements](../specs/002-build-an-application/plan.md#git-workflow-requirements)
 - [Setup Guide](../SETUP.md)

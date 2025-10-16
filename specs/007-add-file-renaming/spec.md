@@ -1,5 +1,6 @@
 # Feature Specification: Add File Renaming Recommendations
 
+
 **Feature Branch**: `007-add-file-renaming`
 **Created**: September 10, 2025
 **Status**: Draft
@@ -7,10 +8,12 @@
 
 ## Execution Flow (main)
 
+
 ```
 
 1. Parse user description from Input
    → If empty: ERROR "No feature description provided"
+
 
 
 
@@ -29,8 +32,10 @@
 
 
 
+
 3. For each unclear aspect:
    → Mark with [NEEDS CLARIFICATION: specific question]
+
 
 
 
@@ -49,8 +54,10 @@
 
 
 
+
 5. Generate Functional Requirements
    → Each requirement must be testable
+
 
 
 
@@ -70,14 +77,17 @@
 
 
 
+
    → If implementation details found: ERROR "Remove tech details"
 
 8. Return: SUCCESS (spec ready for planning)
 ```
 
+
 ---
 
 ## ⚡ Quick Guidelines
+
 
 - ✅ Focus on WHAT users need and WHY
 - ❌ Avoid HOW to implement (no tech stack, APIs, code structure)
@@ -85,11 +95,13 @@
 
 ### Section Requirements
 
+
 - **Mandatory sections**: Must be completed for every feature
 - **Optional sections**: Include only when relevant to the feature
 - When a section doesn't apply, remove it entirely (don't leave as "N/A")
 
 ### For AI Generation
+
 
 When creating this spec from a user prompt:
 
@@ -108,11 +120,14 @@ When creating this spec from a user prompt:
 
 ## User Scenarios & Testing *(mandatory)*
 
+
 ### Primary User Story
+
 
 A user runs the episode identification system on a video file and receives high-confidence episode identification results. The system now provides a suggested filename that follows a standardized naming convention, allowing the user to easily rename their files for better organization and media library compatibility. Additionally, users can enable an automatic rename flag to have the system immediately rename the file to the suggested name.
 
 ### Acceptance Scenarios
+
 
 1. **Given** a video file with clear episode identification markers, **When** the system identifies the episode with high confidence, **Then** the JSON response includes a "suggestedFilename" field with format "SeriesName - S01E01 - EpisodeName.mkv"
 
@@ -126,6 +141,7 @@ A user runs the episode identification system on a video file and receives high-
 
 ### Edge Cases
 
+
 - What happens when the series name contains Windows-disallowed characters (< > : " | ? * \)?
 - How does the system handle very long series or episode names that would exceed the 260-character Windows filename limit?
 - What happens when episode name is missing or unknown? (Format: "SeriesName - S##E##.ext")
@@ -135,7 +151,9 @@ A user runs the episode identification system on a video file and receives high-
 
 ## Requirements *(mandatory)*
 
+
 ### Functional Requirements
+
 
 - **FR-001**: System MUST include a "suggestedFilename" field in JSON responses when episode identification confidence is high
 - **FR-002**: System MUST format suggested filenames using the pattern "SeriesName - S##E## - EpisodeName.mkv"
@@ -151,6 +169,7 @@ A user runs the episode identification system on a video file and receives high-
 
 ### Key Entities *(include if feature involves data)*
 
+
 - **Episode Identification Result**: Enhanced with suggested filename field, includes confidence level and formatted name components
 - **Suggested Filename**: Standardized filename following "SeriesName - S##E## - EpisodeName.ext" format with Windows-compatible characters and length limits
 - **Database Schema**: Updated SQLite database with new nullable "EpisodeName" column to store episode names for filename generation
@@ -159,9 +178,11 @@ A user runs the episode identification system on a video file and receives high-
 
 ## Review & Acceptance Checklist
 
+
 *GATE: Automated checks run during main() execution*
 
 ### Content Quality
+
 
 - [ ] No implementation details (languages, frameworks, APIs)
 - [ ] Focused on user value and business needs
@@ -169,6 +190,7 @@ A user runs the episode identification system on a video file and receives high-
 - [ ] All mandatory sections completed
 
 ### Requirement Completeness
+
 
 - [ ] No [NEEDS CLARIFICATION] markers remain
 - [ ] Requirements are testable and unambiguous
@@ -179,6 +201,7 @@ A user runs the episode identification system on a video file and receives high-
 ---
 
 ## Execution Status
+
 
 *Updated by main() during processing*
 

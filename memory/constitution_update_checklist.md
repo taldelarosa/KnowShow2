@@ -1,10 +1,13 @@
 # Constitution Update Checklist
 
+
 When amending the constitution (`/memory/constitution.md`), ensure all dependent documents are updated to maintain consistency.
 
 ## Templates to Update
 
+
 ### When adding/modifying ANY article
+
 
 - [ ] `/templates/plan-template.md` - Update Constitution Check section
 - [ ] `/templates/spec-template.md` - Update if requirements/scope affected
@@ -15,7 +18,9 @@ When amending the constitution (`/memory/constitution.md`), ensure all dependent
 
 ### Article-specific updates
 
+
 #### Article I (Library-First)
+
 
 - [ ] Ensure templates emphasize library creation
 - [ ] Update CLI command examples
@@ -23,10 +28,12 @@ When amending the constitution (`/memory/constitution.md`), ensure all dependent
 
 #### Article II (CLI Interface)
 
+
 - [ ] Update CLI flag requirements in templates
 - [ ] Add text I/O protocol reminders
 
 #### Article III (Test-First)
+
 
 - [ ] Update test order in all templates
 - [ ] Emphasize TDD requirements
@@ -34,11 +41,13 @@ When amending the constitution (`/memory/constitution.md`), ensure all dependent
 
 #### Article IV (Integration Testing)
 
+
 - [ ] List integration test triggers
 - [ ] Update test type priorities
 - [ ] Add real dependency requirements
 
 #### Article V (Observability)
+
 
 - [ ] Add logging requirements to templates
 - [ ] Include multi-tier log streaming
@@ -46,17 +55,20 @@ When amending the constitution (`/memory/constitution.md`), ensure all dependent
 
 #### Article VI (Versioning)
 
+
 - [ ] Add version increment reminders
 - [ ] Include breaking change procedures
 - [ ] Update migration requirements
 
 #### Article VII (Simplicity)
 
+
 - [ ] Update project count limits
 - [ ] Add pattern prohibition examples
 - [ ] Include YAGNI reminders
 
 ## Validation Steps
+
 
 1. **Before committing constitution changes:**
    - [ ] All templates reference new requirements
@@ -75,6 +87,7 @@ When amending the constitution (`/memory/constitution.md`), ensure all dependent
 
 ## Common Misses
 
+
 Watch for these often-forgotten updates:
 
 - Command documentation (`/commands/*.md`)
@@ -84,6 +97,7 @@ Watch for these often-forgotten updates:
 - Cross-references between documents
 
 ## Template Sync Status
+
 
 Last sync check: 2025-07-16
 

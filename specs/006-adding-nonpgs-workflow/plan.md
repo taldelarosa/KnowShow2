@@ -1,14 +1,17 @@
 # Implementation Plan: NonPGS Subtitle Workflow
 
+
 **Branch**: `006-adding-nonpgs-workflow` | **Date**: September 8, 2025 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/mnt/c/Users/Ragma/KnowShow_Specd/specs/006-adding-nonpgs-workflow/spec.md`
 
 ## Execution Flow (/plan command scope)
 
+
 ```
 
 1. Load feature spec from Input path
    → If not found: ERROR "No feature spec at {path}"
+
 
 
 
@@ -26,10 +29,12 @@
 
 
 
+
    → Set Structure Decision based on project type
 
 3. Evaluate Constitution Check section below
    → If violations exist: Document in Complexity Tracking
+
 
 
 
@@ -50,9 +55,11 @@
 
 
 
+
 5. Execute Phase 1 → contracts, data-model.md, quickstart.md, agent-specific template file (e.g., `CLAUDE.md` for Claude Code, `.github/copilot-instructions.md` for GitHub Copilot, or `GEMINI.md` for Gemini CLI).
 6. Re-evaluate Constitution Check section
    → If new violations: Refactor design, return to Phase 1
+
 
 
 
@@ -66,6 +73,7 @@
 8. STOP - Ready for /tasks command
 ```
 
+
 **IMPORTANT**: The /plan command STOPS at step 7. Phases 2-4 are executed by other commands:
 
 - Phase 2: /tasks command creates tasks.md
@@ -73,9 +81,11 @@
 
 ## Summary
 
+
 Extend the episode identification system to support text-based subtitle formats (.srt, .ass, .vtt) when PGS subtitles are not available. The system will maintain PGS subtitle priority while providing fallback processing through sequential text subtitle track extraction and existing fuzzy hash comparison workflow.
 
 ## Technical Context
+
 
 **Language/Version**: C# .NET 8.0
 **Primary Dependencies**: FFmpeg, MKVToolNix (mkvextract), Tesseract OCR, pgsrip, System.Text.Json
@@ -88,6 +98,7 @@ Extend the episode identification system to support text-based subtitle formats 
 **Scale/Scope**: Support 3-5 common text subtitle formats, process multiple tracks per video
 
 ## Constitution Check
+
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
@@ -128,7 +139,9 @@ Extend the episode identification system to support text-based subtitle formats 
 
 ## Project Structure
 
+
 ### Documentation (this feature)
+
 
 ```
 specs/[###-feature]/
@@ -140,11 +153,14 @@ specs/[###-feature]/
 └── tasks.md             # Phase 2 output (/tasks command - NOT created by /plan)
 ```
 
+
 ### Source Code (repository root)
+
 
 ```
 
 # Option 1: Single project (DEFAULT)
+
 
 
 
@@ -164,6 +180,7 @@ tests/
 └── unit/
 
 # Option 2: Web application (when "frontend" + "backend" detected)
+
 
 
 
@@ -193,6 +210,7 @@ frontend/
 
 
 
+
 api/
 └── [same as backend above]
 
@@ -200,9 +218,11 @@ ios/ or android/
 └── [platform-specific structure]
 ```
 
+
 **Structure Decision**: [DEFAULT to Option 1 unless Technical Context indicates web/mobile app]
 
 ## Phase 0: Outline & Research
+
 
 1. **Extract unknowns from Technical Context** above:
    - For each NEEDS CLARIFICATION → research task
@@ -226,6 +246,7 @@ ios/ or android/
 **Output**: research.md with all NEEDS CLARIFICATION resolved
 
 ## Phase 1: Design & Contracts
+
 
 *Prerequisites: research.md complete*
 
@@ -259,6 +280,7 @@ ios/ or android/
 **Output**: data-model.md, /contracts/*, failing tests, quickstart.md, agent-specific file
 
 ## Phase 2: Task Planning Approach
+
 
 *This section describes what the /tasks command will do - DO NOT execute during /plan*
 
@@ -295,6 +317,7 @@ ios/ or android/
 
 ## Phase 3+: Future Implementation
 
+
 *These phases are beyond the scope of the /plan command*
 
 **Phase 3**: Task execution (/tasks command creates tasks.md)
@@ -302,6 +325,7 @@ ios/ or android/
 **Phase 5**: Validation (run tests, execute quickstart.md, performance validation)
 
 ## Complexity Tracking
+
 
 *Fill ONLY if Constitution Check has violations that must be justified*
 
@@ -311,6 +335,7 @@ ios/ or android/
 | [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
 
 ## Progress Tracking
+
 
 *This checklist is updated during execution flow*
 

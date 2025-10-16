@@ -78,8 +78,7 @@ public class FuzzyHashService : IDisposable
                 OriginalText TEXT DEFAULT '',
                 NoTimecodesText TEXT DEFAULT '',
                 NoHtmlText TEXT DEFAULT '',
-                CleanText TEXT DEFAULT '',
-                UNIQUE(Series, Season, Episode)
+                CleanText TEXT DEFAULT ''
             );";
         command.ExecuteNonQuery();
 
@@ -89,8 +88,8 @@ public class FuzzyHashService : IDisposable
         // Migrate existing data if needed
         MigrateExistingData(connection);
 
-        // Add unique constraint if table already exists without it
-        AddUniqueConstraintIfNeeded(connection);
+        // Remove old unique constraint if it exists (migration for hash-based deduplication)
+        RemoveOldUniqueConstraintIfNeeded(connection);
     }
 
     private void MigrateExistingData(SqliteConnection connection)
@@ -249,22 +248,29 @@ public class FuzzyHashService : IDisposable
         }
     }
 
-    private void AddUniqueConstraintIfNeeded(SqliteConnection connection)
+    private void RemoveOldUniqueConstraintIfNeeded(SqliteConnection connection)
     {
         try
         {
-            // Check if the unique constraint already exists by trying to create it
-            using var command = connection.CreateCommand();
-            command.CommandText = @"
-                CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_episode 
-                ON SubtitleHashes(Series, Season, Episode);";
-            command.ExecuteNonQuery();
+            // Check if the old unique index exists
+            using var checkCommand = connection.CreateCommand();
+            checkCommand.CommandText = "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_unique_episode';";
+            var indexExists = checkCommand.ExecuteScalar() != null;
 
-            _logger.LogDebug("Unique constraint ensured on (Series, Season, Episode)");
+            if (indexExists)
+            {
+                _logger.LogInformation("Removing old unique constraint on (Series, Season, Episode) to allow multiple subtitle variants per episode");
+
+                using var dropCommand = connection.CreateCommand();
+                dropCommand.CommandText = "DROP INDEX IF EXISTS idx_unique_episode;";
+                dropCommand.ExecuteNonQuery();
+
+                _logger.LogInformation("Old unique constraint removed successfully");
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("Could not add unique constraint: {Message}", ex.Message);
+            _logger.LogWarning("Could not remove old unique constraint: {Message}", ex.Message);
         }
     }
 
@@ -293,7 +299,8 @@ public class FuzzyHashService : IDisposable
                 using var hashIndexCommand = connection.CreateCommand();
                 hashIndexCommand.CommandText = @"
                     CREATE INDEX IF NOT EXISTS idx_clean_hash ON SubtitleHashes(CleanHash);
-                    CREATE INDEX IF NOT EXISTS idx_original_hash ON SubtitleHashes(OriginalHash);";
+                    CREATE INDEX IF NOT EXISTS idx_original_hash ON SubtitleHashes(OriginalHash);
+                    CREATE INDEX IF NOT EXISTS idx_hash_composite ON SubtitleHashes(OriginalHash, NoTimecodesHash, NoHtmlHash, CleanHash);";
                 hashIndexCommand.ExecuteNonQuery();
             }
         }
@@ -339,9 +346,48 @@ public class FuzzyHashService : IDisposable
         var noHtmlHash = GenerateFuzzyHash(normalized.NoHtml);
         var cleanHash = GenerateFuzzyHash(normalized.NoHtmlAndTimecodes);
 
+        // Check if this exact hash combination already exists
+        using var checkCommand = connection.CreateCommand();
+        checkCommand.CommandText = @"
+            SELECT COUNT(*) FROM SubtitleHashes 
+            WHERE OriginalHash = @originalHash 
+              AND NoTimecodesHash = @noTimecodesHash 
+              AND NoHtmlHash = @noHtmlHash 
+              AND CleanHash = @cleanHash;";
+        checkCommand.Parameters.AddWithValue("@originalHash", originalHash);
+        checkCommand.Parameters.AddWithValue("@noTimecodesHash", noTimecodesHash);
+        checkCommand.Parameters.AddWithValue("@noHtmlHash", noHtmlHash);
+        checkCommand.Parameters.AddWithValue("@cleanHash", cleanHash);
+
+        var existingCount = Convert.ToInt32(await checkCommand.ExecuteScalarAsync());
+        if (existingCount > 0)
+        {
+            _logger.LogWarning("Subtitle with identical hash already exists for {Series} S{Season}E{Episode}, skipping true duplicate",
+                subtitle.Series, subtitle.Season, subtitle.Episode);
+            return;
+        }
+
+        // Check if this Series/Season/Episode already exists (but with different hash)
+        using var episodeCheckCommand = connection.CreateCommand();
+        episodeCheckCommand.CommandText = @"
+            SELECT COUNT(*) FROM SubtitleHashes 
+            WHERE LOWER(Series) = LOWER(@series) 
+              AND Season = @season 
+              AND Episode = @episode;";
+        episodeCheckCommand.Parameters.AddWithValue("@series", subtitle.Series);
+        episodeCheckCommand.Parameters.AddWithValue("@season", subtitle.Season);
+        episodeCheckCommand.Parameters.AddWithValue("@episode", subtitle.Episode);
+
+        var episodeCount = Convert.ToInt32(await episodeCheckCommand.ExecuteScalarAsync());
+        if (episodeCount > 0)
+        {
+            _logger.LogInformation("Adding variant subtitle for {Series} S{Season}E{Episode} (different hash from existing entry)",
+                subtitle.Series, subtitle.Season, subtitle.Episode);
+        }
+
         using var command = connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO SubtitleHashes (Series, Season, Episode, OriginalHash, NoTimecodesHash, NoHtmlHash, CleanHash, 
+            INSERT INTO SubtitleHashes (Series, Season, Episode, OriginalHash, NoTimecodesHash, NoHtmlHash, CleanHash,
                                       OriginalText, NoTimecodesText, NoHtmlText, CleanText, EpisodeName)
             VALUES (@series, @season, @episode, @originalHash, @noTimecodesHash, @noHtmlHash, @cleanHash,
                     @original, @noTimecodes, @noHtml, @clean, @episodeName);";
@@ -367,8 +413,9 @@ public class FuzzyHashService : IDisposable
         }
         catch (SqliteException ex) when (ex.Message.Contains("UNIQUE constraint failed"))
         {
-            _logger.LogWarning("Episode {Series} S{Season}E{Episode} already exists in database, skipping duplicate entry",
-                subtitle.Series, subtitle.Season, subtitle.Episode);
+            // This shouldn't happen anymore with our hash check above, but keep as safety net
+            _logger.LogWarning("Unexpected duplicate key error for {Series} S{Season}E{Episode}: {Error}",
+                subtitle.Series, subtitle.Season, subtitle.Episode, ex.Message);
         }
     }
 
@@ -406,6 +453,13 @@ public class FuzzyHashService : IDisposable
             NoHtmlHash = GenerateFuzzyHash(inputNormalized.NoHtml),
             CleanHash = GenerateFuzzyHash(inputNormalized.NoHtmlAndTimecodes)
         };
+
+        // Log computed hashes for troubleshooting
+        _logger.LogInformation("Computed CTPH hashes for input subtitle - OriginalHash: {OriginalHash}, NoTimecodesHash: {NoTimecodesHash}, NoHtmlHash: {NoHtmlHash}, CleanHash: {CleanHash}",
+            inputHashes.OriginalHash,
+            inputHashes.NoTimecodesHash,
+            inputHashes.NoHtmlHash,
+            inputHashes.CleanHash);
 
         // Log search filter parameters
         if (!string.IsNullOrWhiteSpace(seriesFilter) || seasonFilter.HasValue)
@@ -506,16 +560,16 @@ public class FuzzyHashService : IDisposable
             // Fast hash-based comparison - try the most important combinations first
             var confidence = 0.0;
 
-            // Primary comparison: clean vs clean (most accurate for subtitle matching)
+            // PRIMARY comparison: Clean vs Clean (most aggressive normalization with lowercase + collapsed whitespace)
             if (!string.IsNullOrEmpty(storedHashes.CleanHash))
             {
                 confidence = Math.Max(confidence, CompareFuzzyHashes(inputHashes.CleanHash, storedHashes.CleanHash));
 
-                // Early check: if clean comparison is already above threshold, we have a good match
+                // Early check: if Clean comparison is already above threshold, we have a good match
                 if (confidence >= threshold)
                 {
                     results.Add((subtitle, confidence));
-                    _logger.LogDebug("Fast match found: {Series} S{Season}E{Episode} with confidence {Confidence:P2} (clean hash)",
+                    _logger.LogDebug("Fast match found: {Series} S{Season}E{Episode} with confidence {Confidence:P2} (Clean hash)",
                         subtitle.Series, subtitle.Season, subtitle.Episode, confidence);
 
                     // Early termination for excellent matches
@@ -668,6 +722,13 @@ public class FuzzyHashService : IDisposable
             CleanHash = GenerateFuzzyHash(inputNormalized.NoHtmlAndTimecodes)
         };
 
+        // Log computed hashes for text fallback search
+        _logger.LogInformation("Computed CTPH hashes for text fallback - OriginalHash: {OriginalHash}, NoTimecodesHash: {NoTimecodesHash}, NoHtmlHash: {NoHtmlHash}, CleanHash: {CleanHash}",
+            inputHashes.OriginalHash,
+            inputHashes.NoTimecodesHash,
+            inputHashes.NoHtmlHash,
+            inputHashes.CleanHash);
+
         using var command = connection.CreateCommand();
         command.CommandText = @"
             SELECT Series, Season, Episode, OriginalText, OriginalHash, NoTimecodesHash, NoHtmlHash, CleanHash, EpisodeName
@@ -685,7 +746,7 @@ public class FuzzyHashService : IDisposable
                 Season = reader.GetString(1),
                 Episode = reader.GetString(2),
                 SubtitleText = reader.GetString(3), // Use original text for the result
-                EpisodeName = reader.IsDBNull(8) ? null : reader.GetString(8)
+                EpisodeName = reader.IsDBNull(9) ? null : reader.GetString(9)
             };
 
             // Get stored hashes
@@ -697,7 +758,7 @@ public class FuzzyHashService : IDisposable
                 CleanHash = reader.IsDBNull(7) ? "" : reader.GetString(7)
             };
 
-            // Try all hash combinations and find the best
+            // Try all hash combinations and find the best, prioritizing Clean for most aggressive matching
             var confidence = 0.0;
 
             if (!string.IsNullOrEmpty(storedHashes.CleanHash))
@@ -796,7 +857,15 @@ public class FuzzyHashService : IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to compare CTPH hashes");
+            // Extract block sizes from hashes (format: blocksize:hash:hash)
+            var blockSize1 = hash1.Split(':').FirstOrDefault() ?? "unknown";
+            var blockSize2 = hash2.Split(':').FirstOrDefault() ?? "unknown";
+
+            _logger.LogDebug(ex,
+                "Failed to compare CTPH hashes (expected when comparing hashes with different block sizes or normalization levels). " +
+                "BlockSize1: {BlockSize1}, BlockSize2: {BlockSize2}. " +
+                "This typically occurs when comparing CleanHash (collapsed whitespace) with NoTimecodesHash/NoHtmlHash variants.",
+                blockSize1, blockSize2);
             return 0.0;
         }
     }

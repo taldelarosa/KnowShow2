@@ -1,14 +1,17 @@
 # Implementation Plan: Fuzzy Hashing Plus Configuration System
 
+
 **Branch**: `008-fuzzy-hashing-plus` | **Date**: September 13, 2025 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/mnt/c/Users/Ragma/KnowShow_Specd/specs/008-fuzzy-hashing-plus/spec.md`
 
 ## Execution Flow (/plan command scope)
 
+
 ```
 
 1. Load feature spec from Input path
    → If not found: ERROR "No feature spec at {path}"
+
 
 
 
@@ -26,10 +29,12 @@
 
 
 
+
    → Set Structure Decision based on project type
 
 3. Evaluate Constitution Check section below
    → If violations exist: Document in Complexity Tracking
+
 
 
 
@@ -50,9 +55,11 @@
 
 
 
+
 5. Execute Phase 1 → contracts, data-model.md, quickstart.md, agent-specific template file (e.g., `CLAUDE.md` for Claude Code, `.github/copilot-instructions.md` for GitHub Copilot, or `GEMINI.md` for Gemini CLI).
 6. Re-evaluate Constitution Check section
    → If new violations: Refactor design, return to Phase 1
+
 
 
 
@@ -66,6 +73,7 @@
 8. STOP - Ready for /tasks command
 ```
 
+
 **IMPORTANT**: The /plan command STOPS at step 7. Phases 2-4 are executed by other commands:
 
 - Phase 2: /tasks command creates tasks.md
@@ -73,9 +81,11 @@
 
 ## Summary
 
+
 The feature implements a comprehensive configuration system for episode identification with fuzzy hashing capabilities and bulk processing. The system will read JSON configuration files for match thresholds, name confidence thresholds, and filename templates while replacing SHA1/MD5 hashing with Context-triggered piecewise hashing (CTPH). Additionally, it will support both individual video file processing and bulk directory processing with recursive discovery.
 
 ## Technical Context
+
 
 **Language/Version**: C# .NET 8.0
 **Primary Dependencies**: Microsoft.Data.Sqlite, System.CommandLine, FuzzySharp, ssdeep.NET, FluentValidation, System.IO.Abstractions
@@ -88,6 +98,7 @@ The feature implements a comprehensive configuration system for episode identifi
 **Scale/Scope**: Support for large media libraries, bulk processing operations
 
 ## Constitution Check
+
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
@@ -132,7 +143,9 @@ The feature implements a comprehensive configuration system for episode identifi
 
 ## Project Structure
 
+
 ### Documentation (this feature)
+
 
 ```
 specs/008-fuzzy-hashing-plus/
@@ -144,11 +157,14 @@ specs/008-fuzzy-hashing-plus/
 └── tasks.md             # Phase 2 output (/tasks command - NOT created by /plan)
 ```
 
+
 ### Source Code (repository root)
+
 
 ```
 
 # Single project structure (current architecture)
+
 
 
 
@@ -176,9 +192,11 @@ tests/
 └── unit/
 ```
 
+
 **Structure Decision**: Option 1 (Single project) - matches existing EpisodeIdentifier.Core structure
 
 ## Phase 0: Outline & Research
+
 
 1. **Extract unknowns from Technical Context** above:
    - For each NEEDS CLARIFICATION → research task
@@ -202,6 +220,7 @@ tests/
 **Output**: research.md with all NEEDS CLARIFICATION resolved
 
 ## Phase 1: Design & Contracts
+
 
 *Prerequisites: research.md complete*
 
@@ -236,6 +255,7 @@ tests/
 
 ## Phase 2: Task Planning Approach
 
+
 *This section describes what the /tasks command will do - DO NOT execute during /plan*
 
 **Task Generation Strategy**:
@@ -267,6 +287,7 @@ Following TDD principles and dependency order:
 
 ## Phase 3+: Future Implementation
 
+
 *These phases are beyond the scope of the /plan command*
 
 **Phase 3**: Task execution (/tasks command creates tasks.md)
@@ -274,6 +295,7 @@ Following TDD principles and dependency order:
 **Phase 5**: Validation (run tests, execute quickstart.md, performance validation)
 
 ## Complexity Tracking
+
 
 *Fill ONLY if Constitution Check has violations that must be justified*
 
@@ -283,6 +305,7 @@ Following TDD principles and dependency order:
 | [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
 
 ## Complexity Tracking
+
 
 *Fill ONLY if Constitution Check has violations that must be justified*
 
@@ -295,6 +318,7 @@ No constitutional violations identified. The design follows all principles:
 - Proper observability and versioning
 
 ## Progress Tracking
+
 
 *This checklist is updated during execution flow*
 

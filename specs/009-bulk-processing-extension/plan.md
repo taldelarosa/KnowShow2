@@ -1,29 +1,45 @@
 # Implementation Plan: Bulk Processing Extension for Episode Identification
 
+
 **Branch**: `009-bulk-processing-extension` | **Date**: September 13, 2025 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/mnt/c/Users/Ragma/KnowShow_Specd/specs/009-bulk-processing-extension/spec.md`
 
 ## Execution Flow (/plan command scope)
 
+
 ```
+
 1. Load feature spec from Input path
    → Feature loaded: Bulk processing extension for video file identification
+
+
 2. Fill Technical Context (scan for NEEDS CLARIFICATION)
    → Project Type: single (extending existing console application)
+
    → Structure Decision: Extend existing EpisodeIdentifier.Core structure
+
 3. Evaluate Constitution Check section below
    → No violations: extends existing architecture with library-based services
+
    → Update Progress Tracking: Initial Constitution Check - PASS
+
 4. Execute Phase 0 → research.md
    → Research bulk processing patterns, file discovery, progress reporting
+
+
 5. Execute Phase 1 → contracts, data-model.md, quickstart.md, .github/copilot-instructions.md
    → Design service contracts for bulk operations
+
+
 6. Re-evaluate Constitution Check section
    → Post-design check: maintains constitutional compliance
+
    → Update Progress Tracking: Post-Design Constitution Check - PASS
+
 7. Plan Phase 2 → Describe task generation approach (DO NOT create tasks.md)
 8. STOP - Ready for /tasks command
 ```
+
 
 **IMPORTANT**: The /plan command STOPS at step 7. Phases 2-4 are executed by other commands:
 
@@ -32,21 +48,24 @@
 
 ## Summary
 
+
 The feature extends the existing episode identification system with comprehensive bulk processing capabilities. Users can process individual video files or entire directories with recursive traversal, progress feedback, error handling, and performance optimization. The system maintains memory efficiency during large-scale operations and provides detailed reporting on processing outcomes.
 
 ## Technical Context
 
-**Language/Version**: C# .NET 8.0 (extending existing project)  
-**Primary Dependencies**: System.IO.Abstractions, Microsoft.Extensions.Logging, System.CommandLine (existing stack)  
-**Storage**: Existing SQLite databases (bones.db, production_hashes.db)  
-**Testing**: xUnit (standard .NET testing framework)  
+
+**Language/Version**: C# .NET 8.0 (extending existing project)
+**Primary Dependencies**: System.IO.Abstractions, Microsoft.Extensions.Logging, System.CommandLine (existing stack)
+**Storage**: Existing SQLite databases (bones.db, production_hashes.db)
+**Testing**: xUnit (standard .NET testing framework)
 **Target Platform**: Cross-platform (.NET 8.0)
-**Project Type**: single - extending existing console application  
-**Performance Goals**: Handle thousands of video files efficiently, <2GB memory usage for large directories  
-**Constraints**: Memory-efficient streaming processing, graceful error handling, progress reporting  
+**Project Type**: single - extending existing console application
+**Performance Goals**: Handle thousands of video files efficiently, <2GB memory usage for large directories
+**Constraints**: Memory-efficient streaming processing, graceful error handling, progress reporting
 **Scale/Scope**: Support for media libraries with 10,000+ files, recursive directory processing
 
 ## Constitution Check
+
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
@@ -92,7 +111,9 @@ The feature extends the existing episode identification system with comprehensiv
 
 ## Project Structure
 
+
 ### Documentation (this feature)
+
 
 ```
 specs/[###-feature]/
@@ -104,10 +125,14 @@ specs/[###-feature]/
 └── tasks.md             # Phase 2 output (/tasks command - NOT created by /plan)
 ```
 
+
 ### Source Code (repository root)
 
+
 ```
+
 # Option 1: Single project (DEFAULT)
+
 src/
 ├── models/
 ├── services/
@@ -120,6 +145,7 @@ tests/
 └── unit/
 
 # Option 2: Web application (when "frontend" + "backend" detected)
+
 backend/
 ├── src/
 │   ├── models/
@@ -135,6 +161,7 @@ frontend/
 └── tests/
 
 # Option 3: Mobile + API (when "iOS/Android" detected)
+
 api/
 └── [same as backend above]
 
@@ -142,9 +169,11 @@ ios/ or android/
 └── [platform-specific structure]
 ```
 
+
 **Structure Decision**: [DEFAULT to Option 1 unless Technical Context indicates web/mobile app]
 
 ## Phase 0: Outline & Research
+
 
 1. **Extract unknowns from Technical Context** above:
    - For each NEEDS CLARIFICATION → research task
@@ -168,6 +197,7 @@ ios/ or android/
 **Output**: research.md with all NEEDS CLARIFICATION resolved
 
 ## Phase 1: Design & Contracts
+
 
 *Prerequisites: research.md complete*
 
@@ -202,6 +232,7 @@ ios/ or android/
 
 ## Phase 2: Task Planning Approach
 
+
 *This section describes what the /tasks command will do - DO NOT execute during /plan*
 
 **Task Generation Strategy**:
@@ -225,13 +256,15 @@ ios/ or android/
 
 ## Phase 3+: Future Implementation
 
+
 *These phases are beyond the scope of the /plan command*
 
-**Phase 3**: Task execution (/tasks command creates tasks.md)  
-**Phase 4**: Implementation (execute tasks.md following constitutional principles)  
+**Phase 3**: Task execution (/tasks command creates tasks.md)
+**Phase 4**: Implementation (execute tasks.md following constitutional principles)
 **Phase 5**: Validation (run tests, execute quickstart.md, performance validation)
 
 ## Complexity Tracking
+
 
 *Fill ONLY if Constitution Check has violations that must be justified*
 
@@ -241,6 +274,7 @@ ios/ or android/
 | [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
 
 ## Progress Tracking
+
 
 *This checklist is updated during execution flow*
 

@@ -1,12 +1,16 @@
 # Data Model: File Renaming Recommendations
 
+
 ## Overview
+
 
 Data model extensions for the file renaming recommendations feature, including enhanced response models, database schema changes, and new service models.
 
 ## Enhanced Models
 
+
 ### IdentificationResult Extension
+
 
 ```csharp
 public class IdentificationResult
@@ -33,9 +37,12 @@ public class IdentificationResult
 }
 ```
 
+
 ### New Service Models
 
+
 #### FilenameGenerationRequest
+
 
 ```csharp
 public class FilenameGenerationRequest
@@ -49,7 +56,9 @@ public class FilenameGenerationRequest
 }
 ```
 
+
 #### FilenameGenerationResult
+
 
 ```csharp
 public class FilenameGenerationResult
@@ -63,7 +72,9 @@ public class FilenameGenerationResult
 }
 ```
 
+
 #### FileRenameRequest
+
 
 ```csharp
 public class FileRenameRequest
@@ -74,7 +85,9 @@ public class FileRenameRequest
 }
 ```
 
+
 #### FileRenameResult
+
 
 ```csharp
 public class FileRenameResult
@@ -96,9 +109,12 @@ public enum FileRenameError
 }
 ```
 
+
 ## Database Schema Changes
 
+
 ### SubtitleHashes Table Extension
+
 
 ```sql
 -- Migration: Add EpisodeName column
@@ -119,7 +135,9 @@ CREATE TABLE SubtitleHashes (
 );
 ```
 
+
 ### Database Migration Strategy
+
 
 ```csharp
 public class DatabaseMigration_007
@@ -144,9 +162,12 @@ public class DatabaseMigration_007
 }
 ```
 
+
 ## Entity Relationships
 
+
 ### Core Entities
+
 
 - **Video File**: Input file requiring episode identification
 - **Episode Identification**: Process that produces confidence score and metadata
@@ -156,6 +177,7 @@ public class DatabaseMigration_007
 
 ### Data Flow
 
+
 ```
 Video File
     → Episode Identification (with confidence)
@@ -164,9 +186,12 @@ Video File
     → [Rename Flag?] → File Rename Operation
 ```
 
+
 ### Validation Rules
 
+
 #### Filename Generation Rules
+
 
 - Series name: Required, max 100 characters after sanitization
 - Season: Required, format S## (zero-padded)
@@ -177,11 +202,13 @@ Video File
 
 #### High Confidence Criteria
 
+
 - MatchConfidence >= 0.9 (90% confidence threshold)
 - No error conditions present
 - Valid series, season, episode metadata available
 
 #### Windows Compatibility Rules
+
 
 - Replace characters: `< > : " | ? * \` with single space
 - Trim multiple consecutive spaces to single space
@@ -190,7 +217,9 @@ Video File
 
 ## Service Interfaces
 
+
 ### IFilenameService
+
 
 ```csharp
 public interface IFilenameService
@@ -202,7 +231,9 @@ public interface IFilenameService
 }
 ```
 
+
 ### IFileRenameService
+
 
 ```csharp
 public interface IFileRenameService
@@ -213,7 +244,9 @@ public interface IFileRenameService
 }
 ```
 
+
 ### IDatabaseMigrationService
+
 
 ```csharp
 public interface IDatabaseMigrationService
@@ -224,9 +257,12 @@ public interface IDatabaseMigrationService
 }
 ```
 
+
 ## State Transitions
 
+
 ### Filename Generation States
+
 
 1. **Input Validation**: Validate required fields
 2. **Confidence Check**: Verify ≥90% confidence
@@ -237,6 +273,7 @@ public interface IDatabaseMigrationService
 
 ### File Rename States
 
+
 1. **Pre-flight Check**: File exists, writable
 2. **Target Validation**: Target path available
 3. **Rename Operation**: Atomic file move
@@ -245,7 +282,9 @@ public interface IDatabaseMigrationService
 
 ## Configuration Values
 
+
 ### Default Settings
+
 
 ```csharp
 public static class FilenameDefaults
@@ -260,9 +299,12 @@ public static class FilenameDefaults
 }
 ```
 
+
 ## Error Handling Patterns
 
+
 ### Validation Errors
+
 
 - Invalid series/season/episode format
 - Filename too long after sanitization
@@ -270,12 +312,14 @@ public static class FilenameDefaults
 
 ### Runtime Errors
 
+
 - File not found during rename
 - Permission denied for file operations
 - Target file already exists
 - Disk space insufficient
 
 ### Recovery Strategies
+
 
 - Graceful degradation: Skip rename on error, still return suggestion
 - Detailed error messages for debugging

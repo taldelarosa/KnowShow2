@@ -46,7 +46,7 @@ public class SubtitleNormalizationService
     }
 
     /// <summary>
-    /// Removes SRT timecode lines (e.g., "00:01:23,456 --> 00:01:25,789")
+    /// Removes SRT timecode lines (e.g., "00:01:23,456 --> 00:01:25,789") and converts to lowercase
     /// </summary>
     public string RemoveTimecodes(string subtitleText)
     {
@@ -81,11 +81,12 @@ public class SubtitleNormalizationService
         var result = string.Join('\n', filteredLines);
         result = Regex.Replace(result, @"\n{3,}", "\n\n"); // Replace 3+ newlines with 2
 
-        return result.Trim();
+        // Convert to lowercase for case-insensitive comparison
+        return result.Trim().ToLowerInvariant();
     }
 
     /// <summary>
-    /// Removes HTML/XML tags from subtitle text (e.g., &lt;i&gt;, &lt;b&gt;, &lt;font&gt;, etc.)
+    /// Removes HTML/XML tags from subtitle text (e.g., &lt;i&gt;, &lt;b&gt;, &lt;font&gt;, etc.) and converts to lowercase
     /// </summary>
     public string RemoveHtml(string subtitleText)
     {
@@ -106,19 +107,27 @@ public class SubtitleNormalizationService
         // Clean up any double spaces that might have been created
         noTags = Regex.Replace(noTags, @"\s{2,}", " ");
 
-        return noTags.Trim();
+        // Convert to lowercase for case-insensitive comparison
+        return noTags.Trim().ToLowerInvariant();
     }
 
     /// <summary>
-    /// Removes both HTML tags and timecodes for the cleanest comparison text
+    /// Removes both HTML tags and timecodes, converts to lowercase, and collapses all whitespace
+    /// for the most aggressive comparison text
     /// </summary>
     public string RemoveHtmlAndTimecodes(string subtitleText)
     {
-        // Apply both transformations
+        if (string.IsNullOrWhiteSpace(subtitleText))
+            return string.Empty;
+
+        // Apply both transformations (both already lowercase)
         var noTimecodes = RemoveTimecodes(subtitleText);
         var clean = RemoveHtml(noTimecodes);
 
-        return clean;
+        // Replace all newlines and multiple whitespace with single space
+        clean = Regex.Replace(clean, @"\s+", " ");
+
+        return clean.Trim();
     }
 }
 

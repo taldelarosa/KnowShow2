@@ -1,9 +1,11 @@
 # Implementation Plan: Bulk Processing Extension for Episode Identification
 
+
 **Branch**: `009-bulk-processing-extension` | **Date**: September 13, 2025 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/mnt/c/Users/Ragma/KnowShow_Specd/specs/009-bulk-processing-extension/spec.md`
 
 ## Execution Flow (/plan command scope)
+
 
 ```
 
@@ -12,14 +14,17 @@
 
 
 
+
 2. Fill Technical Context (scan for NEEDS CLARIFICATION)
    → Project Type: single (extending existing console application)
+
 
 
    → Structure Decision: Extend existing EpisodeIdentifier.Core structure
 
 3. Evaluate Constitution Check section below
    → No violations: extends existing architecture with library-based services
+
 
 
    → Update Progress Tracking: Initial Constitution Check - PASS
@@ -29,13 +34,16 @@
 
 
 
+
 5. Execute Phase 1 → contracts, data-model.md, quickstart.md, .github/copilot-instructions.md
    → Design service contracts for bulk operations
 
 
 
+
 6. Re-evaluate Constitution Check section
    → Post-design check: maintains constitutional compliance
+
 
 
    → Update Progress Tracking: Post-Design Constitution Check - PASS
@@ -44,6 +52,7 @@
 8. STOP - Ready for /tasks command
 ```
 
+
 **IMPORTANT**: The /plan command STOPS at step 7. Phases 2-4 are executed by other commands:
 
 - Phase 2: /tasks command creates tasks.md
@@ -51,9 +60,11 @@
 
 ## Summary
 
+
 The feature extends the existing episode identification system with comprehensive bulk processing capabilities. Users can process individual video files or entire directories with recursive traversal, progress feedback, error handling, and performance optimization. The system maintains memory efficiency during large-scale operations and provides detailed reporting on processing outcomes.
 
 ## Technical Context
+
 
 **Language/Version**: C# .NET 8.0 (extending existing project)
 **Primary Dependencies**: System.IO.Abstractions, Microsoft.Extensions.Logging, System.CommandLine (existing stack)
@@ -66,6 +77,7 @@ The feature extends the existing episode identification system with comprehensiv
 **Scale/Scope**: Support for media libraries with 10,000+ files, recursive directory processing
 
 ## Constitution Check
+
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
@@ -111,7 +123,9 @@ The feature extends the existing episode identification system with comprehensiv
 
 ## Project Structure
 
+
 ### Documentation (this feature)
+
 
 ```
 specs/[###-feature]/
@@ -123,11 +137,14 @@ specs/[###-feature]/
 └── tasks.md             # Phase 2 output (/tasks command - NOT created by /plan)
 ```
 
+
 ### Source Code (repository root)
+
 
 ```
 
 # Option 1: Single project (DEFAULT)
+
 
 
 src/
@@ -142,6 +159,7 @@ tests/
 └── unit/
 
 # Option 2: Web application (when "frontend" + "backend" detected)
+
 
 
 backend/
@@ -161,6 +179,7 @@ frontend/
 # Option 3: Mobile + API (when "iOS/Android" detected)
 
 
+
 api/
 └── [same as backend above]
 
@@ -168,9 +187,11 @@ ios/ or android/
 └── [platform-specific structure]
 ```
 
+
 **Structure Decision**: [DEFAULT to Option 1 unless Technical Context indicates web/mobile app]
 
 ## Phase 0: Outline & Research
+
 
 1. **Extract unknowns from Technical Context** above:
    - For each NEEDS CLARIFICATION → research task
@@ -194,6 +215,7 @@ ios/ or android/
 **Output**: research.md with all NEEDS CLARIFICATION resolved
 
 ## Phase 1: Design & Contracts
+
 
 *Prerequisites: research.md complete*
 
@@ -228,6 +250,7 @@ ios/ or android/
 
 ## Phase 2: Task Planning Approach
 
+
 *This section describes what the /tasks command will do - DO NOT execute during /plan*
 
 **Task Generation Strategy**:
@@ -251,6 +274,7 @@ ios/ or android/
 
 ## Phase 3+: Future Implementation
 
+
 *These phases are beyond the scope of the /plan command*
 
 **Phase 3**: Task execution (/tasks command creates tasks.md)
@@ -258,6 +282,7 @@ ios/ or android/
 **Phase 5**: Validation (run tests, execute quickstart.md, performance validation)
 
 ## Complexity Tracking
+
 
 *Fill ONLY if Constitution Check has violations that must be justified*
 
@@ -267,6 +292,7 @@ ios/ or android/
 | [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
 
 ## Progress Tracking
+
 
 *This checklist is updated during execution flow*
 

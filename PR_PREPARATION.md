@@ -1,30 +1,36 @@
 # PR Preparation: Feature 010-async-processing-where
 
+
 ## Branch Status: Ready for PR ✅
 
-**Branch**: `010-async-processing-where`  
-**Target**: `main`  
+
+**Branch**: `010-async-processing-where`
+**Target**: `main`
 **Status**: Performance testing complete, ready for review
 
 ---
 
 ## Summary
 
+
 This PR implements configurable concurrent processing for episode identification with the `maxConcurrency` configuration option. Users can now control the number of simultaneous video file processing operations via `episodeidentifier.config.json`.
 
 ### Key Features
 
-✅ **Configurable Concurrency** - Set `maxConcurrency` in config (1-100, default: 1)  
-✅ **Hot-Reload Support** - Configuration changes apply without restart  
-✅ **Performance Tested** - Up to 6.63x speedup with concurrency level 8  
-✅ **Backward Compatible** - Default behavior unchanged (sequential processing)  
+
+✅ **Configurable Concurrency** - Set `maxConcurrency` in config (1-100, default: 1)
+✅ **Hot-Reload Support** - Configuration changes apply without restart
+✅ **Performance Tested** - Up to 6.63x speedup with concurrency level 8
+✅ **Backward Compatible** - Default behavior unchanged (sequential processing)
 ✅ **All Tests Passing** - 9/9 performance tests green
 
 ---
 
 ## Performance Results
 
+
 ### Throughput Improvements
+
 
 | Concurrency | Time (20 files) | Throughput | Speedup |
 |-------------|-----------------|------------|---------|
@@ -35,6 +41,7 @@ This PR implements configurable concurrent processing for episode identification
 
 ### Real-World Impact
 
+
 For a batch of 1,000 video files:
 
 - **Sequential** (concurrency=1): ~84 seconds
@@ -44,6 +51,7 @@ For a batch of 1,000 video files:
 ---
 
 ## Commits on This Branch
+
 
 ```
 f9dbc24 feat(performance): Add comprehensive async concurrency performance tests
@@ -58,11 +66,14 @@ c6fefe7 010: config: clamp MaxConcurrency to [1,100] on initial loads...
 c2cfac9 010: async-processing-where: finalize MaxConcurrency pass-through semantics...
 ```
 
+
 ---
 
 ## Files Changed
 
+
 ### New Files
+
 
 - ✅ `tests/performance/AsyncConcurrencyPerformanceTests.cs` - Comprehensive performance test suite
 - ✅ `scripts/run_performance_tests.sh` - Automated test runner
@@ -72,6 +83,7 @@ c2cfac9 010: async-processing-where: finalize MaxConcurrency pass-through semant
 
 ### Modified Files
 
+
 - `src/EpisodeIdentifier.Core/Models/BulkProcessingOptions.cs` - MaxConcurrency property
 - `src/EpisodeIdentifier.Core/Models/Configuration/Configuration.cs` - Config schema
 - `src/EpisodeIdentifier.Core/Services/ConfigurationService.cs` - Hot-reload support
@@ -79,6 +91,7 @@ c2cfac9 010: async-processing-where: finalize MaxConcurrency pass-through semant
 - Various test files - Compilation fixes and updates
 
 ### Cleanup (Uncommitted)
+
 
 - `src/EpisodeIdentifier.Core/Interfaces/ISubtitleMatcher.cs` - Deleted (refactored to IEpisodeIdentificationService)
 - `src/EpisodeIdentifier.Core/Services/SubtitleMatcher.cs` - Deleted (refactored)
@@ -89,7 +102,9 @@ c2cfac9 010: async-processing-where: finalize MaxConcurrency pass-through semant
 
 ## Pre-PR Checklist
 
+
 ### Code Quality
+
 
 - [x] All tests passing (9/9 performance tests green)
 - [x] Code follows project conventions
@@ -100,6 +115,7 @@ c2cfac9 010: async-processing-where: finalize MaxConcurrency pass-through semant
 
 ### Documentation
 
+
 - [x] Performance report generated
 - [x] Configuration examples provided
 - [x] Test documentation complete
@@ -108,6 +124,7 @@ c2cfac9 010: async-processing-where: finalize MaxConcurrency pass-through semant
 
 ### Testing
 
+
 - [x] Unit tests passing
 - [x] Integration tests passing
 - [x] Performance tests complete
@@ -115,6 +132,7 @@ c2cfac9 010: async-processing-where: finalize MaxConcurrency pass-through semant
 - [ ] **Optional**: Test on different hardware configurations
 
 ### Repository
+
 
 - [x] Branch up to date with latest commits
 - [x] Performance test commit added
@@ -126,15 +144,20 @@ c2cfac9 010: async-processing-where: finalize MaxConcurrency pass-through semant
 
 ## Remaining Actions
 
+
 ### Option A: Commit Refactoring Changes (Recommended)
+
 
 These changes replace `SubtitleMatcher` with `IEpisodeIdentificationService`:
 
 ```bash
+
 # Review the changes
+
 git diff src/EpisodeIdentifier.Core/Services/SubtitleWorkflowCoordinator.cs
 
 # If good, commit them
+
 git add src/EpisodeIdentifier.Core/
 git add tests/performance/
 git commit -m "refactor: Replace SubtitleMatcher with IEpisodeIdentificationService
@@ -149,35 +172,47 @@ This refactoring aligns with the async processing architecture and
 removes duplicate/obsolete code."
 ```
 
+
 ### Option B: Discard Refactoring Changes
+
 
 If these changes should be in a separate PR:
 
 ```bash
+
 # Discard the refactoring changes
+
 git checkout src/EpisodeIdentifier.Core/Services/SubtitleWorkflowCoordinator.cs
 git checkout src/EpisodeIdentifier.Core/Extensions/ServiceCollectionExtensions.cs
 git checkout src/EpisodeIdentifier.Core/Models/Configuration/Configuration.cs
 git checkout src/EpisodeIdentifier.Core/Program.cs
 
 # Clean up deleted files
+
 git checkout tests/performance/ConcurrencyPerformanceTests.cs tests/performance/FilenamePerformanceTests.cs
 ```
 
+
 ### Clean Up Untracked Files
 
+
 ```bash
+
 # Remove or commit these files
+
 rm test_output.txt
 rm -rf performance_results/  # Or git add if you want to keep test outputs
 
 # Decide on CTPH_MIGRATION_SUMMARY.md
+
 git add CTPH_MIGRATION_SUMMARY.md  # Or delete it
 ```
+
 
 ---
 
 ## Recommended Next Steps
+
 
 1. **Choose Option A** (commit refactoring) - These changes appear to be improvements
 2. **Clean up untracked files**
@@ -186,20 +221,26 @@ git add CTPH_MIGRATION_SUMMARY.md  # Or delete it
 
 ### Suggested PR Title
 
+
 ```
 feat: Add configurable concurrent processing (maxConcurrency)
 ```
 
+
 ### Suggested PR Description
 
+
 ```markdown
+
 ## Summary
 
-Implements configurable concurrent processing for episode identification via the 
-`maxConcurrency` configuration option. Performance testing shows up to 6.63x speedup 
+
+Implements configurable concurrent processing for episode identification via the
+`maxConcurrency` configuration option. Performance testing shows up to 6.63x speedup
 with higher concurrency levels.
 
 ## Changes
+
 
 - Add `maxConcurrency` property to configuration (range: 1-100, default: 1)
 - Implement hot-reload support for concurrency changes
@@ -209,11 +250,13 @@ with higher concurrency levels.
 
 ## Performance
 
+
 - **Sequential (1)**: 11.87 files/sec (baseline)
 - **Optimized (8)**: 78.74 files/sec (6.6x speedup)
 - **All 9 performance tests passing**
 
 ## Documentation
+
 
 - `ASYNC_PROCESSING_PERFORMANCE_REPORT.md` - Detailed analysis
 - `PERFORMANCE_TEST_SUMMARY.md` - Quick reference
@@ -221,9 +264,11 @@ with higher concurrency levels.
 
 ## Breaking Changes
 
+
 None - default behavior unchanged (sequential processing)
 
 ## Testing
+
 
 - 9/9 new performance tests passing
 - All existing unit/integration tests passing
@@ -231,13 +276,16 @@ None - default behavior unchanged (sequential processing)
 
 ## Related
 
+
 - Feature spec: specs/010-async-processing-where/
 - Issue: #010-async-processing-where
 ```
 
+
 ---
 
 ## Final Status
+
 
 **Ready for PR**: Almost! Just need to commit/discard the refactoring changes.
 

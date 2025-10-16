@@ -1,8 +1,10 @@
 # Episode Identifier for Unraid
 
+
 Complete guide for deploying and using Episode Identifier on Unraid servers.
 
 ## Table of Contents
+
 
 - [Overview](#overview)
 - [Prerequisites](#prerequisites)
@@ -14,6 +16,7 @@ Complete guide for deploying and using Episode Identifier on Unraid servers.
 - [Advanced Configuration](#advanced-configuration)
 
 ## Overview
+
 
 Episode Identifier is a tool that identifies TV episodes from video files using PGS subtitle extraction and OCR. Instead of relying on filenames, it compares actual subtitle content to identify episodes with high accuracy.
 
@@ -27,6 +30,7 @@ Episode Identifier is a tool that identifies TV episodes from video files using 
 
 ## Prerequisites
 
+
 - Unraid 6.9 or later
 - Docker service enabled
 - Video files with PGS subtitles (common in Blu-ray rips)
@@ -35,7 +39,9 @@ Episode Identifier is a tool that identifies TV episodes from video files using 
 
 ## Installation via Unraid Docker UI
 
+
 ### Method 1: Using the Template (Recommended)
+
 
 1. **Add the Template Repository**
    - Open Unraid Web UI
@@ -51,6 +57,7 @@ Episode Identifier is a tool that identifies TV episodes from video files using 
    - Click **Apply**
 
 ### Method 2: Manual Setup
+
 
 1. **Open Docker Tab**
    - Navigate to **Docker** in the Unraid Web UI
@@ -83,23 +90,31 @@ Episode Identifier is a tool that identifies TV episodes from video files using 
 
 ### Method 3: Building from Source
 
+
 If you prefer to build the image yourself:
 
 ```bash
+
 # Clone the repository
+
 cd /mnt/user/appdata
 git clone https://github.com/taldelarosa/KnowShow2.git
 cd KnowShow2
 
 # Build the Docker image
+
 docker build -t episodeidentifier-local:latest .
 
 # Use episodeidentifier-local:latest as the Repository in Unraid Docker UI
+
 ```
+
 
 ## Configuration
 
+
 ### Directory Structure
+
 
 After installation, create this directory structure on your Unraid server:
 
@@ -111,7 +126,9 @@ After installation, create this directory structure on your Unraid server:
     └── production_hashes.db (created automatically)
 ```
 
+
 ### Configuration File
+
 
 The default configuration is created automatically on first run. To customize:
 
@@ -143,9 +160,11 @@ The default configuration is created automatically on first run. To customize:
 }
 ```
 
+
 **Configuration Hot-Reload**: Changes to the configuration file are automatically detected and applied without restarting the container.
 
 ### PUID/PGID Setup
+
 
 **Standard Unraid Setup:**
 
@@ -155,32 +174,48 @@ The default configuration is created automatically on first run. To customize:
 **To verify your user/group IDs:**
 
 ```bash
+
 # SSH into Unraid and run:
+
 id nobody
+
 # Output: uid=99(nobody) gid=100(users) groups=100(users)
+
 ```
+
 
 **Custom User Setup:**
 
 If you use a different user for media files:
 
 ```bash
+
 # Find your user ID
+
 id yourusername
 
 # Use the returned uid/gid values in the container environment variables
+
 ```
 
+
 ## Usage Examples
+
 
 Access the container console from Unraid Docker UI or via SSH:
 
 ```bash
+
 # From Unraid: Click container icon → Console
+
+
 # From SSH: docker exec -it EpisodeIdentifier bash
+
 ```
 
+
 ### Basic Identification
+
 
 **Identify a single video file:**
 
@@ -189,6 +224,7 @@ dotnet /app/EpisodeIdentifier.Core.dll \
   --input /data/videos/unknown_episode.mkv \
   --hash-db /data/database/production_hashes.db
 ```
+
 
 **Output:**
 
@@ -199,7 +235,9 @@ Episode: 5
 Match Score: 92.5%
 ```
 
+
 ### Storing Known Episodes
+
 
 **Store a subtitle hash for future matching:**
 
@@ -212,6 +250,7 @@ dotnet /app/EpisodeIdentifier.Core.dll \
   --hash-db /data/database/production_hashes.db
 ```
 
+
 **Store from a subtitle file directly:**
 
 ```bash
@@ -223,7 +262,9 @@ dotnet /app/EpisodeIdentifier.Core.dll \
   --hash-db /data/database/production_hashes.db
 ```
 
+
 ### Bulk Processing
+
 
 **Process all videos in a directory:**
 
@@ -233,15 +274,23 @@ dotnet /app/EpisodeIdentifier.Core.dll \
   --hash-db /data/database/production_hashes.db
 ```
 
+
 **With custom concurrency:**
 
 Edit the configuration file to adjust `maxConcurrency`, or:
 
 ```bash
+
 # The configuration file controls concurrency
+
+
 # Default: 4 concurrent files
+
+
 # Range: 1-100
+
 ```
+
 
 **Bulk results summary:**
 
@@ -254,7 +303,9 @@ Processing 24 files with concurrency: 4
 Completed: 22/24 identified (91.7%)
 ```
 
+
 ### Auto-Rename Feature
+
 
 **Identify and rename in one command:**
 
@@ -265,6 +316,7 @@ dotnet /app/EpisodeIdentifier.Core.dll \
   --rename \
   --rename-template "MyShow S{season:00}E{episode:00}"
 ```
+
 
 **Result:** `random_name.mkv` → `MyShow S02E05.mkv`
 
@@ -278,11 +330,13 @@ dotnet /app/EpisodeIdentifier.Core.dll \
 
 ### Verification Commands
 
+
 **Check database contents:**
 
 ```bash
 sqlite3 /data/database/production_hashes.db "SELECT season, episode, COUNT(*) FROM subtitle_hashes GROUP BY season, episode ORDER BY season, episode;"
 ```
+
 
 **View configuration:**
 
@@ -290,17 +344,25 @@ sqlite3 /data/database/production_hashes.db "SELECT season, episode, COUNT(*) FR
 cat /data/config/episodeidentifier.config.json
 ```
 
+
 **Check container logs:**
 
 ```bash
+
 # From Unraid Docker UI: Click container icon → Logs
+
+
 # From SSH:
+
 docker logs EpisodeIdentifier --tail 100 -f
 ```
 
+
 ## Integration Patterns
 
+
 ### Integration with Unraid User Scripts
+
 
 Create automated workflows using the **User Scripts** plugin:
 
@@ -317,6 +379,7 @@ Create automated workflows using the **User Scripts** plugin:
 #!/bin/bash
 
 # Process new downloads folder
+
 docker exec EpisodeIdentifier bash -c "
 dotnet /app/EpisodeIdentifier.Core.dll \
   --bulk-identify /data/videos/new_downloads \
@@ -326,13 +389,18 @@ dotnet /app/EpisodeIdentifier.Core.dll \
 "
 
 # Move processed files
+
+
 # Add your logic here to move identified files to proper locations
+
 ```
+
 
 4. **Schedule the Script**
    - Set schedule: Hourly, Daily, or Custom cron expression
 
 ### Post-Processing with Download Clients
+
 
 **Radarr/Sonarr Custom Script**:
 
@@ -342,8 +410,13 @@ Create `/mnt/user/scripts/episode-identifier-post-process.sh`:
 #!/bin/bash
 
 # Radarr/Sonarr passes these environment variables:
+
+
 # sonarr_episodefile_path
+
+
 # radarr_moviefile_path
+
 
 FILE_PATH="${sonarr_episodefile_path:-${radarr_moviefile_path}}"
 
@@ -359,6 +432,7 @@ if [ -n "$FILE_PATH" ]; then
 fi
 ```
 
+
 Make executable: `chmod +x /mnt/user/scripts/episode-identifier-post-process.sh`
 
 **Configure in Sonarr**:
@@ -369,15 +443,18 @@ Make executable: `chmod +x /mnt/user/scripts/episode-identifier-post-process.sh`
 
 ### Integration with rclone
 
+
 Process files as they're uploaded:
 
 ```bash
 #!/bin/bash
 
 # After rclone sync completes
+
 rclone sync remote:media /mnt/user/media/videos
 
 # Process new files
+
 docker exec EpisodeIdentifier bash -c "
 dotnet /app/EpisodeIdentifier.Core.dll \
   --bulk-identify /data/videos/recently_synced \
@@ -385,9 +462,12 @@ dotnet /app/EpisodeIdentifier.Core.dll \
 "
 ```
 
+
 ## Troubleshooting
 
+
 ### Container Won't Start
+
 
 **Check Docker service:**
 
@@ -396,11 +476,13 @@ dotnet /app/EpisodeIdentifier.Core.dll \
 docker ps -a
 ```
 
+
 **View container logs:**
 
 ```bash
 docker logs EpisodeIdentifier
 ```
+
 
 **Common issues:**
 
@@ -415,13 +497,16 @@ chown -R nobody:users /mnt/user/appdata/episodeidentifier
 chmod -R 755 /mnt/user/appdata/episodeidentifier
 ```
 
+
 ### Files Not Processing
+
 
 **Verify video file format:**
 
 ```bash
 docker exec EpisodeIdentifier ffprobe /data/videos/yourfile.mkv
 ```
+
 
 **Check for PGS subtitles:**
 
@@ -430,6 +515,7 @@ docker exec EpisodeIdentifier bash -c "
 mkvmerge -i /data/videos/yourfile.mkv | grep 'HDMV PGS'
 "
 ```
+
 
 **Enable debug logging:**
 
@@ -443,7 +529,9 @@ Edit `/mnt/user/appdata/episodeidentifier/config/episodeidentifier.config.json`:
 }
 ```
 
+
 ### Permission Errors
+
 
 **Symptom:** "Permission denied" when accessing files
 
@@ -452,34 +540,44 @@ Edit `/mnt/user/appdata/episodeidentifier/config/episodeidentifier.config.json`:
 1. Verify PUID/PGID match your Unraid user
 2. Check host directory permissions:
    ```bash
+
    ls -la /mnt/user/media/videos
    ```
+
 3. Update container environment variables if needed
 4. Restart container after changes
 
 ### Database Corruption
+
 
 **Symptom:** SQLite errors in logs
 
 **Solution:**
 
 ```bash
+
 # Backup current database
+
 cp /mnt/user/appdata/episodeidentifier/database/production_hashes.db \
    /mnt/user/appdata/episodeidentifier/database/production_hashes.db.backup
 
 # Check database integrity
+
 sqlite3 /mnt/user/appdata/episodeidentifier/database/production_hashes.db "PRAGMA integrity_check;"
 
 # If corrupted, restore from backup or start fresh:
+
 mv /mnt/user/appdata/episodeidentifier/database/production_hashes.db \
    /mnt/user/appdata/episodeidentifier/database/production_hashes.db.corrupted
 
 # Restart container (new database will be created)
+
 docker restart EpisodeIdentifier
 ```
 
+
 ### OCR/Language Issues
+
 
 **Symptom:** "OCR failed" or incorrect text extraction
 
@@ -491,9 +589,11 @@ Check installed Tesseract languages:
 docker exec EpisodeIdentifier tesseract --list-langs
 ```
 
+
 The container includes English and Japanese by default. For other languages, you may need to customize the Dockerfile.
 
 ### Performance Issues
+
 
 **Symptom:** Slow processing
 
@@ -506,15 +606,18 @@ The container includes English and Japanese by default. For other languages, you
 
 ### No Matches Found
 
+
 **Troubleshooting steps:**
 
 1. **Verify database has known episodes:**
    ```bash
+
    sqlite3 /data/database/production_hashes.db "SELECT COUNT(*) FROM subtitle_hashes;"
    ```
 
 2. **Store known episodes first:**
    ```bash
+
    # Store the correct episode
    dotnet /app/EpisodeIdentifier.Core.dll --store \
      --input /data/videos/known/S01E01.mkv \
@@ -524,6 +627,7 @@ The container includes English and Japanese by default. For other languages, you
 
 3. **Adjust matching thresholds:**
    Edit config and lower thresholds:
+
    ```json
    {
      "thresholds": {
@@ -536,6 +640,7 @@ The container includes English and Japanese by default. For other languages, you
 
 4. **Check subtitle extraction:**
    ```bash
+
    docker exec EpisodeIdentifier bash -c "
    pgsrip /data/videos/yourfile.mkv -o /tmp/test.sup
    "
@@ -543,7 +648,9 @@ The container includes English and Japanese by default. For other languages, you
 
 ## Advanced Configuration
 
+
 ### Multiple Container Instances
+
 
 Run separate instances for different libraries:
 
@@ -562,10 +669,12 @@ Run separate instances for different libraries:
 
 ### Custom Network Configuration
 
+
 For accessing the container from other containers:
 
 1. Create custom Docker network:
    ```bash
+
    docker network create media-network
    ```
 
@@ -574,10 +683,12 @@ For accessing the container from other containers:
 
 3. Access from other containers:
    ```bash
+
    docker exec OtherContainer curl http://episodeidentifier:8080
    ```
 
 ### Resource Limits
+
 
 Limit CPU/RAM usage in Unraid Docker UI:
 
@@ -588,27 +699,34 @@ Limit CPU/RAM usage in Unraid Docker UI:
 
 ### Backup Strategy
 
+
 **Automated backup script:**
 
 ```bash
 #!/bin/bash
+
 # /mnt/user/scripts/backup-episode-identifier.sh
+
 
 BACKUP_DIR="/mnt/user/backups/episodeidentifier"
 DATE=$(date +%Y%m%d_%H%M%S)
 
 # Create backup directory
+
 mkdir -p "$BACKUP_DIR"
 
 # Backup database
+
 cp /mnt/user/appdata/episodeidentifier/database/production_hashes.db \
    "$BACKUP_DIR/production_hashes_$DATE.db"
 
 # Backup config
+
 cp /mnt/user/appdata/episodeidentifier/config/episodeidentifier.config.json \
    "$BACKUP_DIR/config_$DATE.json"
 
 # Keep only last 10 backups
+
 cd "$BACKUP_DIR"
 ls -t production_hashes_*.db | tail -n +11 | xargs rm -f
 ls -t config_*.json | tail -n +11 | xargs rm -f
@@ -616,15 +734,18 @@ ls -t config_*.json | tail -n +11 | xargs rm -f
 echo "Backup completed: $DATE"
 ```
 
+
 Schedule via User Scripts plugin.
 
 ## Additional Resources
+
 
 - **Project Repository**: <https://github.com/taldelarosa/KnowShow2>
 - **Issue Tracker**: <https://github.com/taldelarosa/KnowShow2/issues>
 - **Configuration Examples**: See `/data/config/episodeidentifier.config.example.json`
 
 ## Support
+
 
 For issues or questions:
 
@@ -638,5 +759,6 @@ For issues or questions:
    - Steps to reproduce
 
 ## License
+
 
 Episode Identifier is open source software. See LICENSE file in repository.

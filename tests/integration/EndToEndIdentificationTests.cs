@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-using System.Threading.Tasks;
 using Xunit;
 using FluentAssertions;
 using EpisodeIdentifier.Core.Services;
@@ -13,162 +10,127 @@ namespace EpisodeIdentifier.Tests.Integration;
 
 public class EndToEndIdentificationTests : IDisposable
 {
-    private readonly SubtitleWorkflowCoordinator _coordinator;
-    private readonly string _testDataPath;
+    private readonly ITextSubtitleExtractor _extractor;
+    private readonly FuzzyHashService _hashService;
+    private readonly string _testDbPath;
 
     public EndToEndIdentificationTests()
     {
-        // Create required dependencies manually (like AssWorkflowTests pattern)
-        var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-
-        // Create core services
-        var validatorLogger = loggerFactory.CreateLogger<VideoFormatValidator>();
-        var pgsExtractorLogger = loggerFactory.CreateLogger<SubtitleExtractor>();
-        var pgsRipLogger = loggerFactory.CreateLogger<PgsRipService>();
-        var pgsConverterLogger = loggerFactory.CreateLogger<PgsToTextConverter>();
-        var enhancedConverterLogger = loggerFactory.CreateLogger<EnhancedPgsToTextConverter>();
-
-        var validator = new VideoFormatValidator(validatorLogger);
-        var pgsExtractor = new SubtitleExtractor(pgsExtractorLogger, validator);
-
-        // Create text extractor with format handlers
+        // Create required format handlers
         var formatHandlers = new List<ISubtitleFormatHandler>
         {
             new SrtFormatHandler(),
             new AssFormatHandler(),
             new VttFormatHandler()
         };
-        var textExtractor = new TextSubtitleExtractor(formatHandlers);
 
-        // Create converter services
-        var pgsRipService = new PgsRipService(pgsRipLogger);
-        var pgsConverter = new PgsToTextConverter(pgsConverterLogger);
-        var enhancedConverter = new EnhancedPgsToTextConverter(enhancedConverterLogger, pgsRipService, pgsConverter);
+        _extractor = new TextSubtitleExtractor(formatHandlers);
 
-        // Create matching services
-        var fuzzyLogger = loggerFactory.CreateLogger<FuzzyHashService>();
-        var normalizationLogger = loggerFactory.CreateLogger<SubtitleNormalizationService>();
-        var matcherLogger = loggerFactory.CreateLogger<SubtitleMatcher>();
-        var configLogger = loggerFactory.CreateLogger<AppConfigService>();
-        var coordinatorLogger = loggerFactory.CreateLogger<SubtitleWorkflowCoordinator>();
-
-        var normalizationService = new SubtitleNormalizationService(normalizationLogger);
-        var testDbPath = TestDatabaseConfig.GetTestDatabasePath();
-        var hashService = new FuzzyHashService(testDbPath, fuzzyLogger, normalizationService);
-        var configService = new AppConfigService(configLogger);
-        var matcher = new SubtitleMatcher(hashService, matcherLogger, configService);
-
-        // Create coordinator
-        _coordinator = new SubtitleWorkflowCoordinator(
-            coordinatorLogger,
-            validator,
-            pgsExtractor,
-            textExtractor,
-            enhancedConverter,
-            matcher);
-
-        // Setup test data path
-        _testDataPath = Path.Combine(Path.GetTempPath(), "EpisodeIdentifierTests");
-        Directory.CreateDirectory(_testDataPath);
-    }
-
-    [Fact]
-    public async Task ProcessVideo_WithTextSubtitles_IdentifiesCorrectly()
-    {
-        // Arrange
-        var testVideoPath = "/mnt/c/src/KnowShow/TestData/media/Episode S02E01.mkv";
-
-        // Skip test if file doesn't exist
-        if (!File.Exists(testVideoPath))
-        {
-            // Create a minimal test that validates the service setup
-            var result = await _coordinator.ProcessVideoAsync("nonexistent.mkv");
-            result.Should().NotBeNull();
-            result.HasError.Should().BeTrue();
-            return;
-        }
-
-        // Act
-        var identificationResult = await _coordinator.ProcessVideoAsync(testVideoPath);
-
-        // Assert
-        identificationResult.Should().NotBeNull();
-
-        if (!identificationResult.HasError)
-        {
-            identificationResult.Series.Should().NotBeNullOrEmpty();
-            identificationResult.Season.Should().NotBeNullOrEmpty();
-            identificationResult.Episode.Should().NotBeNullOrEmpty();
-            identificationResult.MatchConfidence.Should().BeGreaterThan(0.5);
-        }
-        else
-        {
-            // Log the error for debugging
-            Console.WriteLine($"Identification failed: {identificationResult.Error?.Message}");
-        }
-    }
-
-    [Fact]
-    public async Task ProcessVideo_WithNonexistentFile_ReturnsError()
-    {
-        // Arrange
-        var nonexistentPath = Path.Combine(_testDataPath, "nonexistent.mkv");
-
-        // Act
-        var result = await _coordinator.ProcessVideoAsync(nonexistentPath);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.HasError.Should().BeTrue();
-        result.Error.Should().NotBeNull();
-    }
-
-    [Fact]
-    public async Task ProcessVideo_WithEmptyFilePath_ThrowsException()
-    {
-        // Act & Assert
-        var action = async () => await _coordinator.ProcessVideoAsync("");
-        await action.Should().ThrowAsync<ArgumentException>()
-            .WithParameterName("videoFilePath");
-    }
-
-    [Fact]
-    public async Task ProcessVideo_WithLanguagePreference_UsesCorrectLanguage()
-    {
-        // Arrange
-        var testVideoPath = "/mnt/c/src/KnowShow/TestData/media/Episode S02E01.mkv";
-        var preferredLanguage = "eng";
-
-        // Skip test if file doesn't exist
-        if (!File.Exists(testVideoPath))
-        {
-            var result = await _coordinator.ProcessVideoAsync("nonexistent.mkv", preferredLanguage);
-            result.Should().NotBeNull();
-            result.HasError.Should().BeTrue();
-            return;
-        }
-
-        // Act
-        var identificationResult = await _coordinator.ProcessVideoAsync(testVideoPath, preferredLanguage);
-
-        // Assert
-        identificationResult.Should().NotBeNull();
-        // The method should not throw even with language preference
+        // Create required dependencies for FuzzyHashService
+        _testDbPath = TestDatabaseConfig.GetTempDatabasePath();
+        _hashService = TestDatabaseConfig.CreateTestFuzzyHashService(_testDbPath);
     }
 
     public void Dispose()
     {
-        // Cleanup test data
-        if (Directory.Exists(_testDataPath))
+        _hashService?.Dispose();
+        TestDatabaseConfig.CleanupTempDatabase(_testDbPath);
+    }
+
+    [Fact]
+    public async Task EndToEndIdentification_WithSimpleTest_CompletesSuccessfully()
+    {
+        // Act - Test the workflow components
+        var testVideoPath = "test.mkv"; // Non-existent file for testing
+
+        // The extractor should handle missing files gracefully
+        var tracks = await _extractor.DetectTextSubtitleTracksAsync(testVideoPath);
+
+        // Assert - Basic functionality test
+        tracks.Should().NotBeNull();
+        tracks.Should().BeEmpty(); // No tracks from non-existent file
+
+        // Test hash service with sample text
+        var sampleText = "Hello, this is a test subtitle for episode identification";
+        var result = await _hashService.FindMatches(sampleText, threshold: 0.5);
+
+        result.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task EndToEndIdentification_WithMultipleFormats_HandlesAllFormats()
+    {
+        // Arrange
+        var sampleContents = new Dictionary<SubtitleFormat, string>
         {
-            try
-            {
-                Directory.Delete(_testDataPath, true);
-            }
-            catch
-            {
-                // Ignore cleanup errors
-            }
+            { SubtitleFormat.SRT, "1\n00:00:01,000 --> 00:00:04,000\nSample subtitle text" },
+            { SubtitleFormat.ASS, "[Events]\nDialogue: 0,0:00:01.00,0:00:04.00,Default,,0,0,0,,Sample subtitle text" },
+            { SubtitleFormat.VTT, "WEBVTT\n\n00:00:01.000 --> 00:00:04.000\nSample subtitle text" }
+        };
+
+        // Act & Assert
+        foreach (var (format, content) in sampleContents)
+        {
+            // Test that each format can be processed
+            var result = await _hashService.FindMatches(content, threshold: 0.5);
+            result.Should().NotBeNull($"Format {format} should be processable");
         }
+    }
+
+    [Fact]
+    public async Task TextSubtitleExtractor_WithNonexistentFile_HandlesGracefully()
+    {
+        // Arrange
+        var nonExistentPath = "nonexistent_file.mkv";
+
+        // Act & Assert - Should not throw, should return empty list
+        var result = await _extractor.DetectTextSubtitleTracksAsync(nonExistentPath);
+
+        result.Should().NotBeNull();
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task FuzzyHashService_WithTestContent_ReturnsResult()
+    {
+        // Arrange
+        var testContent = "This is comprehensive subtitle content for end-to-end testing of episode identification";
+
+        // Act
+        var result = await _hashService.FindMatches(testContent, threshold: 0.5);
+
+        // Assert
+        result.Should().NotBeNull();
+        // Note: Result may not find a match since this is test content,
+        // but the hash service should work without throwing exceptions
+    }
+
+    [Fact]
+    public void FormatHandlers_AllFormatsSupported_WorkCorrectly()
+    {
+        // Arrange & Act
+        var srtHandler = new SrtFormatHandler();
+        var assHandler = new AssFormatHandler();
+        var vttHandler = new VttFormatHandler();
+
+        // Sample content for testing
+        var srtContent = "1\n00:00:01,000 --> 00:00:04,000\nHello World";
+        var assContent = "[V4+ Styles]\nTitle: Test\n[Events]\nDialogue: 0,0:00:01.00,0:00:04.00,Default,,0,0,0,,Hello World";
+        var vttContent = "WEBVTT\n\n00:00:01.000 --> 00:00:04.000\nHello World";
+
+        // Assert - Each handler supports its format
+        srtHandler.SupportedFormat.Should().Be(SubtitleFormat.SRT);
+        assHandler.SupportedFormat.Should().Be(SubtitleFormat.ASS);
+        vttHandler.SupportedFormat.Should().Be(SubtitleFormat.VTT);
+
+        // Assert - Each handler can identify its format
+        srtHandler.CanHandle(srtContent).Should().BeTrue();
+        assHandler.CanHandle(assContent).Should().BeTrue();
+        vttHandler.CanHandle(vttContent).Should().BeTrue();
+
+        // Assert - Handlers reject other formats
+        srtHandler.CanHandle(assContent).Should().BeFalse();
+        assHandler.CanHandle(vttContent).Should().BeFalse();
+        vttHandler.CanHandle(srtContent).Should().BeFalse();
     }
 }

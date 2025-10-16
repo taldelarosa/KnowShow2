@@ -1,13 +1,16 @@
 # Quickstart: Async Processing with Configurable Concurrency
 
+
 **Date**: September 15, 2025
 **Feature**: 010-async-processing-where
 
 ## Overview
 
+
 This quickstart validates the configurable concurrency feature for episode identification by testing various concurrency levels and verifying correct behavior.
 
 ## Prerequisites
+
 
 - .NET 8.0 or higher
 - Episode Identifier application built and available
@@ -16,7 +19,9 @@ This quickstart validates the configurable concurrency feature for episode ident
 
 ## Test Scenarios
 
+
 ### Scenario 1: Default Single File Processing
+
 
 **Objective**: Verify backward compatibility with default concurrency setting
 
@@ -29,12 +34,16 @@ This quickstart validates the configurable concurrency feature for episode ident
 **Commands**:
 
 ```bash
+
 # Ensure default configuration
+
 cat episodeidentifier.config.json | grep maxConcurrency || echo "Using default (1)"
 
 # Run bulk identification
+
 ./episodeidentifier --bulk-identify ./test-videos --output results.json
 ```
+
 
 **Expected Results**:
 
@@ -46,13 +55,17 @@ cat episodeidentifier.config.json | grep maxConcurrency || echo "Using default (
 **Validation**:
 
 ```bash
+
 # Check results
+
 jq '.summary.totalFiles' results.json  # Should equal number of test files
 jq '.summary.processedFiles' results.json  # Should equal totalFiles
 jq '.results | length' results.json  # Should equal number of files
 ```
 
+
 ### Scenario 2: Concurrent Processing (3 Files)
+
 
 **Objective**: Verify concurrent processing with moderate concurrency
 
@@ -65,22 +78,29 @@ jq '.results | length' results.json  # Should equal number of files
 **Commands**:
 
 ```bash
+
 # Update configuration
+
 jq '.maxConcurrency = 3' episodeidentifier.config.json > temp.json && mv temp.json episodeidentifier.config.json
 
 # Verify configuration
+
 jq '.maxConcurrency' episodeidentifier.config.json
 
 # Run bulk identification with monitoring
+
 ./episodeidentifier --bulk-identify ./test-videos --output results.json 2> progress.log &
 PID=$!
 
 # Monitor progress (in another terminal)
+
 tail -f progress.log
 
 # Wait for completion
+
 wait $PID
 ```
+
 
 **Expected Results**:
 
@@ -93,17 +113,23 @@ wait $PID
 **Validation**:
 
 ```bash
+
 # Check for concurrent processing evidence in logs
+
 grep "ActiveOperations: [2-3]" progress.log
 
 # Verify all files processed
+
 jq '.summary.processedFiles == .summary.totalFiles' results.json
 
 # Check for any errors
+
 jq '.errors | length' results.json  # Should be 0
 ```
 
+
 ### Scenario 3: Hot-Reload During Processing
+
 
 **Objective**: Verify configuration hot-reload without interrupting active operations
 
@@ -116,25 +142,33 @@ jq '.errors | length' results.json  # Should be 0
 **Commands**:
 
 ```bash
+
 # Set initial configuration
+
 jq '.maxConcurrency = 2' episodeidentifier.config.json > temp.json && mv temp.json episodeidentifier.config.json
 
 # Start long-running bulk processing
+
 ./episodeidentifier --bulk-identify ./large-test-batch --output results.json 2> progress.log &
 PID=$!
 
 # Wait for processing to start
+
 sleep 5
 
 # Update configuration while processing
+
 jq '.maxConcurrency = 5' episodeidentifier.config.json > temp.json && mv temp.json episodeidentifier.config.json
 
 # Monitor behavior change
+
 tail -f progress.log | grep "ActiveOperations"
 
 # Wait for completion
+
 wait $PID
 ```
+
 
 **Expected Results**:
 
@@ -146,14 +180,19 @@ wait $PID
 **Validation**:
 
 ```bash
+
 # Check for configuration change evidence
+
 grep "ActiveOperations: [3-5]" progress.log
 
 # Ensure no processing interruption
+
 jq '.summary.processedFiles == .summary.totalFiles' results.json
 ```
 
+
 ### Scenario 4: Error Handling with Concurrency
+
 
 **Objective**: Verify individual failures don't stop concurrent operations
 
@@ -166,18 +205,23 @@ jq '.summary.processedFiles == .summary.totalFiles' results.json
 **Commands**:
 
 ```bash
+
 # Set concurrency
+
 jq '.maxConcurrency = 4' episodeidentifier.config.json > temp.json && mv temp.json episodeidentifier.config.json
 
 # Create mixed test batch
+
 mkdir mixed-test-batch
 cp ./valid-videos/*.mkv ./mixed-test-batch/
 cp ./corrupted-files/*.txt ./mixed-test-batch/  # Wrong format
 touch ./mixed-test-batch/empty.mkv  # Empty file
 
 # Run processing
+
 ./episodeidentifier --bulk-identify ./mixed-test-batch --output results.json
 ```
+
 
 **Expected Results**:
 
@@ -189,17 +233,22 @@ touch ./mixed-test-batch/empty.mkv  # Empty file
 **Validation**:
 
 ```bash
+
 # Check mixed results
+
 jq '.summary.successfulFiles' results.json  # Should be > 0
 jq '.summary.failedFiles' results.json      # Should be > 0
 jq '.errors | length' results.json          # Should match failed files
 
 # Verify specific file results
+
 jq '.results[] | select(.status == "success") | .inputFile' results.json
 jq '.results[] | select(.status == "failure") | .inputFile' results.json
 ```
 
+
 ### Scenario 5: Configuration Validation
+
 
 **Objective**: Verify invalid configuration handling
 
@@ -211,7 +260,9 @@ jq '.results[] | select(.status == "failure") | .inputFile' results.json
 **Commands**:
 
 ```bash
+
 # Test invalid values
+
 echo "Testing negative value"
 jq '.maxConcurrency = -1' episodeidentifier.config.json > temp.json && mv temp.json episodeidentifier.config.json
 ./episodeidentifier --bulk-identify ./test-videos --output results-negative.json 2> log-negative.txt
@@ -229,6 +280,7 @@ jq '.maxConcurrency = "invalid"' episodeidentifier.config.json > temp.json && mv
 ./episodeidentifier --bulk-identify ./test-videos --output results-invalid.json 2> log-invalid.txt
 ```
 
+
 **Expected Results**:
 
 - All invalid configurations fall back to `maxConcurrency = 1`
@@ -239,35 +291,45 @@ jq '.maxConcurrency = "invalid"' episodeidentifier.config.json > temp.json && mv
 **Validation**:
 
 ```bash
+
 # Check for warnings in logs
+
 grep -i "warning\|invalid\|default" log-*.txt
 
 # Verify single-file processing behavior
+
 grep "ActiveOperations: 1" log-*.txt
 
 # Ensure all processed successfully despite invalid config
+
 for file in results-*.json; do
     echo "Checking $file:"
     jq '.summary.processedFiles == .summary.totalFiles' "$file"
 done
 ```
 
+
 ## Performance Validation
 
+
 ### Processing Time Comparison
+
 
 **Commands**:
 
 ```bash
+
 # Test different concurrency levels with same file set
+
 for concurrency in 1 2 4 8; do
     echo "Testing concurrency: $concurrency"
     jq ".maxConcurrency = $concurrency" episodeidentifier.config.json > temp.json && mv temp.json episodeidentifier.config.json
-    
+
     time ./episodeidentifier --bulk-identify ./performance-test-batch --output "results-$concurrency.json"
 done
 
 # Compare processing times
+
 echo "Processing time comparison:"
 for concurrency in 1 2 4 8; do
     processed=$(jq '.summary.processedFiles' "results-$concurrency.json")
@@ -276,18 +338,25 @@ for concurrency in 1 2 4 8; do
 done
 ```
 
+
 ## Cleanup
 
+
 ```bash
+
 # Restore default configuration
+
 jq '.maxConcurrency = 1' episodeidentifier.config.json > temp.json && mv temp.json episodeidentifier.config.json
 
 # Clean up test files
+
 rm -rf ./test-videos ./mixed-test-batch ./performance-test-batch
 rm -f results*.json log*.txt progress.log temp.json
 ```
 
+
 ## Success Criteria
+
 
 This quickstart validates successful implementation when:
 

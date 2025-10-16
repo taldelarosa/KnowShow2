@@ -1,15 +1,19 @@
 # Data Model: Async Processing with Configurable Concurrency
 
+
 **Date**: September 15, 2025
 **Feature**: 010-async-processing-where
 
 ## Entity Overview
 
+
 This feature extends existing entities rather than creating new ones, focusing on configuration model enhancement and leveraging existing processing infrastructure.
 
 ## Extended Entities
 
+
 ### ConcurrencyConfiguration (Extension of existing configuration)
+
 
 **Purpose**: Stores configurable concurrency settings within existing application configuration
 
@@ -40,6 +44,7 @@ This feature extends existing entities rather than creating new ones, focusing o
 
 ### EpisodeIdentificationJob (Existing entity - usage clarification)
 
+
 **Purpose**: Represents individual file processing operation within concurrent execution pool
 
 **Key Fields (existing)**:
@@ -57,6 +62,7 @@ This feature extends existing entities rather than creating new ones, focusing o
 
 ### ProcessingQueue (Conceptual - implemented within existing BulkProcessing)
 
+
 **Purpose**: Manages files awaiting processing when demand exceeds concurrency limit
 
 **Behavior**:
@@ -69,6 +75,7 @@ This feature extends existing entities rather than creating new ones, focusing o
 
 ### ProcessingPool (Conceptual - implemented within existing BulkProcessing)
 
+
 **Purpose**: Manages active concurrent operations and resource allocation
 
 **Key Responsibilities**:
@@ -80,7 +87,9 @@ This feature extends existing entities rather than creating new ones, focusing o
 
 ## Configuration Schema Extension
 
+
 ### Existing episodeidentifier.config.json Enhancement
+
 
 ```json
 {
@@ -92,12 +101,13 @@ This feature extends existing entities rather than creating new ones, focusing o
   "hashingAlgorithm": "CTPH",
   "filenamePatterns": {
     "primaryPattern": "^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
-    "secondaryPattern": "^(?<SeriesName>.+?)\\s(?<Season>\\d+)x(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$", 
+    "secondaryPattern": "^(?<SeriesName>.+?)\\s(?<Season>\\d+)x(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
     "tertiaryPattern": "^(?<SeriesName>.+?)\\.S(?<Season>\\d+)\\.E(?<Episode>\\d+)(?:\\.(?<EpisodeName>.+?))?$"
   },
   "filenameTemplate": "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}"
 }
 ```
+
 
 **New Field**: `maxConcurrency`
 
@@ -108,7 +118,9 @@ This feature extends existing entities rather than creating new ones, focusing o
 
 ## Data Flow
 
+
 ### Configuration Flow
+
 
 1. Application start/hot-reload trigger
 2. Load episodeidentifier.config.json
@@ -117,6 +129,7 @@ This feature extends existing entities rather than creating new ones, focusing o
 5. Apply to active processing (if running)
 
 ### Processing Flow
+
 
 1. User initiates bulk processing
 2. System reads maxConcurrency from configuration
@@ -129,6 +142,7 @@ This feature extends existing entities rather than creating new ones, focusing o
 
 ### Hot-Reload Flow
 
+
 1. Configuration file change detected
 2. New maxConcurrency value loaded and validated
 3. Active processing pool adjusted (if processing active)
@@ -137,7 +151,9 @@ This feature extends existing entities rather than creating new ones, focusing o
 
 ## Error Handling
 
+
 ### Configuration Errors
+
 
 - Invalid maxConcurrency value → default to 1, log warning
 - Missing maxConcurrency field → default to 1
@@ -145,11 +161,13 @@ This feature extends existing entities rather than creating new ones, focusing o
 
 ### Processing Errors
 
+
 - Individual file failures → continue processing others, collect in results
 - Resource exhaustion → existing error handling with backpressure
 - Database connectivity → retry logic for concurrent operations
 
 ## Validation Rules Summary
+
 
 1. **maxConcurrency Validation**:
    - Must be positive integer
@@ -166,7 +184,9 @@ This feature extends existing entities rather than creating new ones, focusing o
 
 ## Integration Points
 
+
 ### Existing Services Integration
+
 
 - **IAppConfigService**: Extended to include maxConcurrency property
 - **BulkProcessingService**: Modified to use config-based concurrency
@@ -175,11 +195,13 @@ This feature extends existing entities rather than creating new ones, focusing o
 
 ### Database Coordination
 
+
 - Shared SQLite connection pool for concurrent hash lookups
 - Connection limiting to prevent database lock contention
 - Efficient query batching for concurrent operations
 
 ### File System Coordination
+
 
 - Directory-level locking for concurrent rename operations
 - Atomic file operations to prevent conflicts

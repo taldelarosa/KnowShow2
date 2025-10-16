@@ -12,10 +12,11 @@ using EpisodeIdentifier.Tests.Contract;
 
 namespace EpisodeIdentifier.Tests.Integration;
 
-public class SrtWorkflowTests
+public class SrtWorkflowTests : IDisposable
 {
     private readonly TextSubtitleExtractor _textExtractor;
-    private readonly SubtitleMatcher _matcher;
+    private readonly FuzzyHashService _hashService;
+    private readonly string _testDbPath;
 
     public SrtWorkflowTests()
     {
@@ -34,16 +35,14 @@ public class SrtWorkflowTests
         _textExtractor = new TextSubtitleExtractor(formatHandlers);
 
         // Create matching services
-        var fuzzyLogger = loggerFactory.CreateLogger<FuzzyHashService>();
-        var normalizationLogger = loggerFactory.CreateLogger<SubtitleNormalizationService>();
-        var matcherLogger = loggerFactory.CreateLogger<SubtitleMatcher>();
-        var configLogger = loggerFactory.CreateLogger<AppConfigService>();
+        _testDbPath = TestDatabaseConfig.GetTempDatabasePath();
+        _hashService = TestDatabaseConfig.CreateTestFuzzyHashService(_testDbPath);
+    }
 
-        var normalizationService = new SubtitleNormalizationService(normalizationLogger);
-        var testDbPath = TestDatabaseConfig.GetTestDatabasePath();
-        var hashService = new FuzzyHashService(testDbPath, fuzzyLogger, normalizationService);
-        var configService = new AppConfigService(configLogger);
-        _matcher = new SubtitleMatcher(hashService, matcherLogger, configService);
+    public void Dispose()
+    {
+        _hashService?.Dispose();
+        TestDatabaseConfig.CleanupTempDatabase(_testDbPath);
     }
 
     [Fact]
@@ -78,30 +77,28 @@ This is the second subtitle.
 This is the third subtitle.
 ";
 
-        // Act - Use subtitle matcher directly with text
-        var result = await _matcher.IdentifyEpisode(testSubtitleText);
+        // Act - Use hash service directly with text
+        var result = await _hashService.FindMatches(testSubtitleText, threshold: 0.5);
 
         // Assert
         result.Should().NotBeNull();
-        result.HasError.Should().BeFalse();
-        // For test data that doesn't match, we expect no match
-        result.Series.Should().BeNull();
+        // For test data that doesn't match, we expect no matches
+        result.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task SubtitleMatcher_WithTestContent_ReturnsResult()
+    public async Task FuzzyHashService_WithTestContent_ReturnsResult()
     {
         // Arrange  
         var testContent = "This is a test subtitle that should not match anything in the database.";
 
         // Act
-        var result = await _matcher.IdentifyEpisode(testContent);
+        var result = await _hashService.FindMatches(testContent, threshold: 0.5);
 
         // Assert
         result.Should().NotBeNull();
-        result.HasError.Should().BeFalse();
         // Test content should not match anything in database
-        result.Series.Should().BeNull();
+        result.Should().BeEmpty();
     }
 
     [Fact]

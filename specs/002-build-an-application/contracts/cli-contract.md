@@ -1,6 +1,8 @@
 # Contract: CLI Input/Output for Episode Identification
 
+
 ## CLI Arguments
+
 
 - `--input <video-file>`: Path to AV1 video file
 - `--hash-db <sqlite-db>`: Path to SQLite database for fuzzy hashes
@@ -8,11 +10,14 @@
 
 ## Input Example
 
+
 ```sh
 ./identify-episode --input "MyShow_S01E02.mkv" --hash-db "./hashes.sqlite"
 ```
 
+
 ## Output JSON Schema
+
 
 ```
 {
@@ -28,7 +33,9 @@
 }
 ```
 
+
 ## Error Output Example
+
 
 ```
 {
@@ -39,7 +46,9 @@
 }
 ```
 
+
 ## Ambiguity Output Example
+
 
 ```
 {
@@ -51,5 +60,6 @@
   "error": null
 }
 ```
+
 
 ---
