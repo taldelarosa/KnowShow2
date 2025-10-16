@@ -276,6 +276,15 @@ public class ProgressTrackerContractTests
             };
         }
 
+        public void UpdateTotalFiles(string requestId, int totalFiles)
+        {
+            if (string.IsNullOrEmpty(requestId)) throw new ArgumentException("Request ID cannot be null or empty", nameof(requestId));
+            if (totalFiles < 0) throw new ArgumentOutOfRangeException(nameof(totalFiles), "Total files cannot be negative");
+            if (!_progress.ContainsKey(requestId)) throw new InvalidOperationException("Request has not been initialized");
+
+            _progress[requestId].TotalFiles = totalFiles;
+        }
+
         public void UpdatePhase(string requestId, BulkProcessingPhase phase, string? currentFile = null)
         {
             if (string.IsNullOrEmpty(requestId)) throw new ArgumentException("Request ID cannot be null or empty", nameof(requestId));
