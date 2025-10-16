@@ -51,7 +51,9 @@ public class Program
         {
             IsRequired = false
         };
-        hashDbOption.SetDefaultValue(new FileInfo("production_hashes.db"));
+        // Use HASH_DB_PATH environment variable if set, otherwise default to production_hashes.db
+        var defaultHashDbPath = Environment.GetEnvironmentVariable("HASH_DB_PATH") ?? "production_hashes.db";
+        hashDbOption.SetDefaultValue(new FileInfo(defaultHashDbPath));
         rootCommand.Add(hashDbOption);
 
         var storeOption = new Option<bool>(
@@ -198,7 +200,9 @@ public class Program
         LegacyConfigurationService = legacyConfigService; // Make available to other services
 
         // Load new fuzzy hashing configuration
-        var fuzzyHashConfigService = new ConfigurationService(loggerFactory.CreateLogger<ConfigurationService>());
+        // Use CONFIG_PATH environment variable if set, otherwise default to application directory
+        var configPath = Environment.GetEnvironmentVariable("CONFIG_PATH");
+        var fuzzyHashConfigService = new ConfigurationService(loggerFactory.CreateLogger<ConfigurationService>(), configFilePath: configPath);
         var fuzzyConfigResult = await fuzzyHashConfigService.LoadConfiguration();
         FuzzyHashConfigurationService = fuzzyHashConfigService; // Make available to other services
 

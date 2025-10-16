@@ -1,0 +1,14 @@
+{
+  "version": "2.0",
+  "maxConcurrency": 3,
+  "matchConfidenceThreshold": 0.5,
+  "renameConfidenceThreshold": 0.5,
+  "fuzzyHashThreshold": 50,
+  "hashingAlgorithm": "CTPH",
+  "filenamePatterns": {
+    "primaryPattern": "^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
+    "secondaryPattern": "^(?<SeriesName>.+?)\\s(?<Season>\\d+)x(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
+    "tertiaryPattern": "^(?<SeriesName>.+?)\\.S(?<Season>\\d+)\\.E(?<Episode>\\d+)(?:\\.(?<EpisodeName>.+?))?$"
+  },
+  "filenameTemplate": "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}"
+}

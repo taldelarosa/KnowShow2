@@ -22,7 +22,8 @@ temp_*.cs
 
 # Configuration files (will be in volumes)
 episodeidentifier.config.json
-!episodeidentifier.config.example.json
+!episodeidentifier.config.template.json
+# Note: We use config.template.json (clean JSON) in Docker, not config.example.json (with comments)
 
 # IDE files
 .vs/
