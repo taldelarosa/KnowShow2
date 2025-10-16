@@ -102,6 +102,28 @@ _ReSharper*/
 *.db
 *.db-shm
 *.db-wal
+*.db.backup*
+production_hashes.db*
+bones.db*
+
+# Log files
+*.log
+criminal_minds_import_*.log
+criminal_minds_reimport_*.log
+subtitle_import.log
+quick_test_*.log
+
+# Debug and test databases
+debug_*.db*
+test_*.db*
+
+# Debug and temporary source files in root
+debug_*.cs
+temp_*.cs
+test_db_*.cs
+
+# Backup files
+*.backup
 
 # macOS
 .DS_Store
