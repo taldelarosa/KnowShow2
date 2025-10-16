@@ -57,8 +57,8 @@ RUN mkdir -p /data/videos /data/database /data/config /app/logs && \
 # Copy published application
 COPY --from=build /app/publish .
 
-# Copy example configuration to template location (not affected by volume mounts)
-COPY episodeidentifier.config.example.json /app/config.template.json
+# Copy clean configuration template (without comments for JSON parser compatibility)
+COPY episodeidentifier.config.template.json /app/config.template.json
 RUN chown appuser:appuser /app/config.template.json
 
 # Copy entrypoint script
