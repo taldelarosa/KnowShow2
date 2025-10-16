@@ -39,14 +39,15 @@ branch_protection:
       require_last_push_approval: false
     
     # Required status checks - ALL MUST PASS
+    # Note: Format is "workflow-name / job-name" as reported by GitHub Actions
     required_status_checks:
       strict: true  # Requires branch to be up to date before merging
       contexts:
-        - "build-and-test"
-        - "verify-setup"
-        - "security-scan"
-        - "lint-and-format"
-        - "docs-check"
+        - "CI/CD Pipeline / Build and Test (.NET)"
+        - "CI/CD Pipeline / Verify Setup Script"
+        - "CI/CD Pipeline / Security and Quality"
+        - "CI/CD Pipeline / Lint and Format Check"
+        - "CI/CD Pipeline / Documentation Check"
     
     # Additional restrictions - ENFORCED
     enforce_admins: false  # Allow admin to bypass in emergencies
