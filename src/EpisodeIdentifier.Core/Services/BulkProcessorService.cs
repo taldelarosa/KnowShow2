@@ -538,6 +538,9 @@ public class BulkProcessorService : IBulkProcessor
         result.TotalFiles = discoveredFiles.Count + missingFilesCount;
         _logger.LogInformation("Discovered {FileCount} files for request {RequestId}", discoveredFiles.Count, request.RequestId);
 
+        // Update the progress tracker with the actual total file count after discovery
+        _progressTracker.UpdateTotalFiles(request.RequestId, result.TotalFiles);
+
         if (discoveredFiles.Count == 0)
         {
             _logger.LogWarning("No files discovered for request {RequestId}", request.RequestId);

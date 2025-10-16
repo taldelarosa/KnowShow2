@@ -20,6 +20,16 @@ public interface IProgressTracker
     void Initialize(string requestId, int totalFiles, BulkProcessingOptions options);
 
     /// <summary>
+    /// Updates the total number of files after file discovery.
+    /// </summary>
+    /// <param name="requestId">The request identifier.</param>
+    /// <param name="totalFiles">The actual total number of files discovered.</param>
+    /// <exception cref="ArgumentException">Thrown when requestId is null or empty.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when totalFiles is negative.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the request hasn't been initialized.</exception>
+    void UpdateTotalFiles(string requestId, int totalFiles);
+
+    /// <summary>
     /// Updates the current processing phase and optionally the current file being processed.
     /// </summary>
     /// <param name="requestId">The request identifier.</param>

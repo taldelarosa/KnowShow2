@@ -56,6 +56,25 @@ public class ProgressTracker : IProgressTracker
     }
 
     /// <inheritdoc />
+    public void UpdateTotalFiles(string requestId, int totalFiles)
+    {
+        if (string.IsNullOrEmpty(requestId)) throw new ArgumentException("Request ID cannot be null or empty", nameof(requestId));
+        if (totalFiles < 0) throw new ArgumentOutOfRangeException(nameof(totalFiles), "Total files cannot be negative");
+        if (!_progressData.TryGetValue(requestId, out var progress)) throw new InvalidOperationException("Request has not been initialized");
+
+        _logger.LogDebug("Updating total files for request {RequestId} from {OldTotal} to {NewTotal}",
+            requestId, progress.TotalFiles, totalFiles);
+
+        lock (progress)
+        {
+            progress.TotalFiles = totalFiles;
+            progress.LastUpdateTime = DateTime.UtcNow;
+        }
+
+        OnProgressUpdated(requestId, progress);
+    }
+
+    /// <inheritdoc />
     public void UpdatePhase(string requestId, BulkProcessingPhase phase, string? currentFile = null)
     {
         if (string.IsNullOrEmpty(requestId)) throw new ArgumentException("Request ID cannot be null or empty", nameof(requestId));
