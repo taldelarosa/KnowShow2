@@ -3,7 +3,7 @@
   "maxConcurrency": 3,
   "matchConfidenceThreshold": 0.5,
   "renameConfidenceThreshold": 0.5,
-  "fuzzyHashThreshold": 59,
+  "fuzzyHashThreshold": 40,
   "hashingAlgorithm": "CTPH",
   "filenamePatterns": {
     "primaryPattern": "^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
