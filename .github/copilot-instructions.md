@@ -9,8 +9,12 @@ Auto-generated from all feature plans. Last updated: 2025-09-15
 - C# .NET 8.0, System.CommandLine, Microsoft.Extensions.Logging, System.Text.Json
 - SQLite database for hash storage, JSON configuration with hot-reload
 - xUnit testing framework with TDD approach
-- (008-fuzzy-hashing-plus)
+- (008-fuzzy-hashing-plus) CTPH fuzzy hashing for subtitle matching
 - (010-async-processing-where) Configurable concurrent episode identification
+- (012-process-dvd-subtitle) DVD subtitle (VobSub) OCR support with mkvextract + Tesseract
+  - VobSubExtractor: Extracts .idx/.sub files from MKV containers
+  - VobSubOcrService: Performs OCR on VobSub subtitle images
+  - Subtitle priority: Text > PGS > DVD
 
 ## Project Structure
 
@@ -19,21 +23,39 @@ Auto-generated from all feature plans. Last updated: 2025-09-15
 src/
   EpisodeIdentifier.Core/
     Models/
-      BulkProcessingOptions.cs  # Contains MaxConcurrency property
-      Configuration/            # App configuration models
-    Services/                   # Core business logic
-    Program.cs                  # CLI entry point
+      BulkProcessingOptions.cs          # Contains MaxConcurrency property
+      VobSubExtractionResult.cs         # DVD subtitle extraction results
+      VobSubOcrResult.cs                # DVD subtitle OCR results
+      Configuration/                    # App configuration models
+    Services/                           # Core business logic
+      VobSubExtractor.cs                # DVD subtitle extraction service
+      VobSubOcrService.cs               # DVD subtitle OCR service
+    Interfaces/
+      IVobSubExtractor.cs               # DVD subtitle extraction contract
+      IVobSubOcrService.cs              # DVD subtitle OCR contract
+    Program.cs                          # CLI entry point
 tests/
   unit/
   integration/
   contract/
+    VobSubExtractorContractTests.cs     # VobSub extractor tests
+    VobSubOcrServiceContractTests.cs    # VobSub OCR tests
 specs/
-  010-async-processing-where/  # Current feature documentation
+  010-async-processing-where/  # Previous feature documentation
     plan.md
     research.md
     data-model.md
     quickstart.md
     contracts/
+  012-process-dvd-subtitle/    # Current feature: DVD subtitle OCR
+    spec.md                     # Feature specification
+    plan.md                     # Implementation plan
+    research.md                 # Phase 0: Technical decisions
+    data-model.md               # Phase 1: VobSubExtractionResult, VobSubOcrResult
+    quickstart.md               # Manual testing guide
+    contracts/
+      vobsub-extractor.json     # IVobSubExtractor contract
+      vobsub-ocr.json           # IVobSubOcrService contract
 ```
 
 
@@ -47,6 +69,14 @@ specs/
 - Reads maxConcurrency from episodeidentifier.config.json (default: 1, range: 1-100)
 - Supports hot-reload of configuration during processing
 
+### Subtitle Processing
+
+
+- Text subtitles (SRT, ASS, WebVTT): Processed directly (Priority 1)
+- PGS subtitles: OCR using pgsrip + Tesseract (Priority 2)
+- DVD subtitles (VobSub): Extraction using mkvextract, OCR using Tesseract (Priority 3)
+- Requires: mkvextract (mkvtoolnix), tesseract-ocr for DVD subtitle support
+
 ## Code Style
 
 
@@ -55,7 +85,9 @@ specs/
 ## Recent Changes
 
 
-- 008-fuzzy-hashing-plus: Added  +
+- 008-fuzzy-hashing-plus: Added CTPH fuzzy hashing for subtitle matching
+- 010-async-processing-where: Implemented configurable concurrent episode identification
+- 012-process-dvd-subtitle: Added DVD subtitle (VobSub) OCR support with VobSubExtractor and VobSubOcrService
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

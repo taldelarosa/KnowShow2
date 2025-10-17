@@ -1,0 +1,97 @@
+{
+  "service": "IVobSubExtractor",
+  "version": "1.0.0",
+  "description": "Extracts VobSub (.idx/.sub) files from MKV containers",
+  "methods": [
+    {
+      "name": "ExtractAsync",
+      "description": "Extracts DVD subtitle track from MKV file to VobSub format",
+      "parameters": [
+        {
+          "name": "videoPath",
+          "type": "string",
+          "required": true,
+          "description": "Absolute path to MKV video file",
+          "validation": "Must exist, must be .mkv file"
+        },
+        {
+          "name": "trackIndex",
+          "type": "int",
+          "required": true,
+          "description": "Subtitle track index from SubtitleTrackInfo",
+          "validation": "Must be >= 0"
+        },
+        {
+          "name": "outputDirectory",
+          "type": "string",
+          "required": true,
+          "description": "Directory for extracted .idx and .sub files",
+          "validation": "Must be writable directory path"
+        },
+        {
+          "name": "cancellationToken",
+          "type": "CancellationToken",
+          "required": true,
+          "description": "Cancellation token for timeout handling"
+        }
+      ],
+      "returns": {
+        "type": "Task<VobSubExtractionResult>",
+        "description": "Result containing paths to extracted files or error details"
+      },
+      "errors": [
+        {
+          "type": "ArgumentNullException",
+          "when": "videoPath or outputDirectory is null"
+        },
+        {
+          "type": "ArgumentException",
+          "when": "videoPath doesn't exist or trackIndex < 0"
+        },
+        {
+          "type": "OperationCanceledException",
+          "when": "Extraction exceeds timeout (cancellationToken triggered)"
+        }
+      ]
+    },
+    {
+      "name": "IsMkvExtractAvailableAsync",
+      "description": "Checks if mkvextract tool is available on system PATH",
+      "parameters": [],
+      "returns": {
+        "type": "Task<bool>",
+        "description": "True if mkvextract is available, false otherwise"
+      },
+      "errors": []
+    }
+  ],
+  "dependencies": [
+    "mkvextract (from mkvtoolnix package)"
+  ],
+  "test_scenarios": [
+    {
+      "name": "Extract valid DVD subtitle",
+      "given": "MKV file with DVD subtitle track at index 3",
+      "when": "ExtractAsync called with valid parameters",
+      "then": "Returns Success=true with valid .idx and .sub file paths"
+    },
+    {
+      "name": "Handle missing file",
+      "given": "Non-existent video file path",
+      "when": "ExtractAsync called",
+      "then": "Throws ArgumentException"
+    },
+    {
+      "name": "Handle invalid track",
+      "given": "Track index that doesn't exist in video",
+      "when": "ExtractAsync called",
+      "then": "Returns Success=false with error message"
+    },
+    {
+      "name": "Check tool availability",
+      "given": "System with mkvextract installed",
+      "when": "IsMkvExtractAvailableAsync called",
+      "then": "Returns true"
+    }
+  ]
+}

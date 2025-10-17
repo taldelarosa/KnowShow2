@@ -541,57 +541,69 @@ public class Program
 
                 if (!subtitleTracks.Any())
                 {
-                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLES_FOUND", message = "No PGS or text subtitles could be found in the video file" } }, jsonSerializationOptions));
+                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_SUBTITLES_FOUND", message = "No subtitles could be found in the video file" } }, jsonSerializationOptions));
                     return 1;
                 }
 
-                // Check for DVD subtitles which are not yet fully supported
-                var dvdSubTracks = subtitleTracks.Where(t => t.CodecName == "dvd_subtitle").ToList();
-                if (dvdSubTracks.Any())
+                // Priority 1: Try text subtitle processing first (fastest and most reliable)
+                var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, episodeIdentificationService, rename, filenameService, fileRenameService, legacyConfigService, series, season);
+                if (textSubtitleResult != null)
                 {
-                    Console.WriteLine(JsonSerializer.Serialize(new 
-                    { 
-                        error = new 
-                        { 
-                            code = "UNSUPPORTED_SUBTITLE_FORMAT", 
-                            message = "DVD subtitle (VobSub) format detected. OCR extraction for this format is not yet implemented. Please convert subtitles to SRT format first." 
-                        } 
-                    }, jsonSerializationOptions));
-                    return 1;
+                    Console.WriteLine(JsonSerializer.Serialize(textSubtitleResult, jsonSerializationOptions));
+                    return textSubtitleResult.HasError ? 1 : 0;
                 }
 
-                // Check if there are any actual PGS tracks first
+                // Priority 2: Try PGS subtitle processing
                 var pgsTracks = subtitleTracks.Where(t =>
                     t.CodecName == "hdmv_pgs_subtitle").ToList();
 
-                if (!pgsTracks.Any())
+                if (pgsTracks.Any())
                 {
-                    // No PGS tracks found, try text subtitle processing
-                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, episodeIdentificationService, rename, filenameService, fileRenameService, legacyConfigService, series, season);
-                    if (textSubtitleResult != null)
-                    {
-                        Console.WriteLine(JsonSerializer.Serialize(textSubtitleResult, jsonSerializationOptions));
-                        return textSubtitleResult.HasError ? 1 : 0;
-                    }
+                    var pgsTrack = PgsTrackSelector.SelectBestTrack(pgsTracks, language);
 
-                    Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "NO_PGS_TRACKS_FOUND", message = "No PGS subtitle tracks found. Only text subtitle tracks are available." } }, jsonSerializationOptions));
-                    return 1;
+                    // Extract and OCR subtitle images directly from video file
+                    var ocrLanguage = GetOcrLanguageCode(language);
+                    var subtitleText = await pgsConverter.ConvertPgsFromVideoToText(input.FullName, pgsTrack.Index, ocrLanguage);
+
+                    if (!string.IsNullOrWhiteSpace(subtitleText))
+                    {
+                        // PGS extraction successful - proceed with identification
+                        goto ProcessIdentification;
+                    }
                 }
 
-                var pgsTrack = PgsTrackSelector.SelectBestTrack(pgsTracks, language);
-
-                // Extract and OCR subtitle images directly from video file
-                var ocrLanguage = GetOcrLanguageCode(language);
-                var subtitleText = await pgsConverter.ConvertPgsFromVideoToText(input.FullName, pgsTrack.Index, ocrLanguage);
-
-                if (string.IsNullOrWhiteSpace(subtitleText))
+                // Priority 3: Try DVD subtitle processing
+                var dvdSubtitleResult = await TryExtractDvdSubtitle(input.FullName, language, validator, episodeIdentificationService, rename, filenameService, fileRenameService, legacyConfigService, series, season, loggerFactory);
+                if (dvdSubtitleResult != null)
                 {
-                    // PGS extraction failed, try text subtitle fallback
-                    var textSubtitleResult = await TryExtractTextSubtitle(input.FullName, language, validator, textExtractor, episodeIdentificationService, rename, filenameService, fileRenameService, legacyConfigService, series, season);
-                    if (textSubtitleResult != null)
+                    Console.WriteLine(JsonSerializer.Serialize(dvdSubtitleResult, jsonSerializationOptions));
+                    return dvdSubtitleResult.HasError ? 1 : 0;
+                }
+
+                // No subtitle format worked
+                Console.WriteLine(JsonSerializer.Serialize(new
+                {
+                    error = new
                     {
-                        Console.WriteLine(JsonSerializer.Serialize(textSubtitleResult, jsonSerializationOptions));
-                        return textSubtitleResult.HasError ? 1 : 0;
+                        code = "NO_SUPPORTED_SUBTITLES",
+                        message = "Failed to extract text from any available subtitle format (text, PGS, or DVD)"
+                    }
+                }));
+                return 1;
+
+            ProcessIdentification:
+                // PGS subtitle text is available - proceed with identification
+                var ocrLang = GetOcrLanguageCode(language);
+                var pgsSubtitleText = await pgsConverter.ConvertPgsFromVideoToText(input.FullName, pgsTracks.First().Index, ocrLang);
+
+                if (string.IsNullOrWhiteSpace(pgsSubtitleText))
+                {
+                    // Shouldn't happen since we checked above, but handle it
+                    var dvdFallback = await TryExtractDvdSubtitle(input.FullName, language, validator, episodeIdentificationService, rename, filenameService, fileRenameService, legacyConfigService, series, season, loggerFactory);
+                    if (dvdFallback != null)
+                    {
+                        Console.WriteLine(JsonSerializer.Serialize(dvdFallback, jsonSerializationOptions));
+                        return dvdFallback.HasError ? 1 : 0;
                     }
 
                     Console.WriteLine(JsonSerializer.Serialize(new
@@ -599,7 +611,7 @@ public class Program
                         error = new
                         {
                             code = "OCR_FAILED",
-                            message = "Failed to extract readable text from PGS subtitles using OCR and no text subtitle fallback available"
+                            message = "Failed to extract readable text from subtitles"
                         }
                     }));
                     return 1;
@@ -609,7 +621,7 @@ public class Program
                 IdentificationResult result;
                 try
                 {
-                    result = await episodeIdentificationService.IdentifyEpisodeAsync(subtitleText, input.FullName, null, series, season);
+                    result = await episodeIdentificationService.IdentifyEpisodeAsync(pgsSubtitleText, input.FullName, null, series, season);
                 }
                 catch (ArgumentException ex)
                 {
@@ -877,6 +889,186 @@ public class Program
         catch (Exception)
         {
             return null; // Text subtitle extraction failed
+        }
+    }
+
+    /// <summary>
+    /// Attempts to extract DVD subtitles (VobSub) from the video when text and PGS subtitles are not available.
+    /// </summary>
+    private static async Task<IdentificationResult?> TryExtractDvdSubtitle(
+        string videoFilePath,
+        string? language,
+        VideoFormatValidator validator,
+        EpisodeIdentificationService episodeIdentificationService,
+        bool rename,
+        FilenameService filenameService,
+        FileRenameService fileRenameService,
+        IAppConfigService legacyConfigService,
+        string? seriesFilter = null,
+        int? seasonFilter = null,
+        ILoggerFactory? loggerFactory = null)
+    {
+        try
+        {
+            // Get all subtitle tracks from the video
+            var subtitleTracks = await validator.GetSubtitleTracks(videoFilePath);
+
+            // Look for DVD subtitle tracks
+            var dvdTracks = subtitleTracks.Where(t => t.CodecName == "dvd_subtitle").ToList();
+
+            if (!dvdTracks.Any())
+            {
+                return null; // No DVD subtitle tracks found
+            }
+
+            // Check for required dependencies
+            var vobSubExtractor = loggerFactory != null
+                ? new VobSubExtractor(loggerFactory.CreateLogger<VobSubExtractor>())
+                : new VobSubExtractor(LoggerFactory.Create(builder => { }).CreateLogger<VobSubExtractor>());
+
+            var vobSubOcrService = loggerFactory != null
+                ? new VobSubOcrService(loggerFactory.CreateLogger<VobSubOcrService>())
+                : new VobSubOcrService(LoggerFactory.Create(builder => { }).CreateLogger<VobSubOcrService>());
+
+            if (!await vobSubExtractor.IsMkvExtractAvailableAsync())
+            {
+                return null; // mkvextract not available, cannot process DVD subtitles
+            }
+
+            if (!await vobSubOcrService.IsTesseractAvailableAsync())
+            {
+                return null; // Tesseract not available, cannot OCR DVD subtitles
+            }
+
+            // Select the best DVD track based on language preference
+            var selectedTrack = dvdTracks.FirstOrDefault(t =>
+                string.IsNullOrEmpty(language) ||
+                (t.Language?.Contains(language, StringComparison.OrdinalIgnoreCase) == true)) ?? dvdTracks.First();
+
+            // Create temporary directory for VobSub extraction
+            var tempDir = Path.Combine(Path.GetTempPath(), $"vobsub_{Guid.NewGuid()}");
+            Directory.CreateDirectory(tempDir);
+
+            try
+            {
+                // Extract VobSub files using VobSubExtractor
+                var extractionResult = await vobSubExtractor.ExtractAsync(
+                    videoFilePath,
+                    selectedTrack.Index,
+                    tempDir,
+                    CancellationToken.None);
+
+                if (!extractionResult.Success || string.IsNullOrEmpty(extractionResult.IdxFilePath) || string.IsNullOrEmpty(extractionResult.SubFilePath))
+                {
+                    return null; // VobSub extraction failed
+                }
+
+                // Perform OCR on extracted VobSub files
+                var ocrLanguage = vobSubOcrService.GetOcrLanguageCode(language ?? "eng");
+                var ocrResult = await vobSubOcrService.PerformOcrAsync(
+                    extractionResult.IdxFilePath,
+                    extractionResult.SubFilePath,
+                    ocrLanguage,
+                    CancellationToken.None);
+
+                if (!ocrResult.Success || string.IsNullOrWhiteSpace(ocrResult.ExtractedText))
+                {
+                    return null; // OCR failed or no text extracted
+                }
+
+                // Match against database using the episode identification service
+                var result = await episodeIdentificationService.IdentifyEpisodeAsync(
+                    ocrResult.ExtractedText,
+                    videoFilePath,
+                    null,
+                    seriesFilter,
+                    seasonFilter);
+
+                // Handle file renaming if --rename flag is specified
+                if (rename && !result.HasError && result.MatchConfidence >= legacyConfigService.Config.RenameConfidenceThreshold)
+                {
+                    // Generate filename using FilenameService
+                    var filenameRequest = new FilenameGenerationRequest
+                    {
+                        Series = result.Series ?? "",
+                        Season = result.Season ?? "",
+                        Episode = result.Episode ?? "",
+                        EpisodeName = result.EpisodeName ?? "",
+                        FileExtension = Path.GetExtension(videoFilePath),
+                        MatchConfidence = result.MatchConfidence
+                    };
+
+                    var filenameResult = filenameService.GenerateFilename(filenameRequest);
+
+                    if (filenameResult.IsValid && !string.IsNullOrEmpty(filenameResult.SuggestedFilename))
+                    {
+                        // Prepare file rename request
+                        var renameRequest = new FileRenameRequest
+                        {
+                            OriginalPath = videoFilePath,
+                            SuggestedFilename = filenameResult.SuggestedFilename
+                        };
+
+                        try
+                        {
+                            // Attempt to rename the file
+                            var renameResult = await fileRenameService.RenameFileAsync(renameRequest);
+
+                            if (renameResult.Success)
+                            {
+                                // Update identification result with rename success
+                                result.SuggestedFilename = filenameResult.SuggestedFilename;
+                                result.FileRenamed = true;
+                                result.OriginalFilename = Path.GetFileName(videoFilePath);
+                            }
+                            else
+                            {
+                                // Include filename suggestion but set error for rename failure
+                                result.SuggestedFilename = filenameResult.SuggestedFilename;
+                                result.FileRenamed = false;
+
+                                // Set appropriate error based on rename failure type
+                                if (renameResult.ErrorType.HasValue)
+                                {
+                                    result.Error = IdentificationError.FromFileRenameError(renameResult.ErrorType.Value, renameResult.ErrorMessage);
+                                }
+                                else
+                                {
+                                    result.Error = IdentificationError.RenameFailedUnknown(renameResult.ErrorMessage ?? "Unknown rename error");
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // Handle unexpected exceptions during rename operation
+                            result.SuggestedFilename = filenameResult.SuggestedFilename;
+                            result.FileRenamed = false;
+                            result.Error = IdentificationError.RenameFailedUnknown($"Unexpected error during file rename: {ex.Message}");
+                        }
+                    }
+                }
+
+                return result;
+            }
+            finally
+            {
+                // Clean up temporary directory
+                try
+                {
+                    if (Directory.Exists(tempDir))
+                    {
+                        Directory.Delete(tempDir, recursive: true);
+                    }
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
+            }
+        }
+        catch (Exception)
+        {
+            return null; // DVD subtitle extraction failed
         }
     }
 }
