@@ -508,14 +508,15 @@ public class Program
             else
             {
                 // Validate file format first
-                if (!await validator.IsValidForProcessing(input!.FullName))
+                var validationResult = await validator.ValidateForProcessing(input!.FullName);
+                if (!validationResult.IsValid)
                 {
                     Console.WriteLine(JsonSerializer.Serialize(new
                     {
                         error = new
                         {
-                            code = "UNSUPPORTED_FILE_TYPE",
-                            message = "The provided file is not AV1 encoded. Non-AV1 files will be supported in a later release."
+                            code = validationResult.ErrorCode,
+                            message = validationResult.ErrorMessage
                         }
                     }));
                     return 1;
@@ -544,10 +545,24 @@ public class Program
                     return 1;
                 }
 
+                // Check for DVD subtitles which are not yet fully supported
+                var dvdSubTracks = subtitleTracks.Where(t => t.CodecName == "dvd_subtitle").ToList();
+                if (dvdSubTracks.Any())
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new 
+                    { 
+                        error = new 
+                        { 
+                            code = "UNSUPPORTED_SUBTITLE_FORMAT", 
+                            message = "DVD subtitle (VobSub) format detected. OCR extraction for this format is not yet implemented. Please convert subtitles to SRT format first." 
+                        } 
+                    }, jsonSerializationOptions));
+                    return 1;
+                }
+
                 // Check if there are any actual PGS tracks first
                 var pgsTracks = subtitleTracks.Where(t =>
-                    t.CodecName == "hdmv_pgs_subtitle" ||
-                    t.CodecName == "dvd_subtitle").ToList();
+                    t.CodecName == "hdmv_pgs_subtitle").ToList();
 
                 if (!pgsTracks.Any())
                 {

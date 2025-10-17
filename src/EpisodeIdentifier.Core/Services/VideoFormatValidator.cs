@@ -23,7 +23,7 @@ public class VideoFormatValidator
     {
     }
 
-    public async Task<bool> IsValidForProcessing(string videoPath)
+    public async Task<ValidationResult> ValidateForProcessing(string videoPath)
     {
         _logger.LogInformation("Validating video file for processing: {VideoPath}", videoPath);
 
@@ -31,7 +31,7 @@ public class VideoFormatValidator
         if (!_fileSystem.File.Exists(videoPath))
         {
             _logger.LogWarning("Video file not found: {VideoPath}", videoPath);
-            return false;
+            return ValidationResult.Failure("FILE_NOT_FOUND", "The specified video file does not exist.");
         }
 
         // Check if file is an MKV
@@ -39,7 +39,7 @@ public class VideoFormatValidator
         if (extension != ".mkv")
         {
             _logger.LogInformation("Unsupported file format: {Extension}. Only .mkv files are supported.", extension);
-            return false;
+            return ValidationResult.Failure("UNSUPPORTED_FORMAT", $"Unsupported file format: {extension}. Only .mkv files are supported.");
         }
 
         try
@@ -55,24 +55,31 @@ public class VideoFormatValidator
             {
                 var subtitleTypes = subtitleTracks.Select(t => t.CodecName).Distinct().ToArray();
                 _logger.LogInformation("Subtitle types found: {SubtitleTypes}", string.Join(", ", subtitleTypes));
+                return ValidationResult.Success();
             }
             else
             {
                 _logger.LogWarning("No subtitle tracks found in {VideoPath}", videoPath);
+                return ValidationResult.Failure("NO_SUBTITLES", "No subtitle tracks found in the video file. Episode identification requires subtitle tracks.");
             }
-
-            return hasSubtitles;
         }
         catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2)
         {
             _logger.LogWarning("ffprobe not found. Please install FFmpeg to enable video format validation.");
-            return false;
+            return ValidationResult.Failure("FFPROBE_NOT_FOUND", "ffprobe not found. Please install FFmpeg to enable video format validation.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating video for processing: {VideoPath}", videoPath);
-            return false;
+            return ValidationResult.Failure("VALIDATION_ERROR", $"Error validating video file: {ex.Message}");
         }
+    }
+
+    // Backward compatibility method
+    public async Task<bool> IsValidForProcessing(string videoPath)
+    {
+        var result = await ValidateForProcessing(videoPath);
+        return result.IsValid;
     }
 
     public async Task<List<SubtitleTrackInfo>> GetSubtitleTracks(string videoPath)
@@ -124,6 +131,7 @@ public class VideoFormatValidator
 
                     // Check for both PGS and text-based subtitle codecs
                     if (codecNameStr == "hdmv_pgs_subtitle" ||
+                        codecNameStr == "dvd_subtitle" ||
                         codecNameStr == "subrip" ||
                         codecNameStr == "ass" ||
                         codecNameStr == "webvtt" ||
