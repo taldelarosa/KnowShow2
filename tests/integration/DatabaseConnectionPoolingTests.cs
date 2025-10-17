@@ -71,9 +71,9 @@ public class DatabaseConnectionPoolingTests : IDisposable
             {
                 var searchText = (i % 3) switch
                 {
-                    0 => "Hello world test episode",
-                    1 => "This is episode two",
-                    _ => "Episode three has different"
+                    0 => "Hello world test episode one",
+                    1 => "This is episode two content",
+                    _ => "Episode three has different text"
                 };
                 return await fuzzyHashService.FindMatches(searchText, 0.5);
             })
@@ -170,7 +170,8 @@ public class DatabaseConnectionPoolingTests : IDisposable
 
         // Act - Perform concurrent searches on large dataset
         var searchTasks = Enumerable.Range(0, concurrentSearches)
-            .Select(i => fuzzyHashService.FindMatches($"longer subtitle text episode {i % 10}", 0.14))
+            .Select(i => fuzzyHashService.FindMatches(
+                $"This is a longer subtitle text for episode {i % 10} with more content to simulate real world subtitle data", 0.14))
             .ToArray();
 
         var results = await Task.WhenAll(searchTasks);

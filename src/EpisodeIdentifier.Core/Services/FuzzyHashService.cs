@@ -746,7 +746,7 @@ public class FuzzyHashService : IDisposable
                 Season = reader.GetString(1),
                 Episode = reader.GetString(2),
                 SubtitleText = reader.GetString(3), // Use original text for the result
-                EpisodeName = reader.IsDBNull(9) ? null : reader.GetString(9)
+                EpisodeName = reader.IsDBNull(8) ? null : reader.GetString(8)
             };
 
             // Get stored hashes
