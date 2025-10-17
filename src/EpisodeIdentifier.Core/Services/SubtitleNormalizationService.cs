@@ -7,6 +7,11 @@ public class SubtitleNormalizationService
 {
     private readonly ILogger<SubtitleNormalizationService> _logger;
 
+    // Precompiled regex patterns for performance in bulk processing
+    private static readonly Regex PunctuationRegex = new Regex(@"[^\w\s]", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex WhitespaceRegex = new Regex(@"\s+", RegexOptions.Compiled);
+    private static readonly Regex DoubleSpaceRegex = new Regex(@"\s{2,}", RegexOptions.Compiled);
+
     public SubtitleNormalizationService(ILogger<SubtitleNormalizationService> logger)
     {
         _logger = logger;
@@ -105,7 +110,7 @@ public class SubtitleNormalizationService
         noTags = noTags.Replace("&nbsp;", " ");
 
         // Clean up any double spaces that might have been created
-        noTags = Regex.Replace(noTags, @"\s{2,}", " ");
+        noTags = DoubleSpaceRegex.Replace(noTags, " ");
 
         // Convert to lowercase for case-insensitive comparison
         return noTags.Trim().ToLowerInvariant();
@@ -126,10 +131,10 @@ public class SubtitleNormalizationService
 
         // Remove all punctuation and special characters except spaces
         // This handles variations like "--" vs "..." or different quote styles
-        clean = Regex.Replace(clean, @"[^\w\s]", "");
+        clean = PunctuationRegex.Replace(clean, "");
 
         // Replace all newlines and multiple whitespace with single space
-        clean = Regex.Replace(clean, @"\s+", " ");
+        clean = WhitespaceRegex.Replace(clean, " ");
 
         return clean.Trim();
     }
