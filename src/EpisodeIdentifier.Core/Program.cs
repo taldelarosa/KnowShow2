@@ -485,7 +485,8 @@ public class Program
                         },
                         results = result.GetFileResultsAsList().Select(fr => new
                         {
-                            file = Path.GetFileName(fr.FilePath),
+                            file = fr.FilePath,  // Use full path for bulk imports from multiple folders
+                            fileName = Path.GetFileName(fr.FilePath),  // Also include just the filename for convenience
                             status = fr.Status.ToString(),
                             error = fr.Error?.Message,
                             processingTime = fr.ProcessingDuration.ToString(@"ss\.fff"),
