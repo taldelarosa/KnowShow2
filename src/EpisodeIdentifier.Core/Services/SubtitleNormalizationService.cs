@@ -113,7 +113,7 @@ public class SubtitleNormalizationService
 
     /// <summary>
     /// Removes both HTML tags and timecodes, converts to lowercase, and collapses all whitespace
-    /// for the most aggressive comparison text
+    /// for the most aggressive comparison text. Also removes punctuation for maximum fuzzy matching tolerance.
     /// </summary>
     public string RemoveHtmlAndTimecodes(string subtitleText)
     {
@@ -123,6 +123,10 @@ public class SubtitleNormalizationService
         // Apply both transformations (both already lowercase)
         var noTimecodes = RemoveTimecodes(subtitleText);
         var clean = RemoveHtml(noTimecodes);
+
+        // Remove all punctuation and special characters except spaces
+        // This handles variations like "--" vs "..." or different quote styles
+        clean = Regex.Replace(clean, @"[^\w\s]", "");
 
         // Replace all newlines and multiple whitespace with single space
         clean = Regex.Replace(clean, @"\s+", " ");
