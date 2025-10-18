@@ -86,13 +86,12 @@ public class VobSubOcrService : IVobSubOcrService
                 _fileSystem.Path.GetDirectoryName(idxFilePath) ?? string.Empty,
                 _fileSystem.Path.GetFileNameWithoutExtension(idxFilePath));
 
-            // Create output directory for SRT file
-            var outputDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), $"vobsub_srt_{Guid.NewGuid()}");
-            _fileSystem.Directory.CreateDirectory(outputDir);
-            var outputSrt = _fileSystem.Path.Combine(outputDir, "output.srt");
+            
+            // vobsub2srt writes to <basePath>.srt automatically
+            var outputSrt = basePath + ".srt";
 
             // Run vobsub2srt: vobsub2srt --lang <lang> <input-base> <output-srt>
-            var arguments = $"--lang {languageCode} \"{basePath}\" \"{outputSrt}\"";
+            var arguments = $"--tesseract-lang {languageCode} --lang {languageCode} \"{basePath}\"";
             
             _logger.LogDebug("Executing vobsub2srt with arguments: {Arguments}", arguments);
 
@@ -132,11 +131,11 @@ public class VobSubOcrService : IVobSubOcrService
             // Clean up temp directory
             try
             {
-                _fileSystem.Directory.Delete(outputDir, recursive: true);
+                _fileSystem.File.Delete(outputSrt);
             }
             catch (Exception ex)
             {
-                _logger.LogDebug(ex, "Failed to cleanup temp directory: {TempDir}", outputDir);
+                _logger.LogDebug(ex, "Failed to cleanup temp file: {TempFile}", outputSrt);
             }
 
             stopwatch.Stop();
@@ -174,17 +173,22 @@ public class VobSubOcrService : IVobSubOcrService
     /// </summary>
     public async Task<bool> IsVobSub2SrtAvailableAsync(CancellationToken cancellationToken = default)
     {
+        await Task.CompletedTask; // Method needs to be async for interface
+        
         if (_isAvailable.HasValue)
+        {
             return _isAvailable.Value;
+        }
 
         try
         {
-            var result = await RunProcessAsync("vobsub2srt", "--version", cancellationToken);
-            _isAvailable = result.ExitCode == 0;
+            // vobsub2srt doesn't support --version, so just check if the executable exists
+            var execPath = FindVobSub2SrtExecutable();
+            _isAvailable = execPath != null;
 
             if (_isAvailable.Value)
             {
-                _logger.LogInformation("vobsub2srt is available and ready to use");
+                _logger.LogInformation("vobsub2srt is available and ready to use at: {Path}", execPath);
             }
             else
             {
@@ -335,6 +339,50 @@ public class VobSubOcrService : IVobSubOcrService
             StandardOutput = outputBuilder.ToString(),
             StandardError = errorBuilder.ToString()
         };
+    }
+
+    private string? FindVobSub2SrtExecutable()
+    {
+        // Check common installation paths for vobsub2srt
+        var paths = new[]
+        {
+            "/snap/bin/vobsub2srt",      // Snap installation
+            "/usr/local/bin/vobsub2srt",  // Manual build
+            "/usr/bin/vobsub2srt"         // Package manager
+        };
+
+        foreach (var path in paths)
+        {
+            if (_fileSystem.File.Exists(path))
+            {
+                _logger.LogDebug("Found vobsub2srt at: {Path}", path);
+                return path;
+            }
+        }
+
+        // Try PATH
+        try
+        {
+            var pathEnv = Environment.GetEnvironmentVariable("PATH");
+            if (pathEnv != null)
+            {
+                foreach (var dir in pathEnv.Split(':'))
+                {
+                    var fullPath = _fileSystem.Path.Combine(dir, "vobsub2srt");
+                    if (_fileSystem.File.Exists(fullPath))
+                    {
+                        _logger.LogDebug("Found vobsub2srt in PATH at: {Path}", fullPath);
+                        return fullPath;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Error checking PATH for vobsub2srt");
+        }
+
+        return null;
     }
 
     private class ProcessResult

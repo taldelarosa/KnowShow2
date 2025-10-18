@@ -946,7 +946,9 @@ public class Program
                 (t.Language?.Contains(language, StringComparison.OrdinalIgnoreCase) == true)) ?? dvdTracks.First();
 
             // Create temporary directory for VobSub extraction
-            var tempDir = Path.Combine(Path.GetTempPath(), $"vobsub_{Guid.NewGuid()}");
+            // Use home directory because snap apps can't access /tmp
+            var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            var tempDir = Path.Combine(homeDir, ".episodeidentifier", $"vobsub_{Guid.NewGuid()}");
             Directory.CreateDirectory(tempDir);
 
             try
