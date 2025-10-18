@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.IO.Abstractions;
 using System.Text;
-using System.Text.RegularExpressions;
 using EpisodeIdentifier.Core.Interfaces;
 using EpisodeIdentifier.Core.Models;
 using Microsoft.Extensions.Logging;
@@ -9,15 +8,16 @@ using Microsoft.Extensions.Logging;
 namespace EpisodeIdentifier.Core.Services;
 
 /// <summary>
-/// Performs OCR on VobSub subtitle files using Tesseract.
+/// Performs OCR on VobSub subtitle files using vobsub2srt.
+/// Similar to PgsRipService, this uses an external tool (vobsub2srt) for better accuracy.
 /// </summary>
 public class VobSubOcrService : IVobSubOcrService
 {
     private readonly ILogger<VobSubOcrService> _logger;
     private readonly IFileSystem _fileSystem;
-    private const string TesseractTool = "tesseract";
+    private bool? _isAvailable;
 
-    // Language code mappings
+    // Language code mappings for vobsub2srt
     private static readonly Dictionary<string, string> LanguageCodeMap = new(StringComparer.OrdinalIgnoreCase)
     {
         { "eng", "eng" },
@@ -50,35 +50,15 @@ public class VobSubOcrService : IVobSubOcrService
         string language,
         CancellationToken cancellationToken)
     {
-        if (idxFilePath == null)
-        {
-            throw new ArgumentNullException(nameof(idxFilePath));
-        }
-
-        if (subFilePath == null)
-        {
-            throw new ArgumentNullException(nameof(subFilePath));
-        }
-
-        if (language == null)
-        {
-            throw new ArgumentNullException(nameof(language));
-        }
-
+        if (idxFilePath == null) throw new ArgumentNullException(nameof(idxFilePath));
+        if (subFilePath == null) throw new ArgumentNullException(nameof(subFilePath));
+        if (language == null) throw new ArgumentNullException(nameof(language));
         if (string.IsNullOrWhiteSpace(language))
-        {
             throw new ArgumentException("Language cannot be empty or whitespace", nameof(language));
-        }
-
         if (!_fileSystem.File.Exists(idxFilePath))
-        {
             throw new ArgumentException($".idx file does not exist: {idxFilePath}", nameof(idxFilePath));
-        }
-
         if (!_fileSystem.File.Exists(subFilePath))
-        {
             throw new ArgumentException($".sub file does not exist: {subFilePath}", nameof(subFilePath));
-        }
 
         var stopwatch = Stopwatch.StartNew();
         var languageCode = GetOcrLanguageCode(language);
@@ -86,225 +66,221 @@ public class VobSubOcrService : IVobSubOcrService
         _logger.LogInformation("Starting VobSub OCR for {IdxFile} with language {Language}",
             idxFilePath, languageCode);
 
-        string? tempImageDir = null;
-
         try
         {
-            // Step 1: Extract images from VobSub using ffmpeg
-            tempImageDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), $"vobsub_ocr_{Guid.NewGuid()}");
-            _fileSystem.Directory.CreateDirectory(tempImageDir);
-
-            _logger.LogDebug("Extracting images to temporary directory: {TempDir}", tempImageDir);
-
-            var imageFiles = await ExtractImagesFromVobSubAsync(idxFilePath, tempImageDir, cancellationToken);
-
-            if (imageFiles.Count == 0)
+            // Check if vobsub2srt is available
+            if (!await IsVobSub2SrtAvailableAsync(cancellationToken))
             {
-                stopwatch.Stop();
-                _logger.LogInformation("No images extracted from VobSub. OCR complete with empty result.");
-
+                _logger.LogWarning("vobsub2srt is not available. Install with: sudo apt-get install vobsub2srt");
                 return new VobSubOcrResult
                 {
-                    Success = true,
-                    ExtractedText = string.Empty,
-                    ConfidenceScore = 0.0,
-                    CharacterCount = 0,
-                    OcrDuration = stopwatch.Elapsed,
-                    ImageCount = 0,
-                    Language = languageCode
+                    Success = false,
+                    ErrorMessage = "vobsub2srt tool is not installed",
+                    OcrDuration = stopwatch.Elapsed
                 };
             }
 
-            _logger.LogInformation("Extracted {ImageCount} images from VobSub", imageFiles.Count);
+            // vobsub2srt expects the base name without extension
+            // e.g., if file is "/tmp/subtitle.idx", pass "/tmp/subtitle"
+            var basePath = _fileSystem.Path.Combine(
+                _fileSystem.Path.GetDirectoryName(idxFilePath) ?? string.Empty,
+                _fileSystem.Path.GetFileNameWithoutExtension(idxFilePath));
 
-            // Step 2: Perform OCR on each image
-            var allText = new StringBuilder();
-            double totalConfidence = 0.0;
-            int totalCharacters = 0;
+            // Create output directory for SRT file
+            var outputDir = _fileSystem.Path.Combine(_fileSystem.Path.GetTempPath(), $"vobsub_srt_{Guid.NewGuid()}");
+            _fileSystem.Directory.CreateDirectory(outputDir);
+            var outputSrt = _fileSystem.Path.Combine(outputDir, "output.srt");
 
-            foreach (var imageFile in imageFiles)
+            // Run vobsub2srt: vobsub2srt --lang <lang> <input-base> <output-srt>
+            var arguments = $"--lang {languageCode} \"{basePath}\" \"{outputSrt}\"";
+            
+            _logger.LogDebug("Executing vobsub2srt with arguments: {Arguments}", arguments);
+
+            var result = await RunProcessAsync("vobsub2srt", arguments, cancellationToken);
+
+            if (result.ExitCode != 0)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var ocrResult = await PerformTesseractOcrOnImageAsync(imageFile, languageCode, cancellationToken);
-                if (!string.IsNullOrWhiteSpace(ocrResult.Text))
+                _logger.LogWarning("vobsub2srt failed with exit code {ExitCode}: {Error}",
+                    result.ExitCode, result.StandardError);
+                
+                return new VobSubOcrResult
                 {
-                    allText.AppendLine(ocrResult.Text);
-                    totalCharacters += ocrResult.Text.Length;
-                    totalConfidence += ocrResult.Confidence * ocrResult.Text.Length; // Weight by text length
-                }
+                    Success = false,
+                    ErrorMessage = $"vobsub2srt exited with code {result.ExitCode}",
+                    OcrDuration = stopwatch.Elapsed
+                };
+            }
+
+            // Read the generated SRT file
+            if (!_fileSystem.File.Exists(outputSrt))
+            {
+                _logger.LogWarning("vobsub2srt completed but output file not found: {OutputFile}", outputSrt);
+                return new VobSubOcrResult
+                {
+                    Success = false,
+                    ErrorMessage = "Output SRT file not generated",
+                    OcrDuration = stopwatch.Elapsed
+                };
+            }
+
+            var srtContent = await _fileSystem.File.ReadAllTextAsync(outputSrt, cancellationToken);
+            
+            // Extract just the text content from SRT (remove timestamps and sequence numbers)
+            var extractedText = ExtractTextFromSrt(srtContent);
+            var characterCount = extractedText.Length;
+
+            // Clean up temp directory
+            try
+            {
+                _fileSystem.Directory.Delete(outputDir, recursive: true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to cleanup temp directory: {TempDir}", outputDir);
             }
 
             stopwatch.Stop();
 
-            var extractedText = NormalizeText(allText.ToString());
-            var averageConfidence = totalCharacters > 0 ? totalConfidence / totalCharacters : 0.0;
-
-            _logger.LogInformation("VobSub OCR complete. Extracted {CharCount} characters with {Confidence:P} confidence. Duration: {Duration}ms",
-                totalCharacters, averageConfidence, stopwatch.ElapsedMilliseconds);
+            _logger.LogInformation("VobSub OCR complete. Extracted {CharCount} characters. Duration: {Duration}ms",
+                characterCount, stopwatch.ElapsedMilliseconds);
 
             return new VobSubOcrResult
             {
                 Success = true,
                 ExtractedText = extractedText,
-                ConfidenceScore = averageConfidence,
-                CharacterCount = totalCharacters,
+                ConfidenceScore = 0.85, // vobsub2srt doesn't provide confidence, use reasonable default
+                CharacterCount = characterCount,
                 OcrDuration = stopwatch.Elapsed,
-                ImageCount = imageFiles.Count,
+                ImageCount = 0, // vobsub2srt handles this internally
                 Language = languageCode
             };
-        }
-        catch (OperationCanceledException)
-        {
-            stopwatch.Stop();
-            _logger.LogWarning("VobSub OCR cancelled after {Duration}ms", stopwatch.ElapsedMilliseconds);
-            throw;
         }
         catch (Exception ex)
         {
             stopwatch.Stop();
-            var errorMessage = $"Unexpected error during VobSub OCR: {ex.Message}";
             _logger.LogError(ex, "VobSub OCR failed");
 
             return new VobSubOcrResult
             {
                 Success = false,
-                ErrorMessage = errorMessage,
-                OcrDuration = stopwatch.Elapsed,
-                ImageCount = 0,
-                Language = languageCode
+                ErrorMessage = ex.Message,
+                OcrDuration = stopwatch.Elapsed
             };
         }
-        finally
+    }
+
+    /// <summary>
+    /// Check if vobsub2srt is available on the system
+    /// </summary>
+    public async Task<bool> IsVobSub2SrtAvailableAsync(CancellationToken cancellationToken = default)
+    {
+        if (_isAvailable.HasValue)
+            return _isAvailable.Value;
+
+        try
         {
-            // Clean up temporary directory
-            if (tempImageDir != null && _fileSystem.Directory.Exists(tempImageDir))
+            var result = await RunProcessAsync("vobsub2srt", "--version", cancellationToken);
+            _isAvailable = result.ExitCode == 0;
+
+            if (_isAvailable.Value)
             {
-                try
-                {
-                    _fileSystem.Directory.Delete(tempImageDir, recursive: true);
-                    _logger.LogDebug("Cleaned up temporary directory: {TempDir}", tempImageDir);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to clean up temporary directory: {TempDir}", tempImageDir);
-                }
+                _logger.LogInformation("vobsub2srt is available and ready to use");
             }
+            else
+            {
+                _logger.LogWarning("vobsub2srt is not available - install with: sudo apt-get install vobsub2srt");
+            }
+
+            return _isAvailable.Value;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to check vobsub2srt availability");
+            _isAvailable = false;
+            return false;
         }
     }
 
     /// <inheritdoc/>
     public async Task<bool> IsTesseractAvailableAsync()
     {
-        try
-        {
-            var result = await RunProcessAsync(TesseractTool, "--version", CancellationToken.None);
-            var isAvailable = result.ExitCode == 0;
-
-            _logger.LogDebug("Tesseract availability check: {IsAvailable}", isAvailable);
-            return isAvailable;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "Tesseract not available");
-            return false;
-        }
+        // vobsub2srt uses Tesseract internally, so we check for vobsub2srt instead
+        return await IsVobSub2SrtAvailableAsync();
     }
 
     /// <inheritdoc/>
     public string GetOcrLanguageCode(string language)
     {
-        if (LanguageCodeMap.TryGetValue(language, out var code))
+        if (string.IsNullOrWhiteSpace(language))
         {
-            return code;
+            return "eng";
         }
 
-        // Default to the input if not in mapping (assume it's already a Tesseract code)
-        return language.ToLowerInvariant();
+        if (LanguageCodeMap.TryGetValue(language, out var mappedCode))
+        {
+            return mappedCode;
+        }
+
+        // If it's a 3-letter code, return as-is
+        if (language.Length == 3 && language.All(char.IsLetter))
+        {
+            return language.ToLowerInvariant();
+        }
+
+        // Default to English
+        _logger.LogWarning("Unknown language '{Language}', defaulting to 'eng'", language);
+        return "eng";
     }
 
-    private async Task<List<string>> ExtractImagesFromVobSubAsync(string idxFilePath, string outputDirectory, CancellationToken cancellationToken)
+    /// <summary>
+    /// Extract plain text content from SRT format
+    /// </summary>
+    private string ExtractTextFromSrt(string srtContent)
     {
-        // Use ffmpeg to extract images from VobSub
-        // Command: ffmpeg -i "{idxFilePath}" "{outputDir}/frame_%04d.png"
-        var outputPattern = _fileSystem.Path.Combine(outputDirectory, "frame_%04d.png");
-        var arguments = $"-i \"{idxFilePath}\" \"{outputPattern}\"";
-
-        _logger.LogDebug("Executing ffmpeg with arguments: {Arguments}", arguments);
-
-        var result = await RunProcessAsync("ffmpeg", arguments, cancellationToken);
-
-        // ffmpeg returns 0 on success
-        if (result.ExitCode != 0)
-        {
-            _logger.LogWarning("ffmpeg extraction failed with exit code {ExitCode}: {Error}",
-                result.ExitCode, result.StandardError);
-        }
-
-        // Find all extracted PNG files
-        var imageFiles = _fileSystem.Directory.GetFiles(outputDirectory, "frame_*.png")
-            .OrderBy(f => f)
-            .ToList();
-
-        return imageFiles;
-    }
-
-    private async Task<TesseractOcrResult> PerformTesseractOcrOnImageAsync(string imagePath, string language, CancellationToken cancellationToken)
-    {
-        // Command: tesseract "{imagePath}" stdout -l {language}
-        var arguments = $"\"{imagePath}\" stdout -l {language}";
-
-        _logger.LogDebug("Performing OCR on image: {ImagePath}", imagePath);
-
-        var result = await RunProcessAsync(TesseractTool, arguments, cancellationToken);
-
-        if (result.ExitCode == 0)
-        {
-            // Extract text and confidence from output
-            var text = result.StandardOutput.Trim();
-            // Tesseract doesn't provide per-character confidence in stdout mode
-            // We'll assume a default confidence of 0.85 for successful OCR
-            var confidence = string.IsNullOrWhiteSpace(text) ? 0.0 : 0.85;
-
-            return new TesseractOcrResult
-            {
-                Text = text,
-                Confidence = confidence
-            };
-        }
-        else
-        {
-            _logger.LogWarning("Tesseract OCR failed for image {ImagePath} with exit code {ExitCode}",
-                imagePath, result.ExitCode);
-
-            return new TesseractOcrResult
-            {
-                Text = string.Empty,
-                Confidence = 0.0
-            };
-        }
-    }
-
-    private string NormalizeText(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
+        if (string.IsNullOrWhiteSpace(srtContent))
             return string.Empty;
+
+        var lines = srtContent.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+        var textBuilder = new StringBuilder();
+        var isTextLine = false;
+
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim();
+
+            // Skip sequence numbers (just digits)
+            if (int.TryParse(trimmed, out _))
+            {
+                isTextLine = false;
+                continue;
+            }
+
+            // Skip timestamp lines (contains -->)
+            if (trimmed.Contains("-->"))
+            {
+                isTextLine = true;
+                continue;
+            }
+
+            // Empty line resets
+            if (string.IsNullOrWhiteSpace(trimmed))
+            {
+                isTextLine = false;
+                if (textBuilder.Length > 0 && textBuilder[textBuilder.Length - 1] != '\n')
+                {
+                    textBuilder.AppendLine();
+                }
+                continue;
+            }
+
+            // This is subtitle text
+            if (isTextLine)
+            {
+                textBuilder.AppendLine(trimmed);
+            }
         }
 
-        // Remove HTML tags
-        text = Regex.Replace(text, @"<[^>]+>", string.Empty);
-
-        // Remove timecodes (e.g., 00:00:01,000)
-        text = Regex.Replace(text, @"\d{2}:\d{2}:\d{2}[,\.]\d{3}", string.Empty);
-
-        // Collapse multiple whitespace to single space
-        text = Regex.Replace(text, @"\s+", " ");
-
-        // Reduce multiple newlines to single newline
-        text = Regex.Replace(text, @"(\r?\n){2,}", "\n");
-
-        return text.Trim();
+        return textBuilder.ToString().Trim();
     }
 
     private async Task<ProcessResult> RunProcessAsync(string fileName, string arguments, CancellationToken cancellationToken)
@@ -322,10 +298,11 @@ public class VobSubOcrService : IVobSubOcrService
         using var process = new Process { StartInfo = startInfo };
         var outputBuilder = new StringBuilder();
         var errorBuilder = new StringBuilder();
+        const int maxOutputLength = 100_000; // Reasonable limit for vobsub2srt output
 
         process.OutputDataReceived += (sender, args) =>
         {
-            if (args.Data != null)
+            if (args.Data != null && outputBuilder.Length < maxOutputLength)
             {
                 outputBuilder.AppendLine(args.Data);
             }
@@ -333,7 +310,7 @@ public class VobSubOcrService : IVobSubOcrService
 
         process.ErrorDataReceived += (sender, args) =>
         {
-            if (args.Data != null)
+            if (args.Data != null && errorBuilder.Length < maxOutputLength)
             {
                 errorBuilder.AppendLine(args.Data);
             }
@@ -365,11 +342,5 @@ public class VobSubOcrService : IVobSubOcrService
         public int ExitCode { get; set; }
         public string StandardOutput { get; set; } = string.Empty;
         public string StandardError { get; set; } = string.Empty;
-    }
-
-    private class TesseractOcrResult
-    {
-        public string Text { get; set; } = string.Empty;
-        public double Confidence { get; set; }
     }
 }

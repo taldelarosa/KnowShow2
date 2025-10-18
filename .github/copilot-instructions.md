@@ -74,8 +74,8 @@ specs/
 
 - Text subtitles (SRT, ASS, WebVTT): Processed directly (Priority 1)
 - PGS subtitles: OCR using pgsrip + Tesseract (Priority 2)
-- DVD subtitles (VobSub): Extraction using mkvextract, OCR using Tesseract (Priority 3)
-- Requires: mkvextract (mkvtoolnix), tesseract-ocr for DVD subtitle support
+- DVD subtitles (VobSub): Conversion using vobsub2srt tool (Priority 3)
+- Requires: mkvextract (mkvtoolnix), vobsub2srt, tesseract-ocr for DVD subtitle support
 
 ## Code Style
 
