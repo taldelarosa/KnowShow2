@@ -40,8 +40,8 @@
     "name": "all-MiniLM-L6-v2",
     "modelUrl": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx",
     "tokenizerUrl": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/vocab.txt",
-    "modelSha256": "PLACEHOLDER_UPDATE_AFTER_DOWNLOAD",
-    "tokenizerSha256": "PLACEHOLDER_UPDATE_AFTER_DOWNLOAD",
+    "modelSha256": "6fd5d72fe4589f189f8ebc006442dbb529bb7ce38f8082112682524616046452",
+    "tokenizerSha256": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3",
     "dimensions": 384,
     "maxTokens": 512
   },
