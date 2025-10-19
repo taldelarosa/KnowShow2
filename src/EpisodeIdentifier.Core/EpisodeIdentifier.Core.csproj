@@ -17,7 +17,7 @@
     <PackageReference Include="FluentValidation" Version="11.8.0" />
     <PackageReference Include="System.IO.Abstractions" Version="19.2.69" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.16.3" />
-    <PackageReference Include="Microsoft.ML.Tokenizers" Version="0.21.0-preview.23511.1" />
+    <PackageReference Include="Microsoft.ML.Tokenizers" Version="1.0.2" />
   </ItemGroup>
 
 </Project>
