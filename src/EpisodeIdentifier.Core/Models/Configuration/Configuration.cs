@@ -82,6 +82,21 @@ public class Configuration
     public int MaxConcurrency { get; set; } = 1;
 
     /// <summary>
+    /// Matching strategy selection: "embedding", "fuzzy", or "hybrid".
+    /// - embedding: Use ML embeddings with cosine similarity (default for 013+)
+    /// - fuzzy: Use CTPH fuzzy hashing (legacy fallback)
+    /// - hybrid: Try embedding first, fallback to fuzzy if confidence low
+    /// </summary>
+    public string MatchingStrategy { get; set; } = "embedding";
+
+    /// <summary>
+    /// Embedding-based match thresholds for different subtitle formats.
+    /// Used when MatchingStrategy is "embedding" or "hybrid".
+    /// Each format has embedSimilarity, matchConfidence, and renameConfidence thresholds.
+    /// </summary>
+    public EmbeddingMatchThresholds EmbeddingThresholds { get; set; } = new();
+
+    /// <summary>
     /// Configuration settings for bulk processing operations.
     /// Optional - when null, defaults are used.
     /// </summary>
@@ -273,6 +288,18 @@ public class ConfigurationValidator : AbstractValidator<Configuration>
         RuleFor(x => x.MaxConcurrency)
             .InclusiveBetween(1, 100)
             .WithMessage("MaxConcurrency must be between 1 and 100");
+
+        // Matching strategy validation
+        RuleFor(x => x.MatchingStrategy)
+            .NotEmpty()
+            .WithMessage("MatchingStrategy is required")
+            .Must(s => s == "embedding" || s == "fuzzy" || s == "hybrid")
+            .WithMessage("MatchingStrategy must be 'embedding', 'fuzzy', or 'hybrid'");
+
+        // Embedding thresholds validation (applied when using embedding strategy)
+        RuleFor(x => x.EmbeddingThresholds)
+            .NotNull()
+            .WithMessage("EmbeddingThresholds is required");
 
         // Bulk processing configuration validation rules
         When(x => x.BulkProcessing != null, () =>
