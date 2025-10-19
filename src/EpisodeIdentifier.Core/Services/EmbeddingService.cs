@@ -3,6 +3,7 @@ using EpisodeIdentifier.Core.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
+using Microsoft.ML.Tokenizers;
 
 namespace EpisodeIdentifier.Core.Services;
 
@@ -15,6 +16,7 @@ public class EmbeddingService : IEmbeddingService, IDisposable
     private readonly ILogger<EmbeddingService> _logger;
     private readonly IModelManager _modelManager;
     private InferenceSession? _session;
+    private Tokenizer? _tokenizer;
     private bool _isInitialized = false;
     private readonly SemaphoreSlim _initLock = new(1, 1);
 
@@ -43,19 +45,33 @@ public class EmbeddingService : IEmbeddingService, IDisposable
 
         try
         {
-            // Tokenize the text
-            var tokenIds = TokenizeText(cleanText);
-            var attentionMask = CreateAttentionMask(tokenIds.Length);
+            // Tokenize the text using BERT tokenizer
+            if (_tokenizer == null)
+            {
+                throw new InvalidOperationException("Tokenizer not initialized");
+            }
+
+            // Use EncodeToIds to tokenize the text
+            var result = _tokenizer.EncodeToIds(cleanText);
+            
+            // Convert to long arrays for ONNX
+            var tokenIds = result.Select(id => (long)id).ToArray();
+            var attentionMask = Enumerable.Repeat(1L, tokenIds.Length).ToArray();
+            
+            // Create token_type_ids (all zeros for single sentence)
+            var tokenTypeIds = new long[tokenIds.Length];
 
             // Create input tensors
-            var inputIds = new DenseTensor<long>(tokenIds, new[] { 1, tokenIds.Length });
+            var inputIdsTensor = new DenseTensor<long>(tokenIds, new[] { 1, tokenIds.Length });
             var attentionMaskTensor = new DenseTensor<long>(attentionMask, new[] { 1, attentionMask.Length });
+            var tokenTypeIdsTensor = new DenseTensor<long>(tokenTypeIds, new[] { 1, tokenTypeIds.Length });
 
-            // Run inference
+            // Run inference with all three required inputs
             var inputs = new List<NamedOnnxValue>
             {
-                NamedOnnxValue.CreateFromTensor("input_ids", inputIds),
-                NamedOnnxValue.CreateFromTensor("attention_mask", attentionMaskTensor)
+                NamedOnnxValue.CreateFromTensor("input_ids", inputIdsTensor),
+                NamedOnnxValue.CreateFromTensor("attention_mask", attentionMaskTensor),
+                NamedOnnxValue.CreateFromTensor("token_type_ids", tokenTypeIdsTensor),
             };
 
             using var results = _session!.Run(inputs);
@@ -146,6 +162,10 @@ public class EmbeddingService : IEmbeddingService, IDisposable
             sessionOptions.GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL;
             
             _session = new InferenceSession(modelInfo.ModelPath, sessionOptions);
+
+            // Load tokenizer from tokenizer.json
+            _logger.LogInformation("Loading BERT tokenizer from {TokenizerPath}", modelInfo.TokenizerPath);
+            _tokenizer = BertTokenizer.CreateAsync(modelInfo.TokenizerPath).GetAwaiter().GetResult();
 
             _isInitialized = true;
             _logger.LogInformation("ONNX Runtime session initialized successfully");
