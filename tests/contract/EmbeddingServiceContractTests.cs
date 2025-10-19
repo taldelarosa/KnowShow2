@@ -29,7 +29,7 @@ public class EmbeddingServiceContractTests
         // Assert
         embedding.Should().NotBeNull();
         embedding.Should().HaveCount(384, "all-MiniLM-L6-v2 produces 384-dimensional embeddings");
-        embedding.Should().AllSatisfy(value => value.Should().BeOfType<float>());
+        embedding.Should().AllSatisfy(value => value.Should().BeInRange(-1f, 1f));
     }
 
     [Fact(Skip = "Implementation not yet created - TDD RED phase")]
@@ -92,7 +92,7 @@ public class EmbeddingServiceContractTests
         embeddings.Should().AllSatisfy(embedding =>
         {
             embedding.Should().HaveCount(384, "each embedding should be 384 dimensions");
-            embedding.Should().AllSatisfy(value => value.Should().BeOfType<float>());
+            embedding.Should().AllSatisfy(value => value.Should().BeInRange(-1f, 1f));
         });
 
         // Verify embeddings are different (semantic content differs)
