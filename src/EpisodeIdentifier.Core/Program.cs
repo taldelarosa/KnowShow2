@@ -224,6 +224,12 @@ public class Program
         var fallbackConverter = new PgsToTextConverter(loggerFactory.CreateLogger<PgsToTextConverter>());
         var pgsConverter = new EnhancedPgsToTextConverter(loggerFactory.CreateLogger<EnhancedPgsToTextConverter>(), pgsRipService, fallbackConverter);
         var normalizationService = new SubtitleNormalizationService(loggerFactory.CreateLogger<SubtitleNormalizationService>());
+        
+        // ML embedding services for semantic similarity matching
+        var modelManager = new ModelManager(loggerFactory.CreateLogger<ModelManager>());
+        var embeddingService = new EmbeddingService(loggerFactory.CreateLogger<EmbeddingService>(), modelManager);
+        var vectorSearchService = new VectorSearchService(loggerFactory.CreateLogger<VectorSearchService>(), hashDb.FullName);
+        
         var hashService = new FuzzyHashService(hashDb.FullName, loggerFactory.CreateLogger<FuzzyHashService>(), normalizationService);
         var filenameParser = new SubtitleFilenameParser(loggerFactory.CreateLogger<SubtitleFilenameParser>(), legacyConfigService);
         var textExtractor = new VideoTextSubtitleExtractor(loggerFactory.CreateLogger<VideoTextSubtitleExtractor>());
