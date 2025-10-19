@@ -1,4 +1,5 @@
 using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Models.Configuration;
 using EpisodeIdentifier.Core.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.IO;
@@ -141,25 +142,35 @@ public class VideoFileProcessingService : IVideoFileProcessingService
             }
 
             // Step 5: Identify episode
-            var identificationResult = await _episodeIdentificationService.IdentifyEpisodeAsync(subtitleText ?? "", filePath);
+            // TODO: Pass actual subtitle type based on which extraction method was used
+            var identificationResult = await _episodeIdentificationService.IdentifyEpisodeAsync(
+                subtitleText ?? "", 
+                SubtitleType.TextBased, 
+                filePath);
             result.IdentificationResult = identificationResult;
+
+            // Get the appropriate rename threshold based on subtitle type (defaulting to TextBased for now)
+            var renameThreshold = _configService.Config.MatchingThresholds?.TextBased.RenameConfidence 
+#pragma warning disable CS0618 // Type or member is obsolete
+                ?? (decimal)_configService.Config.RenameConfidenceThreshold;
+#pragma warning restore CS0618
 
             // Log configuration info for debugging
             _logger.LogInformation("Configuration debug: RenameThreshold={Threshold}, Confidence={Confidence}, ShouldRename={ShouldRename}",
-                _configService.Config.RenameConfidenceThreshold, identificationResult.MatchConfidence, shouldRename);
+                renameThreshold, identificationResult.MatchConfidence, shouldRename);
 
             // Step 6: Handle renaming if requested and confidence is high enough
             if (shouldRename && !identificationResult.HasError &&
-                identificationResult.MatchConfidence >= _configService.Config.RenameConfidenceThreshold)
+                (decimal)identificationResult.MatchConfidence >= renameThreshold)
             {
                 _logger.LogInformation("Attempting file rename: Confidence={Confidence:P1}, Threshold={Threshold:P1}",
-                    identificationResult.MatchConfidence, _configService.Config.RenameConfidenceThreshold);
+                    identificationResult.MatchConfidence, renameThreshold);
                 await AttemptFileRename(filePath, identificationResult, result);
             }
             else
             {
                 _logger.LogInformation("Skipping file rename: ShouldRename={ShouldRename}, HasError={HasError}, Confidence={Confidence:P1}, Threshold={Threshold:P1}",
-                    shouldRename, identificationResult.HasError, identificationResult.MatchConfidence, _configService.Config.RenameConfidenceThreshold);
+                    shouldRename, identificationResult.HasError, identificationResult.MatchConfidence, renameThreshold);
             }
 
             result.ProcessingCompleted = DateTime.UtcNow;

@@ -1,18 +1,29 @@
 using System.Text.Json.Serialization;
+using EpisodeIdentifier.Core.Models.Configuration;
 
 namespace EpisodeIdentifier.Core.Models;
 
 public class AppConfig
 {
     /// <summary>
+    /// Matching thresholds for different subtitle types.
+    /// </summary>
+    [JsonPropertyName("matchingThresholds")]
+    public MatchingThresholds? MatchingThresholds { get; set; }
+
+    /// <summary>
+    /// [DEPRECATED] Use MatchingThresholds.TextBased.MatchConfidence instead.
     /// Minimum confidence threshold for episode matching (default: 0.8)
     /// </summary>
+    [Obsolete("Use MatchingThresholds.TextBased.MatchConfidence instead. This property will be removed in a future version.")]
     [JsonPropertyName("matchConfidenceThreshold")]
     public double MatchConfidenceThreshold { get; set; } = 0.8;
 
     /// <summary>
+    /// [DEPRECATED] Use MatchingThresholds.TextBased.RenameConfidence instead.
     /// Minimum confidence threshold required for automatic file renaming (default: 0.85)
     /// </summary>
+    [Obsolete("Use MatchingThresholds.TextBased.RenameConfidence instead. This property will be removed in a future version.")]
     [JsonPropertyName("renameConfidenceThreshold")]
     public double RenameConfidenceThreshold { get; set; } = 0.85;
 

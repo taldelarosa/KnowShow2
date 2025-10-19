@@ -14,18 +14,28 @@
   // Hot-reloadable: Configuration changes apply to new bulk operations
   "maxConcurrency": 3,
   
-  // Matching Configuration
-  // matchConfidenceThreshold: Minimum confidence score (0.0-1.0) for episode matches
-  "matchConfidenceThreshold": 0.6,
-  
-  // renameConfidenceThreshold: Minimum confidence score for automatic file renaming
-  // Must be >= matchConfidenceThreshold for safety
-  "renameConfidenceThreshold": 0.7,
-  
-  // Fuzzy Hash Configuration
-  // fuzzyHashThreshold: Similarity threshold (0-100) for subtitle content matching
-  // Higher values = more strict matching, Lower values = more lenient matching
-  "fuzzyHashThreshold": 75,
+  // Matching Thresholds by Subtitle Type
+  // Different subtitle types have different OCR accuracy, so thresholds can be adjusted independently
+  "matchingThresholds": {
+    // Text-based subtitles (SRT, ASS, WebVTT) - Most accurate, highest thresholds
+    "textBased": {
+      "matchConfidence": 0.7,      // Minimum confidence (0.0-1.0) to report a match
+      "renameConfidence": 0.8,     // Minimum confidence to auto-rename (must be >= matchConfidence)
+      "fuzzyHashSimilarity": 70    // CTPH similarity threshold (0-100) - higher = stricter matching
+    },
+    // PGS (Presentation Graphic Stream) subtitles - OCR required, moderate accuracy
+    "pgs": {
+      "matchConfidence": 0.6,      // Lower threshold to account for OCR errors
+      "renameConfidence": 0.7,
+      "fuzzyHashSimilarity": 60
+    },
+    // DVD/VobSub subtitles - OCR required, lower accuracy
+    "vobSub": {
+      "matchConfidence": 0.5,      // Lowest threshold due to OCR quality
+      "renameConfidence": 0.6,
+      "fuzzyHashSimilarity": 50
+    }
+  },
   
   // hashingAlgorithm: Algorithm used for content hashing (CTPH recommended)
   "hashingAlgorithm": "CTPH",

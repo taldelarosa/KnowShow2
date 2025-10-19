@@ -1,0 +1,138 @@
+{
+  "contractName": "IEmbeddingService",
+  "description": "Service for generating semantic embeddings from subtitle text using ONNX sentence transformer model",
+  "version": "1.0.0",
+  "namespace": "EpisodeIdentifier.Core.Interfaces",
+  "methods": [
+    {
+      "name": "GenerateEmbedding",
+      "description": "Generate 384-dimensional embedding from cleaned subtitle text",
+      "parameters": [
+        {
+          "name": "cleanText",
+          "type": "string",
+          "required": true,
+          "description": "Cleaned subtitle text (CleanText from SubtitleNormalizationService)",
+          "constraints": {
+            "minLength": 1,
+            "maxLength": 100000
+          }
+        }
+      ],
+      "returns": {
+        "type": "float[]",
+        "description": "384-dimensional float32 array representing semantic content",
+        "constraints": {
+          "length": 384,
+          "elementType": "float32"
+        }
+      },
+      "throws": [
+        {
+          "exception": "ArgumentNullException",
+          "condition": "cleanText is null"
+        },
+        {
+          "exception": "ArgumentException",
+          "condition": "cleanText is empty or whitespace"
+        },
+        {
+          "exception": "InvalidOperationException",
+          "condition": "ONNX model not loaded or tokenizer unavailable"
+        }
+      ],
+      "performance": {
+        "target": "<5 seconds per call",
+        "complexity": "O(n) where n is text length"
+      }
+    },
+    {
+      "name": "BatchGenerateEmbeddings",
+      "description": "Generate embeddings for multiple subtitle texts in batch (more efficient than individual calls)",
+      "parameters": [
+        {
+          "name": "cleanTexts",
+          "type": "List<string>",
+          "required": true,
+          "description": "List of cleaned subtitle texts to embed",
+          "constraints": {
+            "minItems": 1,
+            "maxItems": 100
+          }
+        }
+      ],
+      "returns": {
+        "type": "List<float[]>",
+        "description": "List of 384-dimensional embeddings in same order as input",
+        "constraints": {
+          "sameLength": "input list",
+          "elementLength": 384
+        }
+      },
+      "throws": [
+        {
+          "exception": "ArgumentNullException",
+          "condition": "cleanTexts is null"
+        },
+        {
+          "exception": "ArgumentException",
+          "condition": "cleanTexts is empty or contains null/empty entries"
+        },
+        {
+          "exception": "InvalidOperationException",
+          "condition": "ONNX model not loaded"
+        }
+      ],
+      "performance": {
+        "target": "<3 seconds per item (amortized)",
+        "complexity": "O(n*m) where n is batch size, m is avg text length"
+      }
+    },
+    {
+      "name": "IsModelLoaded",
+      "description": "Check if ONNX model and tokenizer are loaded and ready",
+      "parameters": [],
+      "returns": {
+        "type": "bool",
+        "description": "True if model is loaded and operational, false otherwise"
+      },
+      "throws": [],
+      "performance": {
+        "target": "<1ms",
+        "complexity": "O(1)"
+      }
+    },
+    {
+      "name": "GetModelInfo",
+      "description": "Get information about the loaded embedding model",
+      "parameters": [],
+      "returns": {
+        "type": "ModelInfo",
+        "description": "Model metadata including name, version, dimension, file paths",
+        "nullable": true,
+        "nullCondition": "Model not yet loaded"
+      },
+      "throws": [],
+      "performance": {
+        "target": "<1ms",
+        "complexity": "O(1)"
+      }
+    }
+  ],
+  "dependencies": [
+    "Microsoft.ML.OnnxRuntime",
+    "Microsoft.ML.Tokenizers"
+  ],
+  "configurationRequirements": [
+    "embeddingModel.modelPath",
+    "embeddingModel.tokenizerPath"
+  ],
+  "testRequirements": [
+    "Verify 384-dimensional output",
+    "Test with empty string (should throw)",
+    "Test with very long text (>10k chars)",
+    "Verify batch processing returns correct order",
+    "Test model not loaded error handling",
+    "Benchmark generation time (<5s target)"
+  ]
+}

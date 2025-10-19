@@ -118,9 +118,9 @@ public class VobSubOcrServiceContractTests
         var isAvailable = await ocrService.IsTesseractAvailableAsync();
 
         // Assert
-        // Note: This test may fail on systems without Tesseract installed
-        // In CI/CD, ensure Tesseract is available in the test environment
-        isAvailable.Should().BeTrue("Tesseract should be available in the test environment");
+        // Note: This test may fail on systems without vobsub2srt installed
+        // In CI/CD, ensure vobsub2srt is available in the test environment
+        isAvailable.Should().BeTrue("vobsub2srt should be available in the test environment");
     }
 
     [Fact]

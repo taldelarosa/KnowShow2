@@ -71,15 +71,32 @@ public class SingleFileProcessingIntegrationTests
         // Create configuration with maxConcurrency = 1
         var configContent = """
         {
-            "Version": 2.0,
+            "Version": "2.0",
             "HashingAlgorithm": "CTPH",
-            "MatchThreshold": 80.0,
-            "RenameThreshold": 85.0,
+            "MatchConfidenceThreshold": 0.80,
+            "RenameConfidenceThreshold": 0.85,
             "FuzzyHashThreshold": 75,
+            "MatchingThresholds": {
+                "TextBased": {
+                    "MatchConfidence": 0.80,
+                    "RenameConfidence": 0.85,
+                    "FuzzyHashSimilarity": 75
+                },
+                "PGS": {
+                    "MatchConfidence": 0.70,
+                    "RenameConfidence": 0.75,
+                    "FuzzyHashSimilarity": 65
+                },
+                "VobSub": {
+                    "MatchConfidence": 0.60,
+                    "RenameConfidence": 0.70,
+                    "FuzzyHashSimilarity": 55
+                }
+            },
             "MaxConcurrency": 1,
-            "FilenamePatterns": [
-                "^(?<series>.+?)[ ._-]+[Ss](?<season>\\d{1,2})[Ee](?<episode>\\d{1,2}).*$"
-            ],
+            "FilenamePatterns": {
+                "PrimaryPattern": "^(?<SeriesName>.+?)[ ._-]+[Ss](?<Season>\\d{1,2})[Ee](?<Episode>\\d{1,2}).*$"
+            },
             "FilenameTemplate": "{SeriesName} - S{Season:00}E{Episode:00}"
         }
         """;
@@ -136,10 +153,27 @@ public class SingleFileProcessingIntegrationTests
             "MatchThreshold": 80.0,
             "RenameThreshold": 85.0,
             "FuzzyHashThreshold": 75,
+            "matchingThresholds": {
+                "textBased": {
+                    "matchConfidence": 0.80,
+                    "renameConfidence": 0.85,
+                    "fuzzyHashSimilarity": 75
+                },
+                "pgs": {
+                    "matchConfidence": 0.70,
+                    "renameConfidence": 0.75,
+                    "fuzzyHashSimilarity": 65
+                },
+                "vobSub": {
+                    "matchConfidence": 0.60,
+                    "renameConfidence": 0.70,
+                    "fuzzyHashSimilarity": 55
+                }
+            },
             "MaxConcurrency": 150,
-            "FilenamePatterns": [
-                "^(?<series>.+?)[ ._-]+[Ss](?<season>\\d{1,2})[Ee](?<episode>\\d{1,2}).*$"
-            ],
+            "FilenamePatterns": {
+                "PrimaryPattern": "^(?<series>.+?)[ ._-]+[Ss](?<season>\\d{1,2})[Ee](?<episode>\\d{1,2}).*$"
+            },
             "FilenameTemplate": "{SeriesName} - S{Season:00}E{Episode:00}"
         }
         """;
@@ -221,10 +255,27 @@ public class SingleFileProcessingIntegrationTests
             "MatchThreshold": 80.0,
             "RenameThreshold": 85.0,
             "FuzzyHashThreshold": 75,
+            "matchingThresholds": {
+                "textBased": {
+                    "matchConfidence": 0.80,
+                    "renameConfidence": 0.85,
+                    "fuzzyHashSimilarity": 75
+                },
+                "pgs": {
+                    "matchConfidence": 0.70,
+                    "renameConfidence": 0.75,
+                    "fuzzyHashSimilarity": 65
+                },
+                "vobSub": {
+                    "matchConfidence": 0.60,
+                    "renameConfidence": 0.70,
+                    "fuzzyHashSimilarity": 55
+                }
+            },
             "MaxConcurrency": 1,
-            "FilenamePatterns": [
-                "^(?<series>.+?)[ ._-]*[Ss](?<season>\\d{1,2})[Ee](?<episode>\\d{1,2}).*$"
-            ],
+            "FilenamePatterns": {
+                "PrimaryPattern": "^(?<series>.+?)[ ._-]*[Ss](?<season>\\d{1,2})[Ee](?<episode>\\d{1,2}).*$"
+            },
             "FilenameTemplate": "{SeriesName} - S{Season:00}E{Episode:00}"
         }
         """;
@@ -288,10 +339,27 @@ public class SingleFileProcessingIntegrationTests
             "MatchThreshold": 80.0, 
             "RenameThreshold": 85.0,
             "FuzzyHashThreshold": 75,
+            "matchingThresholds": {
+                "textBased": {
+                    "matchConfidence": 0.80,
+                    "renameConfidence": 0.85,
+                    "fuzzyHashSimilarity": 75
+                },
+                "pgs": {
+                    "matchConfidence": 0.70,
+                    "renameConfidence": 0.75,
+                    "fuzzyHashSimilarity": 65
+                },
+                "vobSub": {
+                    "matchConfidence": 0.60,
+                    "renameConfidence": 0.70,
+                    "fuzzyHashSimilarity": 55
+                }
+            },
             "MaxConcurrency": 1,
-            "FilenamePatterns": [
-                "^(?<series>.+?)[ ._-]+[Ss](?<season>\\d{1,2})[Ee](?<episode>\\d{1,2}).*$"
-            ],
+            "FilenamePatterns": {
+                "PrimaryPattern": "^(?<series>.+?)[ ._-]+[Ss](?<season>\\d{1,2})[Ee](?<episode>\\d{1,2}).*$"
+            },
             "FilenameTemplate": "{SeriesName} - S{Season:00}E{Episode:00}"
         }
         """;

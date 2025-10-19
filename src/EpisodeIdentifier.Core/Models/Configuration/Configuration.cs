@@ -17,23 +17,37 @@ public class Configuration
     public string Version { get; set; } = string.Empty;
 
     /// <summary>
-    /// Minimum confidence threshold for episode matches (0.0-1.0).
-    /// Cannot exceed RenameConfidenceThreshold.
+    /// Matching thresholds for different subtitle types.
+    /// Each subtitle type (TextBased, PGS, VobSub) can have different thresholds
+    /// to account for varying OCR accuracy levels.
     /// </summary>
+    [Required]
+    public MatchingThresholds MatchingThresholds { get; set; } = new();
+
+    /// <summary>
+    /// [DEPRECATED] Use MatchingThresholds.TextBased.MatchConfidence instead.
+    /// Minimum confidence threshold for episode matches (0.0-1.0).
+    /// This property is maintained for backward compatibility only.
+    /// </summary>
+    [Obsolete("Use MatchingThresholds.TextBased.MatchConfidence instead. This property will be removed in a future version.")]
     [Range(0.0, 1.0)]
     public decimal MatchConfidenceThreshold { get; set; }
 
     /// <summary>
+    /// [DEPRECATED] Use MatchingThresholds.TextBased.RenameConfidence instead.
     /// Minimum confidence threshold for file renaming (0.0-1.0).
-    /// Must be greater than or equal to MatchConfidenceThreshold.
+    /// This property is maintained for backward compatibility only.
     /// </summary>
+    [Obsolete("Use MatchingThresholds.TextBased.RenameConfidence instead. This property will be removed in a future version.")]
     [Range(0.0, 1.0)]
     public decimal RenameConfidenceThreshold { get; set; }
 
     /// <summary>
+    /// [DEPRECATED] Use MatchingThresholds.TextBased.FuzzyHashSimilarity instead.
     /// CTPH similarity threshold for fuzzy matching (0-100).
-    /// Required when HashingAlgorithm is CTPH.
+    /// This property is maintained for backward compatibility only.
     /// </summary>
+    [Obsolete("Use MatchingThresholds.TextBased.FuzzyHashSimilarity instead. This property will be removed in a future version.")]
     [Range(0, 100)]
     public int FuzzyHashThreshold { get; set; }
 
@@ -201,29 +215,43 @@ public class ConfigurationValidator : AbstractValidator<Configuration>
             .Must(BeValidSemanticVersion)
             .WithMessage("Version must be a valid semantic version (e.g., '2.0', '1.2.3')");
 
-        RuleFor(x => x.MatchConfidenceThreshold)
-            .InclusiveBetween(0.0m, 1.0m)
-            .WithMessage("MatchConfidenceThreshold must be between 0.0 and 1.0");
+        // New threshold validation using MatchingThresholds
+        RuleFor(x => x.MatchingThresholds)
+            .NotNull()
+            .WithMessage("MatchingThresholds configuration is required")
+            .SetValidator(new MatchingThresholdsValidator());
 
-        RuleFor(x => x.RenameConfidenceThreshold)
-            .InclusiveBetween(0.0m, 1.0m)
-            .WithMessage("RenameConfidenceThreshold must be between 0.0 and 1.0");
-
-        RuleFor(x => x)
-            .Must(x => x.RenameConfidenceThreshold >= x.MatchConfidenceThreshold)
-            .WithMessage("RenameConfidenceThreshold must be greater than or equal to MatchConfidenceThreshold")
-            .WithName("RenameConfidenceThreshold");
-
-        RuleFor(x => x.FuzzyHashThreshold)
-            .InclusiveBetween(0, 100)
-            .WithMessage("FuzzyHashThreshold must be between 0 and 100");
-
-        When(x => x.HashingAlgorithm == HashingAlgorithm.CTPH, () =>
+        // Legacy threshold validation (deprecated - kept for backward compatibility)
+        // These are only validated if the new MatchingThresholds is not properly configured
+#pragma warning disable CS0618 // Type or member is obsolete
+        When(x => x.MatchingThresholds == null || 
+                  (x.MatchingThresholds.TextBased == null && x.MatchingThresholds.PGS == null && x.MatchingThresholds.VobSub == null), () =>
         {
+            RuleFor(x => x.MatchConfidenceThreshold)
+                .InclusiveBetween(0.0m, 1.0m)
+                .WithMessage("MatchConfidenceThreshold must be between 0.0 and 1.0");
+
+            RuleFor(x => x.RenameConfidenceThreshold)
+                .InclusiveBetween(0.0m, 1.0m)
+                .WithMessage("RenameConfidenceThreshold must be between 0.0 and 1.0");
+
+            RuleFor(x => x)
+                .Must(x => x.RenameConfidenceThreshold >= x.MatchConfidenceThreshold)
+                .WithMessage("RenameConfidenceThreshold must be greater than or equal to MatchConfidenceThreshold")
+                .WithName("RenameConfidenceThreshold");
+
             RuleFor(x => x.FuzzyHashThreshold)
-                .GreaterThan(0)
-                .WithMessage("FuzzyHashThreshold is required when HashingAlgorithm is CTPH");
+                .InclusiveBetween(0, 100)
+                .WithMessage("FuzzyHashThreshold must be between 0 and 100");
+
+            When(x => x.HashingAlgorithm == HashingAlgorithm.CTPH, () =>
+            {
+                RuleFor(x => x.FuzzyHashThreshold)
+                    .GreaterThan(0)
+                    .WithMessage("FuzzyHashThreshold is required when HashingAlgorithm is CTPH");
+            });
         });
+#pragma warning restore CS0618 // Type or member is obsolete
 
         RuleFor(x => x.HashingAlgorithm)
             .IsInEnum()

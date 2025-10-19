@@ -1,0 +1,181 @@
+{
+  "contractName": "IModelManager",
+  "description": "Service for managing ONNX model download, caching, and loading",
+  "version": "1.0.0",
+  "namespace": "EpisodeIdentifier.Core.Interfaces",
+  "methods": [
+    {
+      "name": "EnsureModelAvailable",
+      "description": "Ensure embedding model and tokenizer are downloaded and cached locally",
+      "parameters": [],
+      "returns": {
+        "type": "Task<bool>",
+        "description": "True if model is available (downloaded or cached), false if failed"
+      },
+      "throws": [
+        {
+          "exception": "HttpRequestException",
+          "condition": "Network error during download"
+        },
+        {
+          "exception": "InvalidOperationException",
+          "condition": "Downloaded model fails SHA256 verification"
+        },
+        {
+          "exception": "UnauthorizedAccessException",
+          "condition": "Cannot write to cache directory"
+        }
+      ],
+      "performance": {
+        "target": "<60 seconds for initial download (45MB model), <100ms for cached check",
+        "complexity": "O(1) cached, O(N) download where N is model size"
+      }
+    },
+    {
+      "name": "LoadModel",
+      "description": "Load ONNX model and tokenizer into memory for inference",
+      "parameters": [],
+      "returns": {
+        "type": "ModelInfo",
+        "description": "Model metadata including paths, dimension, version"
+      },
+      "throws": [
+        {
+          "exception": "FileNotFoundException",
+          "condition": "Model or tokenizer file not found (call EnsureModelAvailable first)"
+        },
+        {
+          "exception": "InvalidOperationException",
+          "condition": "ONNX model failed to load or tokenizer parse error"
+        }
+      ],
+      "performance": {
+        "target": "<2 seconds for model loading",
+        "complexity": "O(1)"
+      }
+    },
+    {
+      "name": "GetModelInfo",
+      "description": "Get information about cached or loaded model",
+      "parameters": [],
+      "returns": {
+        "type": "ModelInfo",
+        "description": "Model metadata or null if not available",
+        "nullable": true
+      },
+      "throws": [],
+      "performance": {
+        "target": "<1ms",
+        "complexity": "O(1)"
+      }
+    },
+    {
+      "name": "DeleteCachedModel",
+      "description": "Delete cached model files (for troubleshooting or version updates)",
+      "parameters": [],
+      "returns": {
+        "type": "bool",
+        "description": "True if files deleted successfully, false if not found or permission denied"
+      },
+      "throws": [],
+      "performance": {
+        "target": "<100ms",
+        "complexity": "O(1)"
+      }
+    },
+    {
+      "name": "VerifyModel",
+      "description": "Verify cached model SHA256 hash matches expected value",
+      "parameters": [],
+      "returns": {
+        "type": "bool",
+        "description": "True if model exists and hash matches, false otherwise"
+      },
+      "throws": [],
+      "performance": {
+        "target": "<5 seconds for hash computation (45MB file)",
+        "complexity": "O(N) where N is model file size"
+      }
+    },
+    {
+      "name": "DownloadModel",
+      "description": "Download model and tokenizer from Hugging Face with progress reporting",
+      "parameters": [
+        {
+          "name": "progressCallback",
+          "type": "Action<DownloadProgress>",
+          "required": false,
+          "description": "Callback for download progress updates (percentage, bytes downloaded)",
+          "constraints": {
+            "nullable": true
+          }
+        },
+        {
+          "name": "cancellationToken",
+          "type": "CancellationToken",
+          "required": false,
+          "description": "Token for cancelling download operation",
+          "constraints": {
+            "nullable": true
+          }
+        }
+      ],
+      "returns": {
+        "type": "Task<ModelInfo>",
+        "description": "Model metadata after successful download and verification"
+      },
+      "throws": [
+        {
+          "exception": "HttpRequestException",
+          "condition": "Network error or HTTP error status"
+        },
+        {
+          "exception": "OperationCanceledException",
+          "condition": "Download cancelled via cancellationToken"
+        },
+        {
+          "exception": "InvalidOperationException",
+          "condition": "Downloaded file fails SHA256 verification"
+        },
+        {
+          "exception": "UnauthorizedAccessException",
+          "condition": "Cannot write to cache directory"
+        }
+      ],
+      "performance": {
+        "target": "<60 seconds @ 6 Mbps (45MB model)",
+        "complexity": "O(N) where N is model size"
+      }
+    }
+  ],
+  "dependencies": [
+    "System.Net.Http (HttpClient)",
+    "System.Security.Cryptography (SHA256)",
+    "System.IO (file operations)"
+  ],
+  "configurationRequirements": [
+    "embeddingModel.autoDownload (bool)",
+    "embeddingModel.modelPath (string, nullable)",
+    "embeddingModel.tokenizerPath (string, nullable)",
+    "embeddingModel.sha256 (string)",
+    "embeddingModel.cacheDir (string, nullable)"
+  ],
+  "testRequirements": [
+    "Test model download with progress reporting",
+    "Test cached model detection (skip download)",
+    "Test SHA256 verification catches corruption",
+    "Test cache directory creation on first run",
+    "Test download cancellation",
+    "Test manual model path override (skip download)",
+    "Test network failure retry logic (3 attempts)",
+    "Benchmark download time estimate",
+    "Test cross-platform cache paths (Windows/Linux)"
+  ],
+  "constants": {
+    "modelUrl": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model_fp16.onnx",
+    "tokenizerUrl": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json",
+    "modelSha256": "TBD",
+    "modelSizeBytes": 47185920,
+    "dimension": 384
+  }
+}

@@ -123,9 +123,9 @@ public class ConfigurationLoadingTests : IDisposable
         result.Configuration.Should().BeNull();
         result.Errors.Should().NotBeEmpty();
         result.Errors.Should().Contain(error =>
-            error.Contains("MatchConfidenceThreshold") ||
-            error.Contains("RenameConfidenceThreshold") ||
-            error.Contains("FuzzyHashThreshold"));
+            error.Contains("MatchConfidence") ||
+            error.Contains("RenameConfidence") ||
+            error.Contains("FuzzyHashSimilarity"));
 
         _logger.LogWarning("Properly validated threshold constraints");
     }
@@ -182,6 +182,27 @@ public class ConfigurationLoadingTests : IDisposable
             matchConfidenceThreshold = 0.8,
             renameConfidenceThreshold = 0.85,
             fuzzyHashThreshold = 75,
+            matchingThresholds = new
+            {
+                textBased = new
+                {
+                    matchConfidence = 0.8,
+                    renameConfidence = 0.85,
+                    fuzzyHashSimilarity = 75
+                },
+                pgs = new
+                {
+                    matchConfidence = 0.7,
+                    renameConfidence = 0.75,
+                    fuzzyHashSimilarity = 65
+                },
+                vobSub = new
+                {
+                    matchConfidence = 0.6,
+                    renameConfidence = 0.7,
+                    fuzzyHashSimilarity = 55
+                }
+            },
             hashingAlgorithm = "CTPH",
             filenamePatterns = new
             {
@@ -233,6 +254,27 @@ public class ConfigurationLoadingTests : IDisposable
             matchConfidenceThreshold = 1.5, // Invalid - > 1.0
             renameConfidenceThreshold = 0.7, // Invalid - less than match threshold
             fuzzyHashThreshold = 150, // Invalid - > 100
+            matchingThresholds = new
+            {
+                textBased = new
+                {
+                    matchConfidence = 1.5, // Invalid - > 1.0
+                    renameConfidence = 0.7, // Invalid - less than match confidence
+                    fuzzyHashSimilarity = 150 // Invalid - > 100
+                },
+                pgs = new
+                {
+                    matchConfidence = 0.7,
+                    renameConfidence = 0.75,
+                    fuzzyHashSimilarity = 65
+                },
+                vobSub = new
+                {
+                    matchConfidence = 0.6,
+                    renameConfidence = 0.7,
+                    fuzzyHashSimilarity = 55
+                }
+            },
             hashingAlgorithm = "CTPH"
         };
 
@@ -257,7 +299,28 @@ public class ConfigurationLoadingTests : IDisposable
         var config = new
         {
             version = "2.0",
-            matchConfidenceThreshold = 0.8
+            matchConfidenceThreshold = 0.8,
+            matchingThresholds = new
+            {
+                textBased = new
+                {
+                    matchConfidence = 0.8,
+                    renameConfidence = 0.85,
+                    fuzzyHashSimilarity = 75
+                },
+                pgs = new
+                {
+                    matchConfidence = 0.7,
+                    renameConfidence = 0.75,
+                    fuzzyHashSimilarity = 65
+                },
+                vobSub = new
+                {
+                    matchConfidence = 0.6,
+                    renameConfidence = 0.7,
+                    fuzzyHashSimilarity = 55
+                }
+            }
             // Missing required fields: filenameTemplate, filenamePatterns
         };
 
@@ -285,6 +348,27 @@ public class ConfigurationLoadingTests : IDisposable
             matchConfidenceThreshold = 0.85, // Changed threshold
             renameConfidenceThreshold = 0.9,
             fuzzyHashThreshold = 80,
+            matchingThresholds = new
+            {
+                textBased = new
+                {
+                    matchConfidence = 0.85,
+                    renameConfidence = 0.9,
+                    fuzzyHashSimilarity = 80
+                },
+                pgs = new
+                {
+                    matchConfidence = 0.7,
+                    renameConfidence = 0.75,
+                    fuzzyHashSimilarity = 65
+                },
+                vobSub = new
+                {
+                    matchConfidence = 0.6,
+                    renameConfidence = 0.7,
+                    fuzzyHashSimilarity = 55
+                }
+            },
             hashingAlgorithm = "CTPH",
             filenamePatterns = new
             {

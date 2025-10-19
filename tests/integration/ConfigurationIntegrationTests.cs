@@ -199,6 +199,23 @@ public class ConfigurationIntegrationTests : IDisposable
             ""matchConfidenceThreshold"": 0.8,
             ""renameConfidenceThreshold"": 0.85,
             ""fuzzyHashThreshold"": 75,
+            ""matchingThresholds"": {
+                ""textBased"": {
+                    ""matchConfidence"": 0.80,
+                    ""renameConfidence"": 0.85,
+                    ""fuzzyHashSimilarity"": 75
+                },
+                ""pgs"": {
+                    ""matchConfidence"": 0.70,
+                    ""renameConfidence"": 0.75,
+                    ""fuzzyHashSimilarity"": 65
+                },
+                ""vobSub"": {
+                    ""matchConfidence"": 0.60,
+                    ""renameConfidence"": 0.70,
+                    ""fuzzyHashSimilarity"": 55
+                }
+            },
             ""hashingAlgorithm"": ""CTPH"",
             ""filenamePatterns"": {
                 ""primaryPattern"": ""^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$""
@@ -228,6 +245,23 @@ public class ConfigurationIntegrationTests : IDisposable
             ""matchConfidenceThreshold"": 0.8,
             ""renameConfidenceThreshold"": 0.85,
             ""fuzzyHashThreshold"": 75,
+            ""matchingThresholds"": {
+                ""textBased"": {
+                    ""matchConfidence"": 0.80,
+                    ""renameConfidence"": 0.85,
+                    ""fuzzyHashSimilarity"": 75
+                },
+                ""pgs"": {
+                    ""matchConfidence"": 0.70,
+                    ""renameConfidence"": 0.75,
+                    ""fuzzyHashSimilarity"": 65
+                },
+                ""vobSub"": {
+                    ""matchConfidence"": 0.60,
+                    ""renameConfidence"": 0.70,
+                    ""fuzzyHashSimilarity"": 55
+                }
+            },
             ""hashingAlgorithm"": ""CTPH"",
             ""filenamePatterns"": {
                 ""primaryPattern"": ""^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$""
@@ -250,6 +284,23 @@ public class ConfigurationIntegrationTests : IDisposable
             ""matchConfidenceThreshold"": 0.8,
             ""renameConfidenceThreshold"": 0.85,
             ""fuzzyHashThreshold"": 75,
+            ""matchingThresholds"": {
+                ""textBased"": {
+                    ""matchConfidence"": 0.80,
+                    ""renameConfidence"": 0.85,
+                    ""fuzzyHashSimilarity"": 75
+                },
+                ""pgs"": {
+                    ""matchConfidence"": 0.70,
+                    ""renameConfidence"": 0.75,
+                    ""fuzzyHashSimilarity"": 65
+                },
+                ""vobSub"": {
+                    ""matchConfidence"": 0.60,
+                    ""renameConfidence"": 0.70,
+                    ""fuzzyHashSimilarity"": 55
+                }
+            },
             ""hashingAlgorithm"": ""CTPH"",
             ""filenamePatterns"": {
                 ""primaryPattern"": ""^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$""
@@ -271,6 +322,23 @@ public class ConfigurationIntegrationTests : IDisposable
             ""matchConfidenceThreshold"": 0.8,
             ""renameConfidenceThreshold"": 0.85,
             ""fuzzyHashThreshold"": 75,
+            ""matchingThresholds"": {
+                ""textBased"": {
+                    ""matchConfidence"": 0.80,
+                    ""renameConfidence"": 0.85,
+                    ""fuzzyHashSimilarity"": 75
+                },
+                ""pgs"": {
+                    ""matchConfidence"": 0.70,
+                    ""renameConfidence"": 0.75,
+                    ""fuzzyHashSimilarity"": 65
+                },
+                ""vobSub"": {
+                    ""matchConfidence"": 0.60,
+                    ""renameConfidence"": 0.70,
+                    ""fuzzyHashSimilarity"": 55
+                }
+            },
             ""hashingAlgorithm"": ""CTPH"",
             ""filenamePatterns"": {
                 ""primaryPattern"": ""^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$""
@@ -291,6 +359,23 @@ public class ConfigurationIntegrationTests : IDisposable
             ""matchConfidenceThreshold"": 0.8,
             ""renameConfidenceThreshold"": 0.85,
             ""fuzzyHashThreshold"": 75,
+            ""matchingThresholds"": {
+                ""textBased"": {
+                    ""matchConfidence"": 0.80,
+                    ""renameConfidence"": 0.85,
+                    ""fuzzyHashSimilarity"": 75
+                },
+                ""pgs"": {
+                    ""matchConfidence"": 0.70,
+                    ""renameConfidence"": 0.75,
+                    ""fuzzyHashSimilarity"": 65
+                },
+                ""vobSub"": {
+                    ""matchConfidence"": 0.60,
+                    ""renameConfidence"": 0.70,
+                    ""fuzzyHashSimilarity"": 55
+                }
+            },
             ""hashingAlgorithm"": ""CTPH"",
             ""filenamePatterns"": {
                 ""primaryPattern"": ""^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$""
@@ -311,6 +396,27 @@ public class ConfigurationIntegrationTests : IDisposable
             MatchConfidenceThreshold = 0.8m,
             RenameConfidenceThreshold = 0.85m,
             FuzzyHashThreshold = 75,
+            MatchingThresholds = new MatchingThresholds
+            {
+                TextBased = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.8m,
+                    RenameConfidence = 0.85m,
+                    FuzzyHashSimilarity = 75
+                },
+                PGS = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.7m,
+                    RenameConfidence = 0.75m,
+                    FuzzyHashSimilarity = 65
+                },
+                VobSub = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.6m,
+                    RenameConfidence = 0.7m,
+                    FuzzyHashSimilarity = 55
+                }
+            },
             HashingAlgorithm = HashingAlgorithm.CTPH,
             FilenamePatterns = new EpisodeIdentifier.Core.Models.Configuration.FilenamePatterns
             {
@@ -328,6 +434,27 @@ public class ConfigurationIntegrationTests : IDisposable
             MatchConfidenceThreshold = 0.75m,
             RenameConfidenceThreshold = 0.9m,
             FuzzyHashThreshold = 80,
+            MatchingThresholds = new MatchingThresholds
+            {
+                TextBased = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.75m,
+                    RenameConfidence = 0.9m,
+                    FuzzyHashSimilarity = 80
+                },
+                PGS = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.65m,
+                    RenameConfidence = 0.8m,
+                    FuzzyHashSimilarity = 70
+                },
+                VobSub = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.55m,
+                    RenameConfidence = 0.75m,
+                    FuzzyHashSimilarity = 60
+                }
+            },
             HashingAlgorithm = HashingAlgorithm.CTPH,
             FilenamePatterns = new EpisodeIdentifier.Core.Models.Configuration.FilenamePatterns
             {

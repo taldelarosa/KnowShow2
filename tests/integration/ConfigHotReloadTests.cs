@@ -282,6 +282,27 @@ public class ConfigHotReloadTests : IDisposable
             matchConfidenceThreshold = 0.8,
             renameConfidenceThreshold = 0.85,
             fuzzyHashThreshold = threshold,
+            matchingThresholds = new
+            {
+                textBased = new
+                {
+                    matchConfidence = 0.8,
+                    renameConfidence = 0.85,
+                    fuzzyHashSimilarity = threshold
+                },
+                pgs = new
+                {
+                    matchConfidence = 0.7,
+                    renameConfidence = 0.75,
+                    fuzzyHashSimilarity = 65
+                },
+                vobSub = new
+                {
+                    matchConfidence = 0.6,
+                    renameConfidence = 0.7,
+                    fuzzyHashSimilarity = 55
+                }
+            },
             hashingAlgorithm = "CTPH",
             filenamePatterns = new
             {
@@ -321,6 +342,27 @@ public class ConfigHotReloadTests : IDisposable
             matchConfidenceThreshold = 2.0, // Invalid - > 1.0
             renameConfidenceThreshold = 0.5, // Invalid - less than match threshold
             fuzzyHashThreshold = -10, // Invalid - negative
+            matchingThresholds = new
+            {
+                textBased = new
+                {
+                    matchConfidence = 2.0, // Invalid - > 1.0
+                    renameConfidence = 0.5, // Invalid - less than match confidence
+                    fuzzyHashSimilarity = -10 // Invalid - negative
+                },
+                pgs = new
+                {
+                    matchConfidence = 0.7,
+                    renameConfidence = 0.75,
+                    fuzzyHashSimilarity = 65
+                },
+                vobSub = new
+                {
+                    matchConfidence = 0.6,
+                    renameConfidence = 0.7,
+                    fuzzyHashSimilarity = 55
+                }
+            },
             hashingAlgorithm = "INVALID_ALGORITHM"
             // Missing required fields
         };

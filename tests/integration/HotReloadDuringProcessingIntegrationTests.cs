@@ -84,6 +84,23 @@ public class HotReloadDuringProcessingIntegrationTests
             "MatchConfidenceThreshold": 0.8,
             "RenameConfidenceThreshold": 0.85,
             "FuzzyHashThreshold": 75,
+            "matchingThresholds": {
+                "textBased": {
+                    "matchConfidence": 0.80,
+                    "renameConfidence": 0.85,
+                    "fuzzyHashSimilarity": 75
+                },
+                "pgs": {
+                    "matchConfidence": 0.70,
+                    "renameConfidence": 0.75,
+                    "fuzzyHashSimilarity": 65
+                },
+                "vobSub": {
+                    "matchConfidence": 0.60,
+                    "renameConfidence": 0.70,
+                    "fuzzyHashSimilarity": 55
+                }
+            },
             "MaxConcurrency": 2,
             "FilenamePatterns": {
                 "PrimaryPattern": "^(?<SeriesName>.+?)[ ._-]+[Ss](?<Season>\\d{1,2})[Ee](?<Episode>\\d{1,2}).*$"
@@ -131,6 +148,23 @@ public class HotReloadDuringProcessingIntegrationTests
             "MatchConfidenceThreshold": 0.75,
             "RenameConfidenceThreshold": 0.90,
             "FuzzyHashThreshold": 80,
+            "matchingThresholds": {
+                "textBased": {
+                    "matchConfidence": 0.80,
+                    "renameConfidence": 0.85,
+                    "fuzzyHashSimilarity": 75
+                },
+                "pgs": {
+                    "matchConfidence": 0.70,
+                    "renameConfidence": 0.75,
+                    "fuzzyHashSimilarity": 65
+                },
+                "vobSub": {
+                    "matchConfidence": 0.60,
+                    "renameConfidence": 0.70,
+                    "fuzzyHashSimilarity": 55
+                }
+            },
             "MaxConcurrency": 4,
             "FilenamePatterns": {
                 "PrimaryPattern": "^(?<SeriesName>.+?)[ ._-]+[Ss](?<Season>\\d{1,2})[Ee](?<Episode>\\d{1,2}).*$"
@@ -176,6 +210,23 @@ public class HotReloadDuringProcessingIntegrationTests
             "MatchConfidenceThreshold": 0.8,
             "RenameConfidenceThreshold": 0.85,
             "FuzzyHashThreshold": 75,
+            "matchingThresholds": {
+                "textBased": {
+                    "matchConfidence": 0.80,
+                    "renameConfidence": 0.85,
+                    "fuzzyHashSimilarity": 75
+                },
+                "pgs": {
+                    "matchConfidence": 0.70,
+                    "renameConfidence": 0.75,
+                    "fuzzyHashSimilarity": 65
+                },
+                "vobSub": {
+                    "matchConfidence": 0.60,
+                    "renameConfidence": 0.70,
+                    "fuzzyHashSimilarity": 55
+                }
+            },
             "MaxConcurrency": 3,
             "FilenamePatterns": {
                 "PrimaryPattern": "^(?<SeriesName>.+?)[ ._-]+[Ss](?<Season>\\d{1,2})[Ee](?<Episode>\\d{1,2}).*$"
@@ -218,6 +269,23 @@ public class HotReloadDuringProcessingIntegrationTests
             "MatchConfidenceThreshold": 0.8,
             "RenameConfidenceThreshold": 0.85,
             "FuzzyHashThreshold": 75,
+            "matchingThresholds": {
+                "textBased": {
+                    "matchConfidence": 0.80,
+                    "renameConfidence": 0.85,
+                    "fuzzyHashSimilarity": 75
+                },
+                "pgs": {
+                    "matchConfidence": 0.70,
+                    "renameConfidence": 0.75,
+                    "fuzzyHashSimilarity": 65
+                },
+                "vobSub": {
+                    "matchConfidence": 0.60,
+                    "renameConfidence": 0.70,
+                    "fuzzyHashSimilarity": 55
+                }
+            },
             "MaxConcurrency": 500,
             "FilenamePatterns": {
                 "PrimaryPattern": "^(?<SeriesName>.+?)[ ._-]+[Ss](?<Season>\\d{1,2})[Ee](?<Episode>\\d{1,2}).*$"
@@ -263,6 +331,23 @@ public class HotReloadDuringProcessingIntegrationTests
             "MatchConfidenceThreshold": 0.8,
             "RenameConfidenceThreshold": 0.85,
             "FuzzyHashThreshold": 75,
+            "matchingThresholds": {
+                "textBased": {
+                    "matchConfidence": 0.80,
+                    "renameConfidence": 0.85,
+                    "fuzzyHashSimilarity": 75
+                },
+                "pgs": {
+                    "matchConfidence": 0.70,
+                    "renameConfidence": 0.75,
+                    "fuzzyHashSimilarity": 65
+                },
+                "vobSub": {
+                    "matchConfidence": 0.60,
+                    "renameConfidence": 0.70,
+                    "fuzzyHashSimilarity": 55
+                }
+            },
             "MaxConcurrency": 2,
             "FilenamePatterns": {
                 "PrimaryPattern": "^(?<SeriesName>.+?)[ ._-]+[Ss](?<Season>\\d{1,2})[Ee](?<Episode>\\d{1,2}).*$"
@@ -335,6 +420,23 @@ public class HotReloadDuringProcessingIntegrationTests
             "MatchConfidenceThreshold": 0.8,
             "RenameConfidenceThreshold": 0.85,
             "FuzzyHashThreshold": 75,
+            "matchingThresholds": {
+                "textBased": {
+                    "matchConfidence": 0.80,
+                    "renameConfidence": 0.85,
+                    "fuzzyHashSimilarity": 75
+                },
+                "pgs": {
+                    "matchConfidence": 0.70,
+                    "renameConfidence": 0.75,
+                    "fuzzyHashSimilarity": 65
+                },
+                "vobSub": {
+                    "matchConfidence": 0.60,
+                    "renameConfidence": 0.70,
+                    "fuzzyHashSimilarity": 55
+                }
+            },
             "MaxConcurrency": 1,
             "FilenamePatterns": {
                 "PrimaryPattern": "^(?<SeriesName>.+?)[ ._-]+[Ss](?<Season>\\d{1,2})[Ee](?<Episode>\\d{1,2}).*$"
@@ -380,6 +482,23 @@ public class HotReloadDuringProcessingIntegrationTests
             "MatchConfidenceThreshold": 0.8,
             "RenameConfidenceThreshold": 0.85,
             "FuzzyHashThreshold": 75,
+            "matchingThresholds": {
+                "textBased": {
+                    "matchConfidence": 0.80,
+                    "renameConfidence": 0.85,
+                    "fuzzyHashSimilarity": 75
+                },
+                "pgs": {
+                    "matchConfidence": 0.70,
+                    "renameConfidence": 0.75,
+                    "fuzzyHashSimilarity": 65
+                },
+                "vobSub": {
+                    "matchConfidence": 0.60,
+                    "renameConfidence": 0.70,
+                    "fuzzyHashSimilarity": 55
+                }
+            },
             "MaxConcurrency": 5,
             "FilenamePatterns": {
                 "PrimaryPattern": "^(?<SeriesName>.+?)[ ._-]+[Ss](?<Season>\\d{1,2})[Ee](?<Episode>\\d{1,2}).*$"
@@ -417,6 +536,23 @@ public class HotReloadDuringProcessingIntegrationTests
             "MatchConfidenceThreshold": 0.8,
             "RenameConfidenceThreshold": 0.85,
             "FuzzyHashThreshold": 75,
+            "matchingThresholds": {
+                "textBased": {
+                    "matchConfidence": 0.80,
+                    "renameConfidence": 0.85,
+                    "fuzzyHashSimilarity": 75
+                },
+                "pgs": {
+                    "matchConfidence": 0.70,
+                    "renameConfidence": 0.75,
+                    "fuzzyHashSimilarity": 65
+                },
+                "vobSub": {
+                    "matchConfidence": 0.60,
+                    "renameConfidence": 0.70,
+                    "fuzzyHashSimilarity": 55
+                }
+            },
             "MaxConcurrency": 2,
             "FilenamePatterns": {
                 "PrimaryPattern": "^(?<SeriesName>.+?)[ ._-]+[Ss](?<Season>\\d{1,2})[Ee](?<Episode>\\d{1,2}).*$"
@@ -470,6 +606,23 @@ public class HotReloadDuringProcessingIntegrationTests
             "MatchConfidenceThreshold": 0.8,
             "RenameConfidenceThreshold": 0.85,
             "FuzzyHashThreshold": 75,
+            "matchingThresholds": {
+                "textBased": {
+                    "matchConfidence": 0.80,
+                    "renameConfidence": 0.85,
+                    "fuzzyHashSimilarity": 75
+                },
+                "pgs": {
+                    "matchConfidence": 0.70,
+                    "renameConfidence": 0.75,
+                    "fuzzyHashSimilarity": 65
+                },
+                "vobSub": {
+                    "matchConfidence": 0.60,
+                    "renameConfidence": 0.70,
+                    "fuzzyHashSimilarity": 55
+                }
+            },
             "MaxConcurrency": 8,
             "FilenamePatterns": {
                 "PrimaryPattern": "^(?<SeriesName>.+?)[ ._-]+[Ss](?<Season>\\d{1,2})[Ee](?<Episode>\\d{1,2}).*$"

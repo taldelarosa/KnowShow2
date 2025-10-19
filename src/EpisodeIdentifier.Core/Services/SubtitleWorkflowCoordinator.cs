@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Models.Configuration;
 using EpisodeIdentifier.Core.Interfaces;
 
 namespace EpisodeIdentifier.Core.Services;
@@ -174,7 +175,7 @@ public class SubtitleWorkflowCoordinator
             _logger.LogDebug("Successfully extracted {Length} characters from PGS subtitles", subtitleText.Length);
 
             // Match against database
-            var result = await _identificationService.IdentifyEpisodeAsync(subtitleText, videoFilePath);
+            var result = await _identificationService.IdentifyEpisodeAsync(subtitleText, SubtitleType.PGS, videoFilePath);
 
             // Add workflow metadata
             if (!result.HasError)
@@ -270,7 +271,7 @@ public class SubtitleWorkflowCoordinator
             _logger.LogDebug("Successfully extracted {Length} characters from text subtitles", extractedTrack.Content.Length);
 
             // Match against database
-            var result = await _identificationService.IdentifyEpisodeAsync(extractedTrack.Content, videoFilePath);
+            var result = await _identificationService.IdentifyEpisodeAsync(extractedTrack.Content, SubtitleType.TextBased, videoFilePath);
 
             // Add workflow metadata
             if (!result.HasError)

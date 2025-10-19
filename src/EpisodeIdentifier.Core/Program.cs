@@ -2,6 +2,7 @@ using System.CommandLine;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Models.Configuration;
 using EpisodeIdentifier.Core.Services;
 using EpisodeIdentifier.Core.Services.Hashing;
 using EpisodeIdentifier.Core.Interfaces;
@@ -621,7 +622,13 @@ public class Program
                 IdentificationResult result;
                 try
                 {
-                    result = await episodeIdentificationService.IdentifyEpisodeAsync(pgsSubtitleText, input.FullName, null, series, season);
+                    result = await episodeIdentificationService.IdentifyEpisodeAsync(
+                        pgsSubtitleText, 
+                        SubtitleType.PGS, 
+                        input.FullName, 
+                        null, 
+                        series, 
+                        season);
                 }
                 catch (ArgumentException ex)
                 {
@@ -637,8 +644,14 @@ public class Program
                     return 0;
                 }
 
+                // Get the appropriate rename threshold based on subtitle type
+                var pgsRenameThreshold = legacyConfigService.Config.MatchingThresholds?.PGS.RenameConfidence 
+#pragma warning disable CS0618 // Type or member is obsolete
+                    ?? (decimal)legacyConfigService.Config.RenameConfidenceThreshold;
+#pragma warning restore CS0618
+
                 // Handle file renaming if --rename flag is specified
-                if (rename && !result.HasError && result.MatchConfidence >= legacyConfigService.Config.RenameConfidenceThreshold)
+                if (rename && !result.HasError && (decimal)result.MatchConfidence >= pgsRenameThreshold)
                 {
                     try
                     {
@@ -818,10 +831,22 @@ public class Program
             }
 
             // Match against database using the episode identification service
-            var result = await episodeIdentificationService.IdentifyEpisodeAsync(subtitleText, videoFilePath, null, seriesFilter, seasonFilter);
+            var result = await episodeIdentificationService.IdentifyEpisodeAsync(
+                subtitleText, 
+                SubtitleType.TextBased, 
+                videoFilePath, 
+                null, 
+                seriesFilter, 
+                seasonFilter);
+
+            // Get the appropriate rename threshold based on subtitle type
+            var renameThreshold = legacyConfigService.Config.MatchingThresholds?.TextBased.RenameConfidence 
+#pragma warning disable CS0618 // Type or member is obsolete
+                ?? (decimal)legacyConfigService.Config.RenameConfidenceThreshold;
+#pragma warning restore CS0618
 
             // Handle file renaming if --rename flag is specified
-            if (rename && !result.HasError && result.MatchConfidence >= legacyConfigService.Config.RenameConfidenceThreshold)
+            if (rename && !result.HasError && (decimal)result.MatchConfidence >= renameThreshold)
             {
                 // Generate filename using FilenameService
                 var filenameRequest = new FilenameGenerationRequest
@@ -946,9 +971,13 @@ public class Program
                 (t.Language?.Contains(language, StringComparison.OrdinalIgnoreCase) == true)) ?? dvdTracks.First();
 
             // Create temporary directory for VobSub extraction
-            // Use home directory because snap apps can't access /tmp
-            var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            var tempDir = Path.Combine(homeDir, ".episodeidentifier", $"vobsub_{Guid.NewGuid()}");
+            // Use current directory or home directory instead of /tmp to avoid snap confinement issues
+            var baseDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (string.IsNullOrEmpty(baseDir) || !Directory.Exists(baseDir))
+            {
+                baseDir = Directory.GetCurrentDirectory();
+            }
+            var tempDir = Path.Combine(baseDir, ".episodeidentifier_temp", $"vobsub_{Guid.NewGuid()}");
             Directory.CreateDirectory(tempDir);
 
             try
@@ -981,13 +1010,20 @@ public class Program
                 // Match against database using the episode identification service
                 var result = await episodeIdentificationService.IdentifyEpisodeAsync(
                     ocrResult.ExtractedText,
+                    SubtitleType.VobSub,
                     videoFilePath,
                     null,
                     seriesFilter,
                     seasonFilter);
 
+                // Get the appropriate rename threshold based on subtitle type
+                var renameThreshold = legacyConfigService.Config.MatchingThresholds?.VobSub.RenameConfidence 
+#pragma warning disable CS0618 // Type or member is obsolete
+                    ?? (decimal)legacyConfigService.Config.RenameConfidenceThreshold;
+#pragma warning restore CS0618
+
                 // Handle file renaming if --rename flag is specified
-                if (rename && !result.HasError && result.MatchConfidence >= legacyConfigService.Config.RenameConfidenceThreshold)
+                if (rename && !result.HasError && (decimal)result.MatchConfidence >= renameThreshold)
                 {
                     // Generate filename using FilenameService
                     var filenameRequest = new FilenameGenerationRequest

@@ -37,6 +37,7 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
     /// Uses CTPH fuzzy hashing if enabled and configured, otherwise falls back to legacy hashing.
     /// </summary>
     /// <param name="subtitleText">The subtitle text content to identify</param>
+    /// <param name="subtitleType">The type of subtitle being processed (affects threshold selection)</param>
     /// <param name="sourceFilePath">Optional path to the source file (used for CTPH hashing)</param>
     /// <param name="minConfidence">Optional minimum confidence threshold</param>
     /// <param name="seriesFilter">Optional series name to filter results (case-insensitive)</param>
@@ -44,6 +45,7 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
     /// <returns>Episode identification result</returns>
     public async Task<IdentificationResult> IdentifyEpisodeAsync(
         string subtitleText,
+        SubtitleType subtitleType = SubtitleType.TextBased,
         string? sourceFilePath = null,
         double? minConfidence = null,
         string? seriesFilter = null,
@@ -57,6 +59,7 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
             ["Operation"] = "EpisodeIdentification",
             ["OperationId"] = operationId,
             ["SourceFilePath"] = sourceFilePath ?? "none",
+            ["SubtitleType"] = subtitleType.ToString(),
             ["MinConfidence"] = minConfidence ?? 0.0,
             ["SubtitleTextLength"] = subtitleText?.Length ?? 0,
             ["SeriesFilter"] = seriesFilter ?? "none",
@@ -99,7 +102,7 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
                 operationId, configCheckDuration);
 
             var fuzzyStartTime = stopwatch.ElapsedMilliseconds;
-            var fuzzyResult = await TryFuzzyHashIdentification(subtitleText, sourceFilePath, fuzzyConfig, minConfidence, operationId, seriesFilter, seasonFilter);
+            var fuzzyResult = await TryFuzzyHashIdentification(subtitleText, subtitleType, sourceFilePath, fuzzyConfig, minConfidence, operationId, seriesFilter, seasonFilter);
             var fuzzyDuration = stopwatch.ElapsedMilliseconds - fuzzyStartTime;
 
             if (fuzzyResult != null)
@@ -141,6 +144,7 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
     /// </summary>
     private async Task<IdentificationResult?> TryFuzzyHashIdentification(
         string subtitleText,
+        SubtitleType subtitleType,
         string? sourceFilePath,
         Configuration fuzzyConfig,
         double? minConfidence,
@@ -180,17 +184,21 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
                     (comparisonResult.TextSimilarityScore / 100.0) :
                     (comparisonResult.HashSimilarityScore / 100.0);
 
-                // Check against minimum confidence threshold from config
-                var configuredThreshold = (double)fuzzyConfig.MatchConfidenceThreshold;
+                // Get threshold configuration based on subtitle type
+                var thresholds = fuzzyConfig.MatchingThresholds.GetThresholdsForType(subtitleType);
+                var configuredThreshold = (double)thresholds.MatchConfidence;
                 if (minConfidence.HasValue)
                     configuredThreshold = Math.Max(configuredThreshold, minConfidence.Value);
 
+                _logger.LogDebug("Using thresholds for {SubtitleType}: MatchConfidence={MatchConfidence:P2}, FuzzyHashSimilarity={FuzzyHashSimilarity}",
+                    subtitleType, configuredThreshold, thresholds.FuzzyHashSimilarity);
+
                 if (confidence >= configuredThreshold)
                 {
-                    _logger.LogInformation("Enhanced CTPH match found - Operation: {OperationId}, Series: {Series} S{Season}E{Episode}, Method: {Method}, HashScore: {HashScore}%, TextScore: {TextScore}%, FinalConfidence: {Confidence:P2}, Duration: {Duration}ms",
+                    _logger.LogInformation("Enhanced CTPH match found - Operation: {OperationId}, Series: {Series} S{Season}E{Episode}, Method: {Method}, SubtitleType: {SubtitleType}, HashScore: {HashScore}%, TextScore: {TextScore}%, FinalConfidence: {Confidence:P2}, Threshold: {Threshold:P2}, Duration: {Duration}ms",
                         operationId, comparisonResult.MatchedSeries, comparisonResult.MatchedSeason, comparisonResult.MatchedEpisode,
                         comparisonResult.UsedTextFallback ? "CTPH+TextFallback" : "CTPH",
-                        comparisonResult.HashSimilarityScore, comparisonResult.TextSimilarityScore, confidence, stopwatch.ElapsedMilliseconds);
+                        subtitleType, comparisonResult.HashSimilarityScore, comparisonResult.TextSimilarityScore, confidence, configuredThreshold, stopwatch.ElapsedMilliseconds);
 
                     return new IdentificationResult
                     {
@@ -207,8 +215,8 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
                 }
                 else
                 {
-                    _logger.LogDebug("Enhanced CTPH match found but below confidence threshold - Operation: {OperationId}, Confidence: {Confidence:P2}, Threshold: {Threshold:P2}, Duration: {Duration}ms",
-                        operationId, confidence, configuredThreshold, stopwatch.ElapsedMilliseconds);
+                    _logger.LogDebug("Enhanced CTPH match found but below confidence threshold - Operation: {OperationId}, SubtitleType: {SubtitleType}, Confidence: {Confidence:P2}, Threshold: {Threshold:P2}, Duration: {Duration}ms",
+                        operationId, subtitleType, confidence, configuredThreshold, stopwatch.ElapsedMilliseconds);
                 }
             }
             else if (!comparisonResult.IsSuccess)
@@ -238,6 +246,7 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
     private Task<FuzzyHashMatch?> FindBestFuzzyHashMatch(
         string sourceHash,
         Configuration fuzzyConfig,
+        SubtitleType subtitleType,
         double? minConfidence,
         Guid operationId)
     {
@@ -245,7 +254,8 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
         {
             ["Operation"] = "CTPhHashMatching",
             ["ParentOperationId"] = operationId,
-            ["SourceHash"] = sourceHash
+            ["SourceHash"] = sourceHash,
+            ["SubtitleType"] = subtitleType.ToString()
         });
 
         try
@@ -253,11 +263,12 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
             // TODO: This should integrate with a database of known episode CTPH hashes
             // For now, this is a framework that demonstrates the integration pattern
 
-            var threshold = minConfidence ?? (double)fuzzyConfig.MatchConfidenceThreshold;
-            var fuzzyThreshold = fuzzyConfig.FuzzyHashThreshold;
+            var thresholds = fuzzyConfig.MatchingThresholds.GetThresholdsForType(subtitleType);
+            var threshold = minConfidence ?? (double)thresholds.MatchConfidence;
+            var fuzzyThreshold = thresholds.FuzzyHashSimilarity;
 
-            _logger.LogDebug("Searching for CTPH hash matches - Operation: {OperationId}, Hash: {SourceHash}, Threshold: {Threshold:P1}, FuzzyThreshold: {FuzzyThreshold}",
-                operationId, sourceHash, threshold, fuzzyThreshold);
+            _logger.LogDebug("Searching for CTPH hash matches - Operation: {OperationId}, Hash: {SourceHash}, SubtitleType: {SubtitleType}, Threshold: {Threshold:P1}, FuzzyThreshold: {FuzzyThreshold}",
+                operationId, sourceHash, subtitleType, threshold, fuzzyThreshold);
 
             // In a real implementation, this would:
             // 1. Query a database of stored episode CTPH hashes

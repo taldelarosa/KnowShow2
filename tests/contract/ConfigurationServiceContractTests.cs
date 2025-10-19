@@ -38,6 +38,27 @@ public class ConfigurationServiceContractTests
             MatchConfidenceThreshold = 0.8m,
             RenameConfidenceThreshold = 0.85m,
             FuzzyHashThreshold = 75,
+            MatchingThresholds = new MatchingThresholds
+            {
+                TextBased = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.8m,
+                    RenameConfidence = 0.85m,
+                    FuzzyHashSimilarity = 75
+                },
+                PGS = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.7m,
+                    RenameConfidence = 0.75m,
+                    FuzzyHashSimilarity = 65
+                },
+                VobSub = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.6m,
+                    RenameConfidence = 0.7m,
+                    FuzzyHashSimilarity = 55
+                }
+            },
             HashingAlgorithm = HashingAlgorithm.CTPH,
             FilenamePatterns = new FilenamePatterns
             {
@@ -108,10 +129,31 @@ public class ConfigurationServiceContractTests
             MatchConfidenceThreshold = 0.9m,
             RenameConfidenceThreshold = 0.5m, // Less than match threshold - invalid
             FuzzyHashThreshold = 75,
+            MatchingThresholds = new MatchingThresholds
+            {
+                TextBased = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.9m,
+                    RenameConfidence = 0.5m, // Less than match threshold - invalid
+                    FuzzyHashSimilarity = 75
+                },
+                PGS = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.7m,
+                    RenameConfidence = 0.75m,
+                    FuzzyHashSimilarity = 65
+                },
+                VobSub = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.6m,
+                    RenameConfidence = 0.7m,
+                    FuzzyHashSimilarity = 55
+                }
+            },
             HashingAlgorithm = HashingAlgorithm.CTPH,
             FilenamePatterns = new FilenamePatterns
             {
-                PrimaryPattern = @"^(?<SeriesName>.+?)\sS(?<Season>\d+)E(?<Episode>\d+)(?:[\s\.\-]+(?<EpisodeName>.+?))?$"
+                PrimaryPattern = @"^(?<SeriesName>.+?)\sS(?<Season>\d+)E(?<Episode>\d+)(?:[\s\\.\\-]+(?<EpisodeName>.+?))?$"
             },
             FilenameTemplate = "{SeriesName} - S{Season}E{Episode} - {EpisodeName}{FileExtension}"
         };
@@ -131,6 +173,7 @@ public class ConfigurationServiceContractTests
             result.Errors.Should().Contain(error =>
                 error.Contains("renameConfidenceThreshold must be >= matchConfidenceThreshold") ||
                 error.Contains("RenameConfidenceThreshold") ||
+                error.Contains("RenameConfidence") ||
                 error.Contains("threshold"));
         }
     }
@@ -186,6 +229,27 @@ public class ConfigurationServiceContractTests
             MatchConfidenceThreshold = 0.8m,
             RenameConfidenceThreshold = 0.85m,
             FuzzyHashThreshold = 75,
+            MatchingThresholds = new MatchingThresholds
+            {
+                TextBased = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.8m,
+                    RenameConfidence = 0.85m,
+                    FuzzyHashSimilarity = 75
+                },
+                PGS = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.7m,
+                    RenameConfidence = 0.75m,
+                    FuzzyHashSimilarity = 65
+                },
+                VobSub = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.6m,
+                    RenameConfidence = 0.7m,
+                    FuzzyHashSimilarity = 55
+                }
+            },
             HashingAlgorithm = HashingAlgorithm.CTPH,
             FilenamePatterns = new FilenamePatterns
             {
@@ -213,6 +277,27 @@ public class ConfigurationServiceContractTests
             MatchConfidenceThreshold = 1.5m, // Invalid range
             RenameConfidenceThreshold = 0.5m, // Less than match threshold
             FuzzyHashThreshold = 150, // Invalid range
+            MatchingThresholds = new MatchingThresholds
+            {
+                TextBased = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.8m,
+                    RenameConfidence = 0.85m,
+                    FuzzyHashSimilarity = 75
+                },
+                PGS = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.7m,
+                    RenameConfidence = 0.75m,
+                    FuzzyHashSimilarity = 65
+                },
+                VobSub = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.6m,
+                    RenameConfidence = 0.7m,
+                    FuzzyHashSimilarity = 55
+                }
+            },
             HashingAlgorithm = (HashingAlgorithm)999, // Invalid enum
             FilenamePatterns = null!, // Required field missing
             FilenameTemplate = "" // Empty template
@@ -246,6 +331,27 @@ public class ConfigurationServiceContractTests
             MatchConfidenceThreshold = 0.8m,
             RenameConfidenceThreshold = 0.85m,
             FuzzyHashThreshold = 75,
+            MatchingThresholds = new MatchingThresholds
+            {
+                TextBased = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.8m,
+                    RenameConfidence = 0.85m,
+                    FuzzyHashSimilarity = 75
+                },
+                PGS = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.7m,
+                    RenameConfidence = 0.75m,
+                    FuzzyHashSimilarity = 65
+                },
+                VobSub = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.6m,
+                    RenameConfidence = 0.7m,
+                    FuzzyHashSimilarity = 55
+                }
+            },
             HashingAlgorithm = HashingAlgorithm.CTPH,
             FilenamePatterns = new FilenamePatterns
             {
@@ -283,6 +389,27 @@ public class ConfigurationServiceContractTests
             MatchConfidenceThreshold = 0.8m,
             RenameConfidenceThreshold = 0.85m,
             FuzzyHashThreshold = 75,
+            MatchingThresholds = new MatchingThresholds
+            {
+                TextBased = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.8m,
+                    RenameConfidence = 0.85m,
+                    FuzzyHashSimilarity = 75
+                },
+                PGS = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.7m,
+                    RenameConfidence = 0.75m,
+                    FuzzyHashSimilarity = 65
+                },
+                VobSub = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.6m,
+                    RenameConfidence = 0.7m,
+                    FuzzyHashSimilarity = 55
+                }
+            },
             HashingAlgorithm = HashingAlgorithm.CTPH,
             FilenamePatterns = new FilenamePatterns
             {
@@ -319,6 +446,27 @@ public class ConfigurationServiceContractTests
             MatchConfidenceThreshold = 0.8m,
             RenameConfidenceThreshold = 0.85m,
             FuzzyHashThreshold = 75,
+            MatchingThresholds = new MatchingThresholds
+            {
+                TextBased = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.8m,
+                    RenameConfidence = 0.85m,
+                    FuzzyHashSimilarity = 75
+                },
+                PGS = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.7m,
+                    RenameConfidence = 0.75m,
+                    FuzzyHashSimilarity = 65
+                },
+                VobSub = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.6m,
+                    RenameConfidence = 0.7m,
+                    FuzzyHashSimilarity = 55
+                }
+            },
             HashingAlgorithm = HashingAlgorithm.CTPH,
             FilenamePatterns = new FilenamePatterns
             {

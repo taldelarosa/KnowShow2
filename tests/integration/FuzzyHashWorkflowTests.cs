@@ -57,6 +57,27 @@ public class FuzzyHashWorkflowTests : IDisposable
             matchConfidenceThreshold = 0.8,
             renameConfidenceThreshold = 0.85,
             fuzzyHashThreshold = 50,
+            matchingThresholds = new
+            {
+                textBased = new
+                {
+                    matchConfidence = 0.8,
+                    renameConfidence = 0.85,
+                    fuzzyHashSimilarity = 50
+                },
+                pgs = new
+                {
+                    matchConfidence = 0.7,
+                    renameConfidence = 0.75,
+                    fuzzyHashSimilarity = 65
+                },
+                vobSub = new
+                {
+                    matchConfidence = 0.6,
+                    renameConfidence = 0.7,
+                    fuzzyHashSimilarity = 55
+                }
+            },
             hashingAlgorithm = "CTPH",
             filenamePatterns = new
             {
