@@ -21,7 +21,7 @@ public class ModelManager : IModelManager
     private const int EMBEDDING_DIMENSION = 384;
     
     // Hugging Face model URLs
-    private const string MODEL_URL = "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model_fp16.onnx";
+    private const string MODEL_URL = "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx";
     private const string TOKENIZER_URL = "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json";
     
     // Expected SHA256 hashes for verification (fp16 variant)

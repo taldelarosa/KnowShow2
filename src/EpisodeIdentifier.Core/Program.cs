@@ -175,21 +175,24 @@ public class Program
             return 1;
         }
 
-        // Validate input parameters
-        var bulkOptions = new[] { bulkStoreDirectory != null, bulkIdentifyDirectory != null }.Count(x => x);
-        var hasInput = input != null;
-        var totalInputOptions = bulkOptions + (hasInput ? 1 : 0);
-
-        if (totalInputOptions > 1)
+        // Validate input parameters (skip validation for --migrate-embeddings)
+        if (!migrateEmbeddings)
         {
-            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "CONFLICTING_OPTIONS", message = "Cannot specify multiple input options. Use either --input, --bulk-store, or --bulk-identify." } }, jsonSerializationOptions));
-            return 1;
-        }
+            var bulkOptions = new[] { bulkStoreDirectory != null, bulkIdentifyDirectory != null }.Count(x => x);
+            var hasInput = input != null;
+            var totalInputOptions = bulkOptions + (hasInput ? 1 : 0);
 
-        if (totalInputOptions == 0)
-        {
-            Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "MISSING_INPUT", message = "Must specify either --input, --bulk-store, or --bulk-identify option" } }, jsonSerializationOptions));
-            return 1;
+            if (totalInputOptions > 1)
+            {
+                Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "CONFLICTING_OPTIONS", message = "Cannot specify multiple input options. Use either --input, --bulk-store, or --bulk-identify." } }, jsonSerializationOptions));
+                return 1;
+            }
+
+            if (totalInputOptions == 0)
+            {
+                Console.WriteLine(JsonSerializer.Serialize(new { error = new { code = "MISSING_INPUT", message = "Must specify either --input, --bulk-store, or --bulk-identify option" } }, jsonSerializationOptions));
+                return 1;
+            }
         }
 
         if (input != null && !input.Exists)
