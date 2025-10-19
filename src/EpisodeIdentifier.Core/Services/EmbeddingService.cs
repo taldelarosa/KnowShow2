@@ -1,6 +1,7 @@
 using EpisodeIdentifier.Core.Interfaces;
 using EpisodeIdentifier.Core.Models;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.ML.Tokenizers;
@@ -41,6 +42,7 @@ public class EmbeddingService : IEmbeddingService, IDisposable
 
         EnsureModelInitialized();
 
+        var stopwatch = Stopwatch.StartNew();
         _logger.LogDebug("Generating embedding for text ({Length} chars)", cleanText.Length);
 
         try
@@ -83,6 +85,11 @@ public class EmbeddingService : IEmbeddingService, IDisposable
             // Apply mean pooling to get sentence embedding
             var embedding = ApplyMeanPooling(output, tokenIds.Length);
 
+            stopwatch.Stop();
+            _logger.LogInformation(
+                "Generated {Dimensions}-dim embedding in {ElapsedMs}ms (throughput: {CharsPerSec:F1} chars/sec)",
+                embedding.Length, stopwatch.ElapsedMilliseconds, cleanText.Length * 1000.0 / Math.Max(1, stopwatch.ElapsedMilliseconds));
+
             _logger.LogDebug("Generated embedding: {Dimensions} dimensions", embedding.Length);
             return embedding;
         }
@@ -113,6 +120,7 @@ public class EmbeddingService : IEmbeddingService, IDisposable
 
         _logger.LogInformation("Batch generating embeddings for {Count} texts", cleanTexts.Count);
 
+        var batchStopwatch = Stopwatch.StartNew();
         var embeddings = new List<float[]>();
         
         // For now, process sequentially
@@ -121,6 +129,11 @@ public class EmbeddingService : IEmbeddingService, IDisposable
         {
             embeddings.Add(GenerateEmbedding(text));
         }
+
+        batchStopwatch.Stop();
+        _logger.LogInformation(
+            "Batch generated {Count} embeddings in {ElapsedMs}ms (avg: {AvgMs:F1}ms per embedding)",
+            embeddings.Count, batchStopwatch.ElapsedMilliseconds, batchStopwatch.ElapsedMilliseconds / (double)Math.Max(1, embeddings.Count));
 
         return embeddings;
     }

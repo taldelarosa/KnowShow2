@@ -1,4 +1,5 @@
 using System.Data;
+using System.Diagnostics;
 using EpisodeIdentifier.Core.Interfaces;
 using EpisodeIdentifier.Core.Models;
 using Microsoft.Data.Sqlite;
@@ -49,6 +50,7 @@ public class VectorSearchService : IVectorSearchService
         _logger.LogDebug("Searching for top {TopK} similar subtitles (minSimilarity: {MinSimilarity})", 
             topK, minSimilarity);
 
+        var stopwatch = Stopwatch.StartNew();
         var results = new List<VectorSimilarityResult>();
 
         try
@@ -112,6 +114,11 @@ public class VectorSearchService : IVectorSearchService
             }
 
             _logger.LogInformation("Found {Count} similar subtitles", results.Count);
+            stopwatch.Stop();
+            _logger.LogInformation(
+                "Vector search completed in {ElapsedMs}ms ({ResultCount} results, throughput: {QueriesPerSec:F1} queries/sec)",
+                stopwatch.ElapsedMilliseconds, results.Count, 1000.0 / Math.Max(1, stopwatch.ElapsedMilliseconds));
+
             return results;
         }
         catch (Exception ex)
