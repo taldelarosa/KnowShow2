@@ -1,47 +1,36 @@
 using System.Security.Cryptography;
 using EpisodeIdentifier.Core.Interfaces;
 using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Models.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace EpisodeIdentifier.Core.Services;
 
 /// <summary>
 /// Manages ONNX model download, caching, and verification.
-/// Downloads all-MiniLM-L6-v2 model from Hugging Face on first run.
+/// Downloads sentence transformer models from configurable URLs (typically Hugging Face).
 /// </summary>
 public class ModelManager : IModelManager
 {
     private readonly ILogger<ModelManager> _logger;
+    private readonly EmbeddingModelConfiguration _modelConfig;
     private ModelInfo? _cachedModelInfo;
     private readonly string _modelCacheDirectory;
-    
-    // Model configuration
-    private const string MODEL_NAME = "all-MiniLM-L6-v2";
-    private const string MODEL_VARIANT = "fp16";
-    private const int EMBEDDING_DIMENSION = 384;
-    
-    // Hugging Face model URLs
-    private const string MODEL_URL = "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx";
-    private const string TOKENIZER_URL = "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json";
-    
-    // Expected SHA256 hashes for verification (fp16 variant)
-    // TODO: Update these with actual hashes from Hugging Face
-    private const string EXPECTED_MODEL_SHA256 = "placeholder_model_hash_to_be_updated";
-    private const string EXPECTED_TOKENIZER_SHA256 = "placeholder_tokenizer_hash_to_be_updated";
 
-    public ModelManager(ILogger<ModelManager> logger)
+    public ModelManager(ILogger<ModelManager> logger, EmbeddingModelConfiguration? modelConfig = null)
     {
         _logger = logger;
+        _modelConfig = modelConfig ?? EmbeddingModelConfiguration.Default;
         
-        // Cache directory: ~/.episodeidentifier/models/all-MiniLM-L6-v2/
+        // Cache directory: ~/.episodeidentifier/models/{ModelName}/
         var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        _modelCacheDirectory = Path.Combine(homeDirectory, ".episodeidentifier", "models", MODEL_NAME);
+        _modelCacheDirectory = Path.Combine(homeDirectory, ".episodeidentifier", "models", _modelConfig.Name);
     }
 
     /// <inheritdoc/>
     public async Task EnsureModelAvailable()
     {
-        _logger.LogInformation("Ensuring model {ModelName} is available...", MODEL_NAME);
+        _logger.LogInformation("Ensuring model {ModelName} is available...", _modelConfig.Name);
 
         var modelPath = GetModelPath();
         var tokenizerPath = GetTokenizerPath();
@@ -63,16 +52,16 @@ public class ModelManager : IModelManager
         }
 
         // Download models
-        _logger.LogInformation("Downloading model from Hugging Face...");
+        _logger.LogInformation("Downloading model from configured URL: {Url}", _modelConfig.ModelUrl);
         Directory.CreateDirectory(_modelCacheDirectory);
 
-        await DownloadModel(MODEL_URL, modelPath);
-        await DownloadModel(TOKENIZER_URL, tokenizerPath);
+        await DownloadModel(_modelConfig.ModelUrl, modelPath);
+        await DownloadModel(_modelConfig.TokenizerUrl, tokenizerPath);
 
         // Verify downloaded model
         if (!await VerifyModel(modelPath))
         {
-            throw new InvalidOperationException($"Downloaded model failed verification. Expected SHA256: {EXPECTED_MODEL_SHA256}");
+            throw new InvalidOperationException($"Downloaded model failed verification. Expected SHA256: {_modelConfig.ModelSha256}");
         }
 
         _logger.LogInformation("Model download and verification complete");
@@ -109,9 +98,9 @@ public class ModelManager : IModelManager
         }
 
         _cachedModelInfo = new ModelInfo(
-            modelName: MODEL_NAME,
-            variant: MODEL_VARIANT,
-            dimension: EMBEDDING_DIMENSION,
+            modelName: _modelConfig.Name,
+            variant: "onnx",
+            dimension: _modelConfig.Dimensions,
             modelPath: modelPath,
             tokenizerPath: tokenizerPath,
             sha256Hash: sha256Hash,
@@ -165,20 +154,22 @@ public class ModelManager : IModelManager
                 actualHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
             }
 
-            // For now, skip strict hash verification if placeholder hash is used
-            // This allows development/testing without the actual model file
-            if (EXPECTED_MODEL_SHA256.StartsWith("placeholder"))
+            // Skip strict hash verification if "SKIP" or placeholder hash is configured
+            // This allows development/testing without the actual hash values
+            if (_modelConfig.ModelSha256.Equals("SKIP", StringComparison.OrdinalIgnoreCase) ||
+                _modelConfig.ModelSha256.StartsWith("PLACEHOLDER", StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogWarning("Using placeholder SHA256 hash - skipping strict verification");
+                _logger.LogWarning("Model SHA256 verification skipped (configured as: {ConfigValue})", _modelConfig.ModelSha256);
+                _logger.LogInformation("Actual model SHA256: {ActualHash}", actualHash);
                 return true;
             }
 
-            var isValid = actualHash.Equals(EXPECTED_MODEL_SHA256, StringComparison.OrdinalIgnoreCase);
+            var isValid = actualHash.Equals(_modelConfig.ModelSha256, StringComparison.OrdinalIgnoreCase);
             
             if (!isValid)
             {
                 _logger.LogError("Model verification failed. Expected: {Expected}, Actual: {Actual}", 
-                    EXPECTED_MODEL_SHA256, actualHash);
+                    _modelConfig.ModelSha256, actualHash);
             }
 
             return isValid;
@@ -255,6 +246,6 @@ public class ModelManager : IModelManager
         }
     }
 
-    private string GetModelPath() => Path.Combine(_modelCacheDirectory, $"model_{MODEL_VARIANT}.onnx");
+    private string GetModelPath() => Path.Combine(_modelCacheDirectory, "model.onnx");
     private string GetTokenizerPath() => Path.Combine(_modelCacheDirectory, "tokenizer.json");
 }

@@ -97,6 +97,12 @@ public class Configuration
     public EmbeddingMatchThresholds EmbeddingThresholds { get; set; } = new();
 
     /// <summary>
+    /// Embedding model configuration (URLs, hashes, dimensions).
+    /// Defines which sentence transformer model to use and where to download it from.
+    /// </summary>
+    public EmbeddingModelConfiguration? EmbeddingModel { get; set; }
+
+    /// <summary>
     /// Configuration settings for bulk processing operations.
     /// Optional - when null, defaults are used.
     /// </summary>

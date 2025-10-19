@@ -237,7 +237,9 @@ public class Program
         var normalizationService = new SubtitleNormalizationService(loggerFactory.CreateLogger<SubtitleNormalizationService>());
         
         // ML embedding services for semantic similarity matching
-        var modelManager = new ModelManager(loggerFactory.CreateLogger<ModelManager>());
+        var embeddingModelConfig = fuzzyHashConfigService.LastConfigurationResult?.Configuration?.EmbeddingModel
+            ?? EpisodeIdentifier.Core.Models.Configuration.EmbeddingModelConfiguration.Default;
+        var modelManager = new ModelManager(loggerFactory.CreateLogger<ModelManager>(), embeddingModelConfig);
         var embeddingService = new EmbeddingService(loggerFactory.CreateLogger<EmbeddingService>(), modelManager);
         var vectorSearchService = new VectorSearchService(loggerFactory.CreateLogger<VectorSearchService>(), hashDb.FullName);
         

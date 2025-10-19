@@ -36,6 +36,15 @@
       "renameConfidence": 0.60
     }
   },
+  "embeddingModel": {
+    "name": "all-MiniLM-L6-v2",
+    "modelUrl": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx",
+    "tokenizerUrl": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json",
+    "modelSha256": "PLACEHOLDER_UPDATE_AFTER_DOWNLOAD",
+    "tokenizerSha256": "PLACEHOLDER_UPDATE_AFTER_DOWNLOAD",
+    "dimensions": 384,
+    "maxTokens": 512
+  },
   "hashingAlgorithm": "CTPH",
   "filenamePatterns": {
     "primaryPattern": "^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
