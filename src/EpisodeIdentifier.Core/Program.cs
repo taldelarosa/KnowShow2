@@ -249,7 +249,9 @@ public class Program
         var episodeIdentificationService = new EpisodeIdentificationService(
             loggerFactory.CreateLogger<EpisodeIdentificationService>(),
             fileSystem,
-            enhancedCtphService);
+            enhancedCtphService,
+            embeddingService,
+            vectorSearchService);
 
         try
         {
