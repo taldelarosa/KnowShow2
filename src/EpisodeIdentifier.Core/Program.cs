@@ -74,6 +74,12 @@ public class Program
             "Provides progress feedback and summary results.");
         rootCommand.Add(bulkIdentifyOption);
 
+        var migrateEmbeddingsOption = new Option<bool>(
+            "--migrate-embeddings",
+            "Generate embeddings for all existing SubtitleHashes entries that don't have them. " +
+            "This is a one-time migration after upgrading to embedding-based matching.");
+        rootCommand.Add(migrateEmbeddingsOption);
+
         var seriesOption = new Option<string>(
             "--series",
             "Series name when storing subtitle information, or filter by series during identification")
@@ -133,13 +139,14 @@ public class Program
             var store = context.ParseResult.GetValueForOption(storeOption);
             var bulkStoreDirectory = context.ParseResult.GetValueForOption(bulkStoreOption);
             var bulkIdentifyDirectory = context.ParseResult.GetValueForOption(bulkIdentifyOption);
+            var migrateEmbeddings = context.ParseResult.GetValueForOption(migrateEmbeddingsOption);
             var series = context.ParseResult.GetValueForOption(seriesOption);
             var season = context.ParseResult.GetValueForOption(seasonOption);
             var episode = context.ParseResult.GetValueForOption(episodeOption);
             var language = context.ParseResult.GetValueForOption(languageOption);
             var rename = context.ParseResult.GetValueForOption(renameOption);
 
-            Environment.Exit(await HandleCommand(input, hashDb!, store, bulkStoreDirectory, bulkIdentifyDirectory, series, season, episode, language, rename));
+            Environment.Exit(await HandleCommand(input, hashDb!, store, bulkStoreDirectory, bulkIdentifyDirectory, migrateEmbeddings, series, season, episode, language, rename));
         });
 
         return await rootCommand.InvokeAsync(args);
@@ -151,6 +158,7 @@ public class Program
         bool store,
         DirectoryInfo? bulkStoreDirectory,
         DirectoryInfo? bulkIdentifyDirectory,
+        bool migrateEmbeddings,
         string? series,
         int? season,
         string? episode,
@@ -255,6 +263,56 @@ public class Program
 
         try
         {
+            // Handle --migrate-embeddings command
+            if (migrateEmbeddings)
+            {
+                loggerFactory.CreateLogger<Program>().LogInformation("Starting embedding migration for existing database entries");
+                
+                var migrationService = new DatabaseMigrationService(
+                    loggerFactory.CreateLogger<DatabaseMigrationService>(),
+                    embeddingService,
+                    hashDb.FullName);
+
+                var result = await migrationService.MigrateAllEntriesAsync(batchSize: 100);
+
+                if (result.Success)
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new
+                    {
+                        success = true,
+                        message = "Embedding migration completed successfully",
+                        statistics = new
+                        {
+                            totalEntries = result.TotalEntries,
+                            entriesProcessed = result.EntriesProcessed,
+                            entriesFailed = result.EntriesFailed,
+                            durationSeconds = result.DurationSeconds
+                        }
+                    }));
+                    return 0;
+                }
+                else
+                {
+                    Console.WriteLine(JsonSerializer.Serialize(new
+                    {
+                        success = false,
+                        error = new
+                        {
+                            code = "MIGRATION_FAILED",
+                            message = result.ErrorMessage ?? "Migration failed",
+                            statistics = new
+                            {
+                                totalEntries = result.TotalEntries,
+                                entriesProcessed = result.EntriesProcessed,
+                                entriesFailed = result.EntriesFailed,
+                                durationSeconds = result.DurationSeconds
+                            }
+                        }
+                    }));
+                    return 1;
+                }
+            }
+
             if (store)
             {
                 if (string.IsNullOrEmpty(series) || !season.HasValue || string.IsNullOrEmpty(episode))
