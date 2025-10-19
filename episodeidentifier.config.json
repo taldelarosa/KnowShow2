@@ -39,7 +39,7 @@
   "embeddingModel": {
     "name": "all-MiniLM-L6-v2",
     "modelUrl": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx",
-    "tokenizerUrl": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json",
+    "tokenizerUrl": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/vocab.txt",
     "modelSha256": "PLACEHOLDER_UPDATE_AFTER_DOWNLOAD",
     "tokenizerSha256": "PLACEHOLDER_UPDATE_AFTER_DOWNLOAD",
     "dimensions": 384,
