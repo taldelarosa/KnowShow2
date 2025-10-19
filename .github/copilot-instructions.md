@@ -86,6 +86,15 @@ specs/
 - Reads maxConcurrency from episodeidentifier.config.json (default: 1, range: 1-100)
 - Supports hot-reload of configuration during processing
 
+### Embedding Migration
+
+
+- `--migrate-embeddings` - Generate embeddings for existing SubtitleHashes entries
+- One-time operation after upgrading to embedding-based matching
+- Automatically downloads all-MiniLM-L6-v2 model on first run (~45MB)
+- Batch processes entries (default: 100 at a time)
+- Returns JSON with statistics (totalEntries, processed, failed, duration)
+
 ### Subtitle Processing
 
 
@@ -134,14 +143,16 @@ specs/
 
 - 010-async-processing-where: Implemented configurable concurrent episode identification
 - 012-process-dvd-subtitle: Added DVD subtitle (VobSub) OCR support with VobSubExtractor and VobSubOcrService
-- 013-ml-embedding-matching: Added ML embedding-based semantic similarity matching
-  - Replaces CTPH fuzzy hashing with 384-dimensional embeddings from all-MiniLM-L6-v2
-  - Solves VobSub OCR matching problem (0% fuzzy hash → >85% embedding similarity)
-  - Uses vectorlite SQLite extension for fast cosine similarity search with HNSW indexing
-  - Automatic model download on first run (45MB), cross-platform support
-  - Database migration: generates embeddings for existing CleanText entries
-  - Per-format thresholds in embeddingThresholds configuration section
-  - New services: EmbeddingService, VectorSearchService, ModelManager
+- 013-ml-embedding-matching: **COMPLETED** - ML embedding-based semantic similarity matching
+  - Core implementation: ModelManager, EmbeddingService, VectorSearchService (all-MiniLM-L6-v2, 384-dim embeddings)
+  - EpisodeIdentificationService integration with strategy selection (embedding/fuzzy/hybrid)
+  - DatabaseMigrationService for batch embedding generation
+  - CLI command: `--migrate-embeddings` for one-time migration
+  - Configuration: matchingStrategy + embeddingThresholds (per-format Text/PGS/VobSub)
+  - Database schema: Added Embedding BLOB column + vector_index virtual table (HNSW)
+  - 45 contract tests + 5 integration tests (TDD approach)
+  - Solves VobSub OCR matching: 0% fuzzy hash → >85% embedding similarity
+  - Auto-downloads model on first run (~45MB), cross-platform support
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
