@@ -20,4 +20,15 @@
     <PackageReference Include="Microsoft.ML.Tokenizers" Version="1.0.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="native/vectorlite.so">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>vectorlite.so</Link>
+    </None>
+    <None Include="native/vectorlite.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>vectorlite.dll</Link>
+    </None>
+  </ItemGroup>
+
 </Project>
