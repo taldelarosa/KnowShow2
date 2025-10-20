@@ -496,6 +496,10 @@ public class Program
                 var fileDiscoveryService = new FileDiscoveryService(localFileSystem, loggerFactory.CreateLogger<FileDiscoveryService>());
                 var progressTracker = new ProgressTracker(loggerFactory.CreateLogger<ProgressTracker>());
 
+                // Create VobSub services for DVD subtitle support
+                var vobSubExtractor = new VobSubExtractor(loggerFactory.CreateLogger<VobSubExtractor>());
+                var vobSubOcrService = new VobSubOcrService(loggerFactory.CreateLogger<VobSubOcrService>());
+
                 // Create the complete video file processing service
                 var videoFileProcessingService = new VideoFileProcessingService(
                     loggerFactory.CreateLogger<VideoFileProcessingService>(),
@@ -503,6 +507,8 @@ public class Program
                     extractor,
                     pgsConverter,
                     textExtractor,
+                    vobSubExtractor,
+                    vobSubOcrService,
                     episodeIdentificationService,
                     filenameService,
                     fileRenameService,

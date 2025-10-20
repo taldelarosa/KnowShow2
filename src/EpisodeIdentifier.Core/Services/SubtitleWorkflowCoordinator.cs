@@ -6,7 +6,7 @@ using EpisodeIdentifier.Core.Interfaces;
 namespace EpisodeIdentifier.Core.Services;
 
 /// <summary>
-/// Coordinates between PGS and text subtitle workflows, automatically determining
+/// Coordinates between PGS, VobSub, and text subtitle workflows, automatically determining
 /// which workflow to use based on the video file content.
 /// </summary>
 public class SubtitleWorkflowCoordinator
@@ -16,6 +16,8 @@ public class SubtitleWorkflowCoordinator
     private readonly SubtitleExtractor _pgsExtractor;
     private readonly ITextSubtitleExtractor _textExtractor;
     private readonly EnhancedPgsToTextConverter _pgsConverter;
+    private readonly IVobSubExtractor _vobSubExtractor;
+    private readonly IVobSubOcrService _vobSubOcrService;
     private readonly IEpisodeIdentificationService _identificationService;
 
     public SubtitleWorkflowCoordinator(
@@ -24,6 +26,8 @@ public class SubtitleWorkflowCoordinator
         SubtitleExtractor pgsExtractor,
         ITextSubtitleExtractor textExtractor,
         EnhancedPgsToTextConverter pgsConverter,
+        IVobSubExtractor vobSubExtractor,
+        IVobSubOcrService vobSubOcrService,
         IEpisodeIdentificationService identificationService)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -31,6 +35,8 @@ public class SubtitleWorkflowCoordinator
         _pgsExtractor = pgsExtractor ?? throw new ArgumentNullException(nameof(pgsExtractor));
         _textExtractor = textExtractor ?? throw new ArgumentNullException(nameof(textExtractor));
         _pgsConverter = pgsConverter ?? throw new ArgumentNullException(nameof(pgsConverter));
+        _vobSubExtractor = vobSubExtractor ?? throw new ArgumentNullException(nameof(vobSubExtractor));
+        _vobSubOcrService = vobSubOcrService ?? throw new ArgumentNullException(nameof(vobSubOcrService));
         _identificationService = identificationService ?? throw new ArgumentNullException(nameof(identificationService));
     }
 
@@ -66,7 +72,7 @@ public class SubtitleWorkflowCoordinator
 
         try
         {
-            // First, check for PGS subtitles (preferred workflow)
+            // First, check for PGS subtitles (preferred workflow for PGS)
             var pgsResult = await TryPgsWorkflowAsync(videoFilePath, language, cancellationToken);
             if (!pgsResult.HasError)
             {
@@ -74,7 +80,17 @@ public class SubtitleWorkflowCoordinator
                 return pgsResult;
             }
 
-            _logger.LogInformation("PGS workflow failed or no PGS subtitles found, trying text subtitle workflow");
+            _logger.LogInformation("PGS workflow failed or no PGS subtitles found, trying VobSub workflow");
+
+            // Second, try VobSub (DVD subtitle) workflow
+            var vobSubResult = await TryVobSubWorkflowAsync(videoFilePath, language, cancellationToken);
+            if (!vobSubResult.HasError)
+            {
+                _logger.LogInformation("Successfully processed video using VobSub workflow");
+                return vobSubResult;
+            }
+
+            _logger.LogInformation("VobSub workflow failed or no DVD subtitles found, trying text subtitle workflow");
 
             // Fallback to text subtitle workflow
             var textResult = await TryTextSubtitleWorkflowAsync(videoFilePath, language, cancellationToken);
@@ -84,10 +100,13 @@ public class SubtitleWorkflowCoordinator
                 return textResult;
             }
 
-            _logger.LogWarning("Both PGS and text subtitle workflows failed for {VideoFile}", videoFilePath);
+            _logger.LogWarning("All subtitle workflows (PGS, VobSub, text) failed for {VideoFile}", videoFilePath);
 
-            // If both workflows fail, return the more informative error
-            return textResult.HasError ? textResult : pgsResult;
+            // If all workflows fail, return the most informative error
+            // Prioritize text result, then VobSub, then PGS
+            if (textResult.HasError) return textResult;
+            if (vobSubResult.HasError) return vobSubResult;
+            return pgsResult;
         }
         catch (Exception ex)
         {
@@ -115,11 +134,12 @@ public class SubtitleWorkflowCoordinator
         {
             _logger.LogDebug("Checking for PGS subtitles in {VideoFile}", videoFilePath);
 
-            // Check if video has PGS subtitle tracks
+            // Check if video has PGS subtitle tracks (explicitly exclude dvd_subtitle)
             var subtitleTracks = await _validator.GetSubtitleTracks(videoFilePath);
             var pgsTrack = subtitleTracks
-                .Where(t => string.Equals(t.CodecName, "pgs", StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(t.CodecName, "hdmv_pgs_subtitle", StringComparison.OrdinalIgnoreCase))
+                .Where(t => (string.Equals(t.CodecName, "pgs", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(t.CodecName, "hdmv_pgs_subtitle", StringComparison.OrdinalIgnoreCase)) &&
+                            !string.Equals(t.CodecName, "dvd_subtitle", StringComparison.OrdinalIgnoreCase))
                 .FirstOrDefault(t =>
                     string.IsNullOrEmpty(language) ||
                     (t.Language?.Contains(language, StringComparison.OrdinalIgnoreCase) ?? false));
@@ -195,6 +215,163 @@ public class SubtitleWorkflowCoordinator
                 {
                     Code = "PROCESSING_ERROR",
                     Message = $"PGS workflow error: {ex.Message}"
+                }
+            };
+        }
+    }
+
+    /// <summary>
+    /// Attempts to process the video using the VobSub (DVD subtitle) workflow.
+    /// </summary>
+    private async Task<IdentificationResult> TryVobSubWorkflowAsync(
+        string videoFilePath,
+        string? language,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogDebug("Checking for DVD subtitles (VobSub) in {VideoFile}", videoFilePath);
+
+            // Check if video has DVD subtitle tracks
+            var subtitleTracks = await _validator.GetSubtitleTracks(videoFilePath);
+            var vobSubTrack = subtitleTracks
+                .Where(t => string.Equals(t.CodecName, "dvd_subtitle", StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault(t =>
+                    string.IsNullOrEmpty(language) ||
+                    (t.Language?.Contains(language, StringComparison.OrdinalIgnoreCase) ?? false));
+
+            if (vobSubTrack == null)
+            {
+                _logger.LogDebug("No DVD subtitles found in {VideoFile}", videoFilePath);
+                return new IdentificationResult
+                {
+                    Error = new IdentificationError
+                    {
+                        Code = "NO_SUBTITLES_FOUND",
+                        Message = "No DVD subtitles found in the video file"
+                    }
+                };
+            }
+
+            _logger.LogInformation("Found DVD subtitle track (index: {Index}, language: {Language})",
+                vobSubTrack.Index, vobSubTrack.Language ?? "unknown");
+
+            // Check if required tools are available
+            if (!await _vobSubExtractor.IsMkvExtractAvailableAsync())
+            {
+                return new IdentificationResult
+                {
+                    Error = new IdentificationError
+                    {
+                        Code = "MISSING_DEPENDENCY",
+                        Message = "mkvextract is required but not available. Please install mkvtoolnix."
+                    }
+                };
+            }
+
+            if (!await _vobSubOcrService.IsTesseractAvailableAsync())
+            {
+                return new IdentificationResult
+                {
+                    Error = new IdentificationError
+                    {
+                        Code = "MISSING_DEPENDENCY",
+                        Message = "Tesseract OCR is required but not available. Please install tesseract-ocr."
+                    }
+                };
+            }
+
+            // Create temporary directory for VobSub extraction
+            var tempDir = Path.Combine(Path.GetTempPath(), $"vobsub_{Guid.NewGuid():N}");
+            Directory.CreateDirectory(tempDir);
+
+            try
+            {
+                // Extract VobSub files from MKV
+                var extractionResult = await _vobSubExtractor.ExtractAsync(
+                    videoFilePath,
+                    vobSubTrack.Index,
+                    tempDir,
+                    cancellationToken);
+
+                if (!extractionResult.Success || string.IsNullOrEmpty(extractionResult.IdxFilePath))
+                {
+                    return new IdentificationResult
+                    {
+                        Error = new IdentificationError
+                        {
+                            Code = "EXTRACTION_FAILED",
+                            Message = $"Failed to extract VobSub files: {extractionResult.ErrorMessage}"
+                        }
+                    };
+                }
+
+                _logger.LogDebug("Successfully extracted VobSub files: {IdxFile}, {SubFile}",
+                    extractionResult.IdxFilePath, extractionResult.SubFilePath);
+
+                // Perform OCR on VobSub files
+                var ocrLanguage = _vobSubOcrService.GetOcrLanguageCode(language ?? "eng");
+                var ocrResult = await _vobSubOcrService.PerformOcrAsync(
+                    extractionResult.IdxFilePath,
+                    extractionResult.SubFilePath!,
+                    ocrLanguage,
+                    cancellationToken);
+
+                if (!ocrResult.Success || string.IsNullOrWhiteSpace(ocrResult.ExtractedText))
+                {
+                    return new IdentificationResult
+                    {
+                        Error = new IdentificationError
+                        {
+                            Code = "OCR_FAILED",
+                            Message = $"Failed to extract text from DVD subtitles using OCR: {ocrResult.ErrorMessage}"
+                        }
+                    };
+                }
+
+                _logger.LogDebug("Successfully extracted {Length} characters from DVD subtitles (confidence: {Confidence:F2})",
+                    ocrResult.ExtractedText.Length, ocrResult.ConfidenceScore);
+
+                // Match against database
+                var result = await _identificationService.IdentifyEpisodeAsync(
+                    ocrResult.ExtractedText,
+                    SubtitleType.VobSub,
+                    videoFilePath);
+
+                // Add workflow metadata
+                if (!result.HasError)
+                {
+                    _logger.LogInformation("VobSub workflow successfully identified: {Series} S{Season}E{Episode}",
+                        result.Series, result.Season, result.Episode);
+                }
+
+                return result;
+            }
+            finally
+            {
+                // Clean up temporary files
+                try
+                {
+                    if (Directory.Exists(tempDir))
+                    {
+                        Directory.Delete(tempDir, recursive: true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to clean up temporary VobSub files in {TempDir}", tempDir);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "VobSub workflow failed for {VideoFile}", videoFilePath);
+            return new IdentificationResult
+            {
+                Error = new IdentificationError
+                {
+                    Code = "PROCESSING_ERROR",
+                    Message = $"VobSub workflow error: {ex.Message}"
                 }
             };
         }

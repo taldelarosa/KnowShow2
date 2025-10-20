@@ -1,7 +1,8 @@
 {
   "version": "2.0",
   "maxConcurrency": 3,
-  "matchingStrategy": "embedding",
+  "renameConfidenceThreshold": 0.59,
+  "matchingStrategy": "hybrid",
   "matchingThresholds": {
     "textBased": {
       "matchConfidence": 0.7,
@@ -15,7 +16,7 @@
     },
     "vobSub": {
       "matchConfidence": 0.5,
-      "renameConfidence": 0.6,
+      "renameConfidence": 0.59,
       "fuzzyHashSimilarity": 50
     }
   },
@@ -33,7 +34,7 @@
     "vobSub": {
       "embedSimilarity": 0.75,
       "matchConfidence": 0.50,
-      "renameConfidence": 0.60
+      "renameConfidence": 0.59
     }
   },
   "embeddingModel": {
