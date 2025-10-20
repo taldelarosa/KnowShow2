@@ -19,6 +19,12 @@ RUN dotnet publish src/EpisodeIdentifier.Core/EpisodeIdentifier.Core.csproj -c R
 
 # Stage 2: Create runtime image with all dependencies
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
+WORKDIR /app
+
+# Add Debian Bullseye repository for Tesseract 4.x
+RUN echo "deb http://deb.debian.org/debian bullseye main" >> /etc/apt/sources.list.d/bullseye.list \
+    && echo "Package: *\nPin: release n=bullseye\nPin-Priority: 100" > /etc/apt/preferences.d/bullseye \
+    && echo "Package: tesseract-ocr* libtesseract*\nPin: release n=bullseye\nPin-Priority: 900" >> /etc/apt/preferences.d/bullseye
 
 # Install system dependencies and build vobsub2srt
 # Build dependencies are removed in the same layer to reduce image size
@@ -41,6 +47,7 @@ RUN apt-get update && apt-get install -y \
     libavcodec-dev \
     libavutil-dev \
     libswscale-dev \
+    libtiff-dev \
     # Python for pgsrip
     python3 \
     python3-pip \
@@ -51,14 +58,19 @@ RUN apt-get update && apt-get install -y \
     sqlite3 \
     gosu \
     && rm -rf /var/lib/apt/lists/* \
-    # Build and install vobsub2srt from source (not available in Debian repos)
-    && git clone https://github.com/ruediger/VobSub2SRT.git /tmp/vobsub2srt \
-    && cd /tmp/vobsub2srt \
-    && mkdir build && cd build \
-    && cmake -DCMAKE_BUILD_TYPE=Release .. \
-    && make \
+    # Build vobsub2srt with Tesseract 4/5 compatibility patches from PR #101
+    && cd /tmp \
+    && git clone https://github.com/ruediger/VobSub2SRT.git \
+    && cd VobSub2SRT \
+    # Fetch and apply PR #101 (Tesseract 4 support)
+    && curl -L https://patch-diff.githubusercontent.com/raw/ruediger/VobSub2SRT/pull/101.patch | git apply \
+    && mkdir build \
+    && cd build \
+    && cmake .. \
+    && make -j$(nproc) \
     && make install \
-    && cd / && rm -rf /tmp/vobsub2srt \
+    && cd / \
+    && rm -rf /tmp/VobSub2SRT \
     # Remove build dependencies to reduce image size
     # Keep the runtime libraries that were installed as dependencies
     && apt-get purge -y --auto-remove \
@@ -71,6 +83,7 @@ RUN apt-get update && apt-get install -y \
         libavcodec-dev \
         libavutil-dev \
         libswscale-dev \
+        libtiff-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pgsrip from source
