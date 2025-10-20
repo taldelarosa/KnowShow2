@@ -185,6 +185,44 @@ public class FuzzyHashService : IDisposable
                 _logger.LogDebug("EpisodeName column already exists, skipping migration");
             }
         }
+
+        // Migration 5: Add Embedding column if it doesn't exist (Feature 013)
+        if (!columns.Contains("Embedding"))
+        {
+            _logger.LogInformation("Adding Embedding column for ML-based semantic matching");
+
+            try
+            {
+                using var alterCommand = connection.CreateCommand();
+                alterCommand.CommandText = "ALTER TABLE SubtitleHashes ADD COLUMN Embedding BLOB NULL;";
+                alterCommand.ExecuteNonQuery();
+
+                _logger.LogInformation("Embedding column added successfully");
+            }
+            catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.Message.Contains("duplicate column name"))
+            {
+                _logger.LogDebug("Embedding column already exists, skipping migration");
+            }
+        }
+
+        // Migration 6: Add SubtitleSourceFormat column if it doesn't exist (Feature 013)
+        if (!columns.Contains("SubtitleSourceFormat"))
+        {
+            _logger.LogInformation("Adding SubtitleSourceFormat column for subtitle type tracking");
+
+            try
+            {
+                using var alterCommand = connection.CreateCommand();
+                alterCommand.CommandText = "ALTER TABLE SubtitleHashes ADD COLUMN SubtitleSourceFormat TEXT NOT NULL DEFAULT 'Text';";
+                alterCommand.ExecuteNonQuery();
+
+                _logger.LogInformation("SubtitleSourceFormat column added successfully");
+            }
+            catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.Message.Contains("duplicate column name"))
+            {
+                _logger.LogDebug("SubtitleSourceFormat column already exists, skipping migration");
+            }
+        }
     }
 
     private void MigrateLegacyDataToHashes(SqliteConnection connection)
