@@ -175,10 +175,18 @@ public class EmbeddingService : IEmbeddingService, IDisposable
             sessionOptions.GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL;
             
             _session = new InferenceSession(modelInfo.ModelPath, sessionOptions);
-
-            // Load tokenizer from tokenizer.json
+            // Load tokenizer from vocab.txt with explicit special tokens
             _logger.LogInformation("Loading BERT tokenizer from {TokenizerPath}", modelInfo.TokenizerPath);
-            _tokenizer = BertTokenizer.CreateAsync(modelInfo.TokenizerPath).GetAwaiter().GetResult();
+            
+            // all-MiniLM-L6-v2 uses WordPiece tokenization with standard BERT special tokens
+            var options = new BertOptions
+            {
+                UnknownToken = "[UNK]",
+                SeparatorToken = "[SEP]",
+                ClassificationToken = "[CLS]"
+            };
+            
+            _tokenizer = BertTokenizer.CreateAsync(modelInfo.TokenizerPath, options).GetAwaiter().GetResult();
 
             _isInitialized = true;
             _logger.LogInformation("ONNX Runtime session initialized successfully");
