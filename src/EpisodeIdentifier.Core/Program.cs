@@ -672,7 +672,7 @@ public class Program
             ProcessIdentification:
                 // PGS subtitle text is available - proceed with identification
                 var ocrLang = GetOcrLanguageCode(language);
-                var pgsSubtitleText = await pgsConverter.ConvertPgsFromVideoToText(input.FullName, pgsTracks.First().Index, ocrLang);
+                var pgsSubtitleText = extractedPgsSubtitleText;
 
                 if (string.IsNullOrWhiteSpace(pgsSubtitleText))
                 {
