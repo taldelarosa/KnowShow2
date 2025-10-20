@@ -385,6 +385,11 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
                 _ => SubtitleSourceFormat.Text
             };
 
+            if (config.EmbeddingThresholds == null)
+            {
+                _logger.LogError("EmbeddingThresholds is not configured - Operation: {OperationId}", operationId);
+                return null;
+            }
             var threshold = config.EmbeddingThresholds.GetThreshold(sourceFormat);
             var effectiveMinSimilarity = minConfidence ?? threshold.EmbedSimilarity;
 
