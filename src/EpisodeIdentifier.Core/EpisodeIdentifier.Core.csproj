@@ -5,6 +5,9 @@
     <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- Suppress CS0618 (Obsolete warnings) for backward-compatible deprecated properties -->
+    <!-- These are intentional deprecations with migration path documented -->
+    <NoWarn>$(NoWarn);CS0618;CS1998</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
