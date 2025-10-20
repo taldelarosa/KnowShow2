@@ -81,7 +81,10 @@ public class FuzzyHashService : IDisposable
                 OriginalText TEXT DEFAULT '',
                 NoTimecodesText TEXT DEFAULT '',
                 NoHtmlText TEXT DEFAULT '',
-                CleanText TEXT DEFAULT ''
+                CleanText TEXT DEFAULT '',
+                -- Embedding and subtitle source format for ML matching
+                Embedding BLOB NULL,
+                SubtitleSourceFormat TEXT NOT NULL DEFAULT 'Text'
             );";
         command.ExecuteNonQuery();
 

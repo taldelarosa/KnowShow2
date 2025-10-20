@@ -57,9 +57,11 @@ public class EmbeddingService : IEmbeddingService, IDisposable
             var result = _tokenizer.EncodeToIds(cleanText);
             
             // Convert to long arrays for ONNX
-            var tokenIds = result.Select(id => (long)id).ToArray();
+            const int maxSeqLength = 512;
+            var tokenIds = result.Take(maxSeqLength).Select(id => (long)id).ToArray();
             var attentionMask = Enumerable.Repeat(1L, tokenIds.Length).ToArray();
             
+            if (result.Count > maxSeqLength) _logger.LogDebug("Truncated input from {Original} to {Max} tokens", result.Count, maxSeqLength);
             // Create token_type_ids (all zeros for single sentence)
             var tokenTypeIds = new long[tokenIds.Length];
 
