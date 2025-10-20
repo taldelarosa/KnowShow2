@@ -124,6 +124,9 @@ test_db_*.cs
 
 # Backup files
 *.backup
+*.tesseract
+*.tesseract_backup
+*_backup
 
 # macOS
 .DS_Store

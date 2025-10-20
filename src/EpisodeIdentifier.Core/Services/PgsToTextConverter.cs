@@ -261,7 +261,7 @@ public class PgsToTextConverter
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "ffmpeg",
-                    Arguments = $"-i \"{videoPath}\" -map 0:s:{trackIndex} -c:s copy -f segment -segment_time 0.1 \"{outputDir}/subtitle_%04d.png\"",
+                    Arguments = $"-i \"{videoPath}\" -map 0:{trackIndex} -c:s copy -f segment -segment_time 0.1 \"{outputDir}/subtitle_%04d.png\"",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -353,13 +353,14 @@ public class PgsToTextConverter
         try
         {
             // Extract subtitle images directly from video file using ffmpeg
-            // This extracts PGS subtitles as individual images
+            // This extracts PGS/DVD subtitles as individual images
+            // For dvd_subtitle, we need to specify the video codec (not subtitle codec)
             using var process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "ffmpeg",
-                    Arguments = $"-i \"{videoPath}\" -map 0:s:{trackIndex} -c:s png -f image2 \"{outputDir}/subtitle_%06d.png\"",
+                    Arguments = $"-i \"{videoPath}\" -map 0:{trackIndex} -c:v png -f image2 \"{outputDir}/subtitle_%06d.png\"",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,

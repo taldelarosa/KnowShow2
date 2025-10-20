@@ -34,6 +34,27 @@ public class ConfigurationValidationUnitTests : IDisposable
             MatchConfidenceThreshold = 0.6m,
             RenameConfidenceThreshold = 0.7m,
             FuzzyHashThreshold = 75,
+            MatchingThresholds = new MatchingThresholds
+            {
+                TextBased = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.6m,
+                    RenameConfidence = 0.7m,
+                    FuzzyHashSimilarity = 75
+                },
+                PGS = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.5m,
+                    RenameConfidence = 0.6m,
+                    FuzzyHashSimilarity = 65
+                },
+                VobSub = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.4m,
+                    RenameConfidence = 0.5m,
+                    FuzzyHashSimilarity = 55
+                }
+            },
             HashingAlgorithm = HashingAlgorithm.CTPH,
             FilenamePatterns = new EpisodeIdentifier.Core.Models.Configuration.FilenamePatterns
             {

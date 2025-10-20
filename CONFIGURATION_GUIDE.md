@@ -224,3 +224,85 @@ Configuration is loaded once at application startup. To apply changes:
 2. Restart the application
 
 The current configuration values are logged at DEBUG level during startup for verification.
+
+## ML Embedding-Based Matching (v013+)
+
+Starting with version 013, EpisodeIdentifier supports semantic similarity matching using ML embeddings. This provides better accuracy for OCR-based subtitles (PGS, VobSub) compared to traditional fuzzy hashing.
+
+### Matching Strategy
+
+```json
+{
+  "matchingStrategy": "embedding"
+}
+```
+
+- **embedding**: Use ML embeddings with cosine similarity (default, recommended)
+- **fuzzy**: Use CTPH fuzzy hashing (legacy, fallback)
+- **hybrid**: Try embedding first, fallback to fuzzy if confidence low
+
+### Embedding Thresholds
+
+Per-format thresholds for embedding-based matching:
+
+```json
+{
+  "embeddingThresholds": {
+    "textBased": {
+      "embedSimilarity": 0.85,
+      "matchConfidence": 0.70,
+      "renameConfidence": 0.80
+    },
+    "pgs": {
+      "embedSimilarity": 0.80,
+      "matchConfidence": 0.60,
+      "renameConfidence": 0.70
+    },
+    "vobSub": {
+      "embedSimilarity": 0.75,
+      "matchConfidence": 0.50,
+      "renameConfidence": 0.60
+    }
+  }
+}
+```
+
+**Threshold Explanation:**
+
+- **embedSimilarity** (0.0-1.0): Minimum cosine similarity for embedding match candidate
+    - Higher values = stricter matching, fewer false positives
+    - Text subtitles use highest (0.85), VobSub uses lowest (0.75) due to OCR errors
+
+- **matchConfidence** (0.0-1.0): Minimum confidence to report a match
+    - Match is displayed but not auto-applied below renameConfidence
+  
+- **renameConfidence** (0.0-1.0): Minimum confidence for automatic file renaming
+    - Only matches above this threshold will trigger automatic renames
+
+**Format-Specific Notes:**
+
+- **textBased**: Highest thresholds (0.85/0.70/0.80) - clean text, best accuracy
+- **pgs**: Medium thresholds (0.80/0.60/0.70) - OCR-based, some errors expected
+- **vobSub**: Lowest thresholds (0.75/0.50/0.60) - DVD subtitles, highest OCR error rate
+
+### Migration to Embeddings
+
+After upgrading to embedding-based matching, run the migration command to generate embeddings for existing database entries:
+
+```bash
+episodeidentifier --migrate-embeddings --hash-db production_hashes.db
+```
+
+This is a one-time operation that:
+
+- Processes all entries without embeddings
+- Generates 384-dimensional vectors using all-MiniLM-L6-v2 model
+- Downloads model automatically on first run (~45MB)
+- Provides progress feedback and statistics
+
+**Migration Performance:**
+
+- ~1000 entries: <30 seconds (typical)
+- Batch size: 100 entries (configurable)
+- Only processes entries where Embedding IS NULL
+

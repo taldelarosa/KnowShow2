@@ -89,16 +89,139 @@ public class ConfigurationValidationTests
 
     #endregion
 
-    #region Confidence Threshold Tests
+    #region MatchingThresholds Validation Tests
+
+    [Fact]
+    public void MatchingThresholds_Null_ShouldHaveValidationError()
+    {
+        // Arrange
+        var config = CreateValidConfiguration();
+        config.MatchingThresholds = null!;
+
+        // Act
+        var result = _validator.Validate(config);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(Configuration.MatchingThresholds));
+    }
 
     [Theory]
     [InlineData(-0.1)]
     [InlineData(1.1)]
     [InlineData(2.0)]
+    public void TextBasedMatchConfidence_OutsideValidRange_ShouldHaveValidationError(decimal threshold)
+    {
+        // Arrange
+        var config = CreateValidConfiguration();
+        config.MatchingThresholds.TextBased.MatchConfidence = threshold;
+
+        // Act
+        var result = _validator.Validate(config);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.PropertyName.Contains("TextBased"));
+    }
+
+    [Theory]
+    [InlineData(0.0)]
+    [InlineData(0.5)]
+    [InlineData(1.0)]
+    public void TextBasedMatchConfidence_WithinValidRange_ShouldNotHaveValidationError(decimal threshold)
+    {
+        // Arrange
+        var config = CreateValidConfiguration();
+        config.MatchingThresholds.TextBased.MatchConfidence = threshold;
+        config.MatchingThresholds.TextBased.RenameConfidence = threshold; // Ensure rename >= match
+
+        // Act
+        var result = _validator.Validate(config);
+
+        // Assert
+        Assert.True(result.IsValid || !result.Errors.Any(e => e.PropertyName.Contains("TextBased.MatchConfidence")));
+    }
+
+    [Fact]
+    public void TextBasedRenameConfidence_LowerThanMatchConfidence_ShouldHaveValidationError()
+    {
+        // Arrange
+        var config = CreateValidConfiguration();
+        config.MatchingThresholds.TextBased.MatchConfidence = 0.7m;
+        config.MatchingThresholds.TextBased.RenameConfidence = 0.5m; // Lower than match threshold
+
+        // Act
+        var result = _validator.Validate(config);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("RenameConfidence must be greater than or equal to MatchConfidence"));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(101)]
+    [InlineData(150)]
+    public void PgsFuzzyHashSimilarity_OutsideValidRange_ShouldHaveValidationError(int threshold)
+    {
+        // Arrange
+        var config = CreateValidConfiguration();
+        config.MatchingThresholds.PGS.FuzzyHashSimilarity = threshold;
+
+        // Act
+        var result = _validator.Validate(config);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.PropertyName.Contains("PGS"));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(50)]
+    [InlineData(100)]
+    public void VobSubFuzzyHashSimilarity_WithinValidRange_ShouldNotHaveValidationError(int threshold)
+    {
+        // Arrange
+        var config = CreateValidConfiguration();
+        config.MatchingThresholds.VobSub.FuzzyHashSimilarity = threshold;
+
+        // Act
+        var result = _validator.Validate(config);
+
+        // Assert
+        Assert.True(result.IsValid || !result.Errors.Any(e => e.PropertyName.Contains("VobSub.FuzzyHashSimilarity")));
+    }
+
+    [Fact]
+    public void FuzzyHashSimilarity_Zero_ShouldHaveValidationError()
+    {
+        // Arrange
+        var config = CreateValidConfiguration();
+        config.MatchingThresholds.TextBased.FuzzyHashSimilarity = 0;
+
+        // Act
+        var result = _validator.Validate(config);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("must be greater than 0"));
+    }
+
+    #endregion
+
+    #region Legacy Threshold Tests (Deprecated)
+
+    [Theory]
+    [InlineData(-0.1)]
+    [InlineData(1.1)]
+    [InlineData(2.0)]
+#pragma warning disable CS0618 // Type or member is obsolete
     public void MatchConfidenceThreshold_OutsideValidRange_ShouldHaveValidationError(decimal threshold)
     {
         // Arrange
         var config = CreateValidConfiguration();
+        config.MatchingThresholds = null!; // Force legacy path
         config.MatchConfidenceThreshold = threshold;
 
         // Act
@@ -117,6 +240,7 @@ public class ConfigurationValidationTests
     {
         // Arrange
         var config = CreateValidConfiguration();
+        config.MatchingThresholds = null!; // Force legacy path
         config.MatchConfidenceThreshold = threshold;
 
         // Act
@@ -131,6 +255,7 @@ public class ConfigurationValidationTests
     {
         // Arrange
         var config = CreateValidConfiguration();
+        config.MatchingThresholds = null!; // Force legacy path
         config.MatchConfidenceThreshold = 0.7m;
         config.RenameConfidenceThreshold = 0.5m; // Lower than match threshold
 
@@ -141,6 +266,7 @@ public class ConfigurationValidationTests
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("RenameConfidenceThreshold must be greater than or equal to MatchConfidenceThreshold"));
     }
+#pragma warning restore CS0618
 
     #endregion
 
@@ -150,10 +276,12 @@ public class ConfigurationValidationTests
     [InlineData(-1)]
     [InlineData(101)]
     [InlineData(150)]
+#pragma warning disable CS0618 // Type or member is obsolete
     public void FuzzyHashThreshold_OutsideValidRange_ShouldHaveValidationError(int threshold)
     {
         // Arrange
         var config = CreateValidConfiguration();
+        config.MatchingThresholds = null!; // Force legacy path
         config.FuzzyHashThreshold = threshold;
 
         // Act
@@ -172,6 +300,7 @@ public class ConfigurationValidationTests
     {
         // Arrange
         var config = CreateValidConfiguration();
+        config.MatchingThresholds = null!; // Force legacy path
         config.FuzzyHashThreshold = threshold;
 
         // Act
@@ -187,6 +316,7 @@ public class ConfigurationValidationTests
     {
         // Arrange
         var config = CreateValidConfiguration();
+        config.MatchingThresholds = null!; // Force legacy path
         config.HashingAlgorithm = HashingAlgorithm.CTPH;
         config.FuzzyHashThreshold = 0;
 
@@ -197,6 +327,7 @@ public class ConfigurationValidationTests
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, e => e.ErrorMessage.Contains("FuzzyHashThreshold is required when HashingAlgorithm is CTPH"));
     }
+#pragma warning restore CS0618
 
     #endregion
 
@@ -392,9 +523,27 @@ public class ConfigurationValidationTests
         var config = new Configuration
         {
             Version = "invalid-version",
-            MatchConfidenceThreshold = -1.0m,
-            RenameConfidenceThreshold = 2.0m,
-            FuzzyHashThreshold = -10,
+            MatchingThresholds = new MatchingThresholds
+            {
+                TextBased = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = -1.0m,
+                    RenameConfidence = 2.0m,
+                    FuzzyHashSimilarity = -10
+                },
+                PGS = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.5m,
+                    RenameConfidence = 0.6m,
+                    FuzzyHashSimilarity = 50
+                },
+                VobSub = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.5m,
+                    RenameConfidence = 0.6m,
+                    FuzzyHashSimilarity = 50
+                }
+            },
             HashingAlgorithm = (HashingAlgorithm)999,
             FilenamePatterns = new FilenamePatterns
             {
@@ -412,9 +561,7 @@ public class ConfigurationValidationTests
 
         // Check for specific error categories
         Assert.Contains(result.Errors, e => e.PropertyName.Contains("Version"));
-        Assert.Contains(result.Errors, e => e.PropertyName.Contains("MatchConfidenceThreshold"));
-        Assert.Contains(result.Errors, e => e.PropertyName.Contains("RenameConfidenceThreshold"));
-        Assert.Contains(result.Errors, e => e.PropertyName.Contains("FuzzyHashThreshold"));
+        Assert.Contains(result.Errors, e => e.PropertyName.Contains("TextBased"));
         Assert.Contains(result.Errors, e => e.PropertyName.Contains("HashingAlgorithm"));
     }
 
@@ -424,7 +571,7 @@ public class ConfigurationValidationTests
         // Arrange
         var config = CreateValidConfiguration();
         config.HashingAlgorithm = HashingAlgorithm.CTPH;
-        config.FuzzyHashThreshold = 50;
+        config.MatchingThresholds.TextBased.FuzzyHashSimilarity = 50;
 
         // Act
         var result = _validator.Validate(config);
@@ -447,9 +594,27 @@ public class ConfigurationValidationTests
         return new Configuration
         {
             Version = "2.0.0",
-            MatchConfidenceThreshold = 0.7m,
-            RenameConfidenceThreshold = 0.8m,
-            FuzzyHashThreshold = 50,
+            MatchingThresholds = new MatchingThresholds
+            {
+                TextBased = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.7m,
+                    RenameConfidence = 0.8m,
+                    FuzzyHashSimilarity = 70
+                },
+                PGS = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.6m,
+                    RenameConfidence = 0.7m,
+                    FuzzyHashSimilarity = 60
+                },
+                VobSub = new SubtitleTypeThresholds
+                {
+                    MatchConfidence = 0.5m,
+                    RenameConfidence = 0.6m,
+                    FuzzyHashSimilarity = 50
+                }
+            },
             HashingAlgorithm = HashingAlgorithm.CTPH,
             FilenamePatterns = new FilenamePatterns
             {

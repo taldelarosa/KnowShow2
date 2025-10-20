@@ -5,6 +5,9 @@
     <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- Suppress CS0618 (Obsolete warnings) for backward-compatible deprecated properties -->
+    <!-- These are intentional deprecations with migration path documented -->
+    <NoWarn>$(NoWarn);CS0618;CS1998</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +19,22 @@
     <PackageReference Include="ssdeep.NET" Version="1.0.0" />
     <PackageReference Include="FluentValidation" Version="11.8.0" />
     <PackageReference Include="System.IO.Abstractions" Version="19.2.69" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.16.3" />
+    <PackageReference Include="Microsoft.ML.Tokenizers" Version="1.0.2" />
+  </ItemGroup>
+
+  <!-- Copy vectorlite native binaries to output directory -->
+  <ItemGroup>
+    <None Include="native/vectorlite.so">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>vectorlite.so</Link>
+    </None>
+    <None Include="native/vectorlite.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>vectorlite.dll</Link>
+    </None>
   </ItemGroup>
 
 </Project>

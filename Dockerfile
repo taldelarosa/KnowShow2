@@ -30,6 +30,8 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     tesseract-ocr-eng \
     tesseract-ocr-jpn \
+    # VobSub to SRT converter for DVD subtitles
+    vobsub2srt \
     # Python for pgsrip
     python3 \
     python3-pip \

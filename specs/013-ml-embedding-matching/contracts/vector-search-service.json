@@ -1,0 +1,202 @@
+{
+  "contractName": "IVectorSearchService",
+  "description": "Service for searching subtitle database using vector similarity via vectorlite extension",
+  "version": "1.0.0",
+  "namespace": "EpisodeIdentifier.Core.Interfaces",
+  "methods": [
+    {
+      "name": "SearchBySimilarity",
+      "description": "Find K nearest neighbors to query embedding using cosine similarity",
+      "parameters": [
+        {
+          "name": "queryEmbedding",
+          "type": "float[]",
+          "required": true,
+          "description": "384-dimensional query embedding vector",
+          "constraints": {
+            "length": 384,
+            "elementType": "float32"
+          }
+        },
+        {
+          "name": "k",
+          "type": "int",
+          "required": true,
+          "description": "Number of nearest neighbors to return",
+          "constraints": {
+            "min": 1,
+            "max": 100,
+            "default": 10
+          }
+        },
+        {
+          "name": "threshold",
+          "type": "double",
+          "required": false,
+          "description": "Minimum similarity threshold (0.0-1.0), null for no filtering",
+          "constraints": {
+            "min": 0.0,
+            "max": 1.0,
+            "nullable": true
+          }
+        },
+        {
+          "name": "formatFilter",
+          "type": "SubtitleFormat?",
+          "required": false,
+          "description": "Filter results by subtitle format (Text, PGS, VobSub)",
+          "constraints": {
+            "nullable": true,
+            "validValues": ["Text", "PGS", "VobSub"]
+          }
+        },
+        {
+          "name": "seriesFilter",
+          "type": "string",
+          "required": false,
+          "description": "Filter results by series name (case-insensitive)",
+          "constraints": {
+            "nullable": true,
+            "minLength": 1
+          }
+        },
+        {
+          "name": "seasonFilter",
+          "type": "int?",
+          "required": false,
+          "description": "Filter results by season number (requires seriesFilter)",
+          "constraints": {
+            "nullable": true,
+            "min": 1,
+            "requiresSeriesFilter": true
+          }
+        },
+        {
+          "name": "ef",
+          "type": "int",
+          "required": false,
+          "description": "HNSW search parameter for speed/accuracy tradeoff (higher = more accurate, slower)",
+          "constraints": {
+            "min": 10,
+            "max": 500,
+            "default": 50
+          }
+        }
+      ],
+      "returns": {
+        "type": "List<VectorSimilarityResult>",
+        "description": "Ordered list of search results (highest similarity first)",
+        "constraints": {
+          "ordered": "descending by similarity",
+          "maxLength": "k parameter",
+          "includesMetadata": ["Series", "Season", "Episode", "Format", "Similarity", "Confidence"]
+        }
+      },
+      "throws": [
+        {
+          "exception": "ArgumentNullException",
+          "condition": "queryEmbedding is null"
+        },
+        {
+          "exception": "ArgumentException",
+          "condition": "queryEmbedding length != 384 OR k < 1 OR threshold out of range"
+        },
+        {
+          "exception": "InvalidOperationException",
+          "condition": "vectorlite extension not loaded or vector_index table not created"
+        },
+        {
+          "exception": "ArgumentException",
+          "condition": "seasonFilter provided without seriesFilter"
+        }
+      ],
+      "performance": {
+        "target": "<2 seconds for 1000 entries",
+        "complexity": "O(log N) with HNSW index"
+      }
+    },
+    {
+      "name": "IsVectorliteLoaded",
+      "description": "Check if vectorlite SQLite extension is loaded and operational",
+      "parameters": [],
+      "returns": {
+        "type": "bool",
+        "description": "True if vectorlite is loaded and vector_index table exists"
+      },
+      "throws": [],
+      "performance": {
+        "target": "<10ms",
+        "complexity": "O(1)"
+      }
+    },
+    {
+      "name": "GetIndexStats",
+      "description": "Get statistics about vector index (entry count, memory usage, etc.)",
+      "parameters": [],
+      "returns": {
+        "type": "VectorIndexStats",
+        "description": "Index statistics including entry count, dimension, max_elements",
+        "nullable": false
+      },
+      "throws": [
+        {
+          "exception": "InvalidOperationException",
+          "condition": "vectorlite not loaded"
+        }
+      ],
+      "performance": {
+        "target": "<100ms",
+        "complexity": "O(1)"
+      }
+    },
+    {
+      "name": "RebuildIndex",
+      "description": "Rebuild vectorlite index from SubtitleHashes table (for maintenance/migration)",
+      "parameters": [
+        {
+          "name": "maxElements",
+          "type": "int",
+          "required": false,
+          "description": "Maximum number of elements in index (null = auto-calculate)",
+          "constraints": {
+            "min": 100,
+            "max": 1000000,
+            "nullable": true
+          }
+        }
+      ],
+      "returns": {
+        "type": "int",
+        "description": "Number of embeddings indexed"
+      },
+      "throws": [
+        {
+          "exception": "InvalidOperationException",
+          "condition": "vectorlite not loaded or database locked"
+        }
+      ],
+      "performance": {
+        "target": "<10 seconds for 1000 entries",
+        "complexity": "O(N log N)"
+      }
+    }
+  ],
+  "dependencies": [
+    "vectorlite SQLite extension",
+    "Microsoft.Data.Sqlite"
+  ],
+  "configurationRequirements": [
+    "vectorlite extension loaded at runtime",
+    "vector_index virtual table created"
+  ],
+  "testRequirements": [
+    "Verify vectorlite extension loads correctly",
+    "Test cosine similarity search returns correct order",
+    "Test format filter excludes other formats",
+    "Test series/season filter works correctly",
+    "Test threshold filters low-confidence results",
+    "Verify ef parameter affects result count/accuracy",
+    "Benchmark search time with 1000 entries (<2s)",
+    "Test error handling for missing index"
+  ]
+}

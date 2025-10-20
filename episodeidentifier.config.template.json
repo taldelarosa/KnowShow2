@@ -1,9 +1,41 @@
 {
   "version": "2.0",
   "maxConcurrency": 3,
-  "matchConfidenceThreshold": 0.5,
-  "renameConfidenceThreshold": 0.5,
-  "fuzzyHashThreshold": 50,
+  "matchingStrategy": "embedding",
+  "matchingThresholds": {
+    "textBased": {
+      "matchConfidence": 0.7,
+      "renameConfidence": 0.8,
+      "fuzzyHashSimilarity": 70
+    },
+    "pgs": {
+      "matchConfidence": 0.6,
+      "renameConfidence": 0.7,
+      "fuzzyHashSimilarity": 60
+    },
+    "vobSub": {
+      "matchConfidence": 0.5,
+      "renameConfidence": 0.6,
+      "fuzzyHashSimilarity": 50
+    }
+  },
+  "embeddingThresholds": {
+    "textBased": {
+      "embedSimilarity": 0.85,
+      "matchConfidence": 0.70,
+      "renameConfidence": 0.80
+    },
+    "pgs": {
+      "embedSimilarity": 0.80,
+      "matchConfidence": 0.60,
+      "renameConfidence": 0.70
+    },
+    "vobSub": {
+      "embedSimilarity": 0.75,
+      "matchConfidence": 0.50,
+      "renameConfidence": 0.60
+    }
+  },
   "hashingAlgorithm": "CTPH",
   "filenamePatterns": {
     "primaryPattern": "^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",

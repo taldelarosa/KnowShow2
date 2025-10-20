@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Interfaces;
 using FuzzySharp;
 using System.Text;
 using System.Collections.Concurrent;
@@ -14,17 +15,19 @@ public class FuzzyHashService : IDisposable
     private readonly string _dbPath;
     private readonly ILogger<FuzzyHashService> _logger;
     private readonly SubtitleNormalizationService _normalizationService;
+    private readonly IEmbeddingService? _embeddingService;
     private readonly SqliteConnection? _sharedConnection; // For in-memory databases
     private readonly string _connectionString = string.Empty; // Cached for file-based dbs
     private readonly ConcurrentBag<SqliteConnection> _readConnections = new();
     private readonly SemaphoreSlim? _readConnSemaphore; // gate pooled read connections
     private readonly int _maxReadConnections = 0;
 
-    public FuzzyHashService(string dbPath, ILogger<FuzzyHashService> logger, SubtitleNormalizationService normalizationService)
+    public FuzzyHashService(string dbPath, ILogger<FuzzyHashService> logger, SubtitleNormalizationService normalizationService, IEmbeddingService? embeddingService = null)
     {
         _dbPath = dbPath;
         _logger = logger;
         _normalizationService = normalizationService;
+        _embeddingService = embeddingService;
 
         // For in-memory databases, keep a shared connection alive
         if (dbPath == ":memory:")
@@ -78,7 +81,10 @@ public class FuzzyHashService : IDisposable
                 OriginalText TEXT DEFAULT '',
                 NoTimecodesText TEXT DEFAULT '',
                 NoHtmlText TEXT DEFAULT '',
-                CleanText TEXT DEFAULT ''
+                CleanText TEXT DEFAULT '',
+                -- Embedding and subtitle source format for ML matching
+                Embedding BLOB NULL,
+                SubtitleSourceFormat TEXT NOT NULL DEFAULT 'Text'
             );";
         command.ExecuteNonQuery();
 
@@ -385,12 +391,31 @@ public class FuzzyHashService : IDisposable
                 subtitle.Series, subtitle.Season, subtitle.Episode);
         }
 
+        // Generate embedding if service is available
+        byte[]? embeddingBytes = null;
+        if (_embeddingService != null)
+        {
+            try
+            {
+                var embedding = _embeddingService.GenerateEmbedding(normalized.NoHtmlAndTimecodes);
+                embeddingBytes = new byte[embedding.Length * sizeof(float)];
+                Buffer.BlockCopy(embedding, 0, embeddingBytes, 0, embeddingBytes.Length);
+                _logger.LogDebug("Generated {Dimensions}-dim embedding for {Series} S{Season}E{Episode}",
+                    embedding.Length, subtitle.Series, subtitle.Season, subtitle.Episode);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to generate embedding for {Series} S{Season}E{Episode}, storing without embedding",
+                    subtitle.Series, subtitle.Season, subtitle.Episode);
+            }
+        }
+
         using var command = connection.CreateCommand();
         command.CommandText = @"
             INSERT INTO SubtitleHashes (Series, Season, Episode, OriginalHash, NoTimecodesHash, NoHtmlHash, CleanHash,
-                                      OriginalText, NoTimecodesText, NoHtmlText, CleanText, EpisodeName)
+                                      OriginalText, NoTimecodesText, NoHtmlText, CleanText, EpisodeName, Embedding)
             VALUES (@series, @season, @episode, @originalHash, @noTimecodesHash, @noHtmlHash, @cleanHash,
-                    @original, @noTimecodes, @noHtml, @clean, @episodeName);";
+                    @original, @noTimecodes, @noHtml, @clean, @episodeName, @embedding);";
 
         command.Parameters.AddWithValue("@series", subtitle.Series);
         command.Parameters.AddWithValue("@season", subtitle.Season);
@@ -404,6 +429,7 @@ public class FuzzyHashService : IDisposable
         command.Parameters.AddWithValue("@noHtml", normalized.NoHtml);
         command.Parameters.AddWithValue("@clean", normalized.NoHtmlAndTimecodes);
         command.Parameters.AddWithValue("@episodeName", subtitle.EpisodeName ?? (object)DBNull.Value);
+        command.Parameters.AddWithValue("@embedding", embeddingBytes != null ? (object)embeddingBytes : DBNull.Value);
 
         try
         {

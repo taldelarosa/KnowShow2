@@ -1,4 +1,5 @@
 using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Models.Configuration;
 using EpisodeIdentifier.Core.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.IO;
@@ -16,6 +17,8 @@ public class VideoFileProcessingService : IVideoFileProcessingService
     private readonly SubtitleExtractor _subtitleExtractor;
     private readonly EnhancedPgsToTextConverter _pgsConverter;
     private readonly VideoTextSubtitleExtractor _textExtractor;
+    private readonly IVobSubExtractor _vobSubExtractor;
+    private readonly IVobSubOcrService _vobSubOcrService;
     private readonly EpisodeIdentificationService _episodeIdentificationService;
     private readonly FilenameService _filenameService;
     private readonly FileRenameService _fileRenameService;
@@ -27,6 +30,8 @@ public class VideoFileProcessingService : IVideoFileProcessingService
         SubtitleExtractor subtitleExtractor,
         EnhancedPgsToTextConverter pgsConverter,
         VideoTextSubtitleExtractor textExtractor,
+        IVobSubExtractor vobSubExtractor,
+        IVobSubOcrService vobSubOcrService,
         EpisodeIdentificationService episodeIdentificationService,
         FilenameService filenameService,
         FileRenameService fileRenameService,
@@ -37,6 +42,8 @@ public class VideoFileProcessingService : IVideoFileProcessingService
         _subtitleExtractor = subtitleExtractor ?? throw new ArgumentNullException(nameof(subtitleExtractor));
         _pgsConverter = pgsConverter ?? throw new ArgumentNullException(nameof(pgsConverter));
         _textExtractor = textExtractor ?? throw new ArgumentNullException(nameof(textExtractor));
+        _vobSubExtractor = vobSubExtractor ?? throw new ArgumentNullException(nameof(vobSubExtractor));
+        _vobSubOcrService = vobSubOcrService ?? throw new ArgumentNullException(nameof(vobSubOcrService));
         _episodeIdentificationService = episodeIdentificationService ?? throw new ArgumentNullException(nameof(episodeIdentificationService));
         _filenameService = filenameService ?? throw new ArgumentNullException(nameof(filenameService));
         _fileRenameService = fileRenameService ?? throw new ArgumentNullException(nameof(fileRenameService));
@@ -96,33 +103,49 @@ public class VideoFileProcessingService : IVideoFileProcessingService
                 return result;
             }
 
-            // Step 4: Try to extract subtitle text
+            // Step 4: Try to extract subtitle text (priority: PGS > VobSub > Text)
             string? subtitleText = null;
+            SubtitleType actualSubtitleType = SubtitleType.TextBased;
 
-            // Check if there are any PGS tracks first
+            // Check for PGS tracks (highest image quality)
             var pgsTracks = subtitleTracks.Where(t =>
-                t.CodecName == "hdmv_pgs_subtitle" ||
-                t.CodecName == "dvd_subtitle").ToList();
+                t.CodecName == "hdmv_pgs_subtitle").ToList();
 
             if (pgsTracks.Any())
             {
-                // Try PGS extraction first
+                // Try PGS extraction
                 var pgsTrack = PgsTrackSelector.SelectBestTrack(pgsTracks, language);
                 var ocrLanguage = GetOcrLanguageCode(language);
                 subtitleText = await _pgsConverter.ConvertPgsFromVideoToText(filePath, pgsTrack.Index, ocrLanguage);
+                if (!string.IsNullOrWhiteSpace(subtitleText))
+                {
+                    actualSubtitleType = SubtitleType.PGS;
+                }
             }
 
-            // If PGS extraction failed or no PGS tracks, try text subtitles
+            // If PGS failed or not available, try VobSub (DVD subtitles)
+            if (string.IsNullOrWhiteSpace(subtitleText))
+            {
+                var vobSubResult = await TryExtractVobSubSubtitle(filePath, language);
+                if (vobSubResult.Success)
+                {
+                    subtitleText = vobSubResult.SubtitleText;
+                    actualSubtitleType = SubtitleType.VobSub;
+                }
+            }
+
+            // If VobSub failed or not available, try text subtitles
             if (string.IsNullOrWhiteSpace(subtitleText))
             {
                 var textSubtitleResult = await TryExtractTextSubtitle(filePath, language);
                 if (textSubtitleResult.Success)
                 {
                     subtitleText = textSubtitleResult.SubtitleText;
+                    actualSubtitleType = SubtitleType.TextBased;
                 }
                 else if (pgsTracks.Any())
                 {
-                    // PGS tracks existed but OCR failed and no text fallback
+                    // PGS tracks existed but OCR failed and no other fallback
                     result.Error = new IdentificationError
                     {
                         Code = "OCR_FAILED",
@@ -133,33 +156,48 @@ public class VideoFileProcessingService : IVideoFileProcessingService
                 }
                 else
                 {
-                    // No PGS tracks and text extraction failed
+                    // No supported subtitle tracks or all extraction methods failed
                     result.Error = IdentificationError.NoSubtitlesFound;
                     result.ProcessingCompleted = DateTime.UtcNow;
                     return result;
                 }
             }
 
-            // Step 5: Identify episode
-            var identificationResult = await _episodeIdentificationService.IdentifyEpisodeAsync(subtitleText ?? "", filePath);
+            // Step 5: Identify episode using the extracted subtitle text
+            var identificationResult = await _episodeIdentificationService.IdentifyEpisodeAsync(
+                subtitleText ?? "",
+                actualSubtitleType,
+                filePath);
             result.IdentificationResult = identificationResult;
+
+            // Get the appropriate rename threshold based on actual subtitle type
+            var renameThreshold = actualSubtitleType switch
+            {
+                SubtitleType.TextBased => _configService.Config.MatchingThresholds?.TextBased.RenameConfidence,
+                SubtitleType.PGS => _configService.Config.MatchingThresholds?.PGS.RenameConfidence,
+                SubtitleType.VobSub => _configService.Config.MatchingThresholds?.VobSub.RenameConfidence,
+                _ => _configService.Config.MatchingThresholds?.TextBased.RenameConfidence
+            }
+#pragma warning disable CS0618 // Type or member is obsolete
+            ?? (decimal)_configService.Config.RenameConfidenceThreshold;
+#pragma warning restore CS0618
 
             // Log configuration info for debugging
             _logger.LogInformation("Configuration debug: RenameThreshold={Threshold}, Confidence={Confidence}, ShouldRename={ShouldRename}",
-                _configService.Config.RenameConfidenceThreshold, identificationResult.MatchConfidence, shouldRename);
+                renameThreshold, identificationResult.MatchConfidence, shouldRename);
 
             // Step 6: Handle renaming if requested and confidence is high enough
             if (shouldRename && !identificationResult.HasError &&
-                identificationResult.MatchConfidence >= _configService.Config.RenameConfidenceThreshold)
+                (decimal)identificationResult.MatchConfidence >= renameThreshold)
             {
                 _logger.LogInformation("Attempting file rename: Confidence={Confidence:P1}, Threshold={Threshold:P1}",
-                    identificationResult.MatchConfidence, _configService.Config.RenameConfidenceThreshold);
+                    identificationResult.MatchConfidence, renameThreshold);
                 await AttemptFileRename(filePath, identificationResult, result);
             }
             else
             {
                 _logger.LogInformation("Skipping file rename: ShouldRename={ShouldRename}, HasError={HasError}, Confidence={Confidence:P1}, Threshold={Threshold:P1}",
-                    shouldRename, identificationResult.HasError, identificationResult.MatchConfidence, _configService.Config.RenameConfidenceThreshold);
+                    shouldRename, identificationResult.HasError, identificationResult.MatchConfidence, renameThreshold);
             }
 
             result.ProcessingCompleted = DateTime.UtcNow;
@@ -188,9 +226,10 @@ public class VideoFileProcessingService : IVideoFileProcessingService
             // Get all subtitle tracks from the video
             var subtitleTracks = await _videoFormatValidator.GetSubtitleTracks(filePath);
 
-            // Look for text-based subtitle tracks (non-PGS)
+            // Look for text-based subtitle tracks (non-PGS, non-DVD)
             var textTracks = subtitleTracks.Where(t =>
                 t.CodecName != "hdmv_pgs_subtitle" &&
+                t.CodecName != "dvd_subtitle" &&
                 (t.CodecName == "subrip" || t.CodecName == "ass" || t.CodecName == "webvtt" || t.CodecName == "mov_text" || t.CodecName == "srt"))
                 .ToList();
 
@@ -215,6 +254,109 @@ public class VideoFileProcessingService : IVideoFileProcessingService
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "Text subtitle extraction failed for {FilePath}", filePath);
+        }
+
+        return (false, null);
+    }
+
+    private async Task<(bool Success, string? SubtitleText)> TryExtractVobSubSubtitle(string filePath, string? language)
+    {
+        try
+        {
+            // Get all subtitle tracks from the video
+            var subtitleTracks = await _videoFormatValidator.GetSubtitleTracks(filePath);
+
+            // Look for DVD subtitle tracks
+            var vobSubTracks = subtitleTracks.Where(t => t.CodecName == "dvd_subtitle").ToList();
+
+            if (!vobSubTracks.Any())
+            {
+                return (false, null); // No DVD subtitle tracks found
+            }
+
+            // Check if required tools are available
+            if (!await _vobSubExtractor.IsMkvExtractAvailableAsync())
+            {
+                _logger.LogDebug("mkvextract not available, skipping VobSub extraction for {FilePath}", filePath);
+                return (false, null);
+            }
+
+            if (!await _vobSubOcrService.IsTesseractAvailableAsync())
+            {
+                _logger.LogDebug("Tesseract not available, skipping VobSub OCR for {FilePath}", filePath);
+                return (false, null);
+            }
+
+            // Select the best VobSub track based on language preference
+            var selectedTrack = vobSubTracks.FirstOrDefault(t =>
+                string.IsNullOrEmpty(language) ||
+                (t.Language?.Contains(language, StringComparison.OrdinalIgnoreCase) == true)) ?? vobSubTracks.First();
+
+            // Create temporary directory for VobSub extraction
+            var baseDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (string.IsNullOrEmpty(baseDir) || !Directory.Exists(baseDir))
+            {
+                baseDir = Directory.GetCurrentDirectory();
+            }
+            var tempDir = Path.Combine(baseDir, ".episodeidentifier_temp", $"vobsub_{Guid.NewGuid():N}");
+            Directory.CreateDirectory(tempDir);
+
+            try
+            {
+                // Extract VobSub files from MKV
+                var extractionResult = await _vobSubExtractor.ExtractAsync(
+                    filePath,
+                    selectedTrack.Index,
+                    tempDir,
+                    CancellationToken.None);
+
+                if (!extractionResult.Success || string.IsNullOrEmpty(extractionResult.IdxFilePath) ||
+                    string.IsNullOrEmpty(extractionResult.SubFilePath))
+                {
+                    _logger.LogDebug("VobSub extraction failed for {FilePath}: {Error}",
+                        filePath, extractionResult.ErrorMessage);
+                    return (false, null);
+                }
+
+                // Perform OCR on VobSub files
+                var ocrLanguage = _vobSubOcrService.GetOcrLanguageCode(language ?? "eng");
+                var ocrResult = await _vobSubOcrService.PerformOcrAsync(
+                    extractionResult.IdxFilePath,
+                    extractionResult.SubFilePath,
+                    ocrLanguage,
+                    CancellationToken.None);
+
+                if (!ocrResult.Success || string.IsNullOrWhiteSpace(ocrResult.ExtractedText))
+                {
+                    _logger.LogDebug("VobSub OCR failed for {FilePath}: {Error}",
+                        filePath, ocrResult.ErrorMessage);
+                    return (false, null);
+                }
+
+                _logger.LogInformation("Successfully extracted {Length} characters from DVD subtitles (confidence: {Confidence:F2})",
+                    ocrResult.ExtractedText.Length, ocrResult.ConfidenceScore);
+
+                return (true, ocrResult.ExtractedText);
+            }
+            finally
+            {
+                // Clean up temporary files
+                try
+                {
+                    if (Directory.Exists(tempDir))
+                    {
+                        Directory.Delete(tempDir, recursive: true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Failed to clean up temporary VobSub files in {TempDir}", tempDir);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "VobSub subtitle extraction failed for {FilePath}", filePath);
         }
 
         return (false, null);

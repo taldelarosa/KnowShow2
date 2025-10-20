@@ -13,7 +13,16 @@ internal class TestAppConfigService : IAppConfigService
     public AppConfig Config { get; private set; }
 
     public int MaxConcurrency => Config.MaxConcurrency;
-    public ConfigurationResult? LastConfigurationResult => ConfigurationResult.Success(new Configuration { MaxConcurrency = Config.MaxConcurrency });
+    public ConfigurationResult? LastConfigurationResult => ConfigurationResult.Success(new Configuration
+    {
+        MaxConcurrency = Config.MaxConcurrency,
+        MatchingThresholds = new MatchingThresholds
+        {
+            TextBased = new SubtitleTypeThresholds { MatchConfidence = 0.8m, RenameConfidence = 0.85m, FuzzyHashSimilarity = 75 },
+            PGS = new SubtitleTypeThresholds { MatchConfidence = 0.7m, RenameConfidence = 0.75m, FuzzyHashSimilarity = 65 },
+            VobSub = new SubtitleTypeThresholds { MatchConfidence = 0.6m, RenameConfidence = 0.7m, FuzzyHashSimilarity = 55 }
+        }
+    });
 
     public TestAppConfigService()
     {
@@ -37,7 +46,16 @@ internal class TestAppConfigService : IAppConfigService
 
     public Task<ConfigurationResult> LoadConfiguration()
     {
-        var config = new Configuration { MaxConcurrency = Config.MaxConcurrency };
+        var config = new Configuration
+        {
+            MaxConcurrency = Config.MaxConcurrency,
+            MatchingThresholds = new MatchingThresholds
+            {
+                TextBased = new SubtitleTypeThresholds { MatchConfidence = 0.8m, RenameConfidence = 0.85m, FuzzyHashSimilarity = 75 },
+                PGS = new SubtitleTypeThresholds { MatchConfidence = 0.7m, RenameConfidence = 0.75m, FuzzyHashSimilarity = 65 },
+                VobSub = new SubtitleTypeThresholds { MatchConfidence = 0.6m, RenameConfidence = 0.7m, FuzzyHashSimilarity = 55 }
+            }
+        };
         return Task.FromResult(ConfigurationResult.Success(config));
     }
 

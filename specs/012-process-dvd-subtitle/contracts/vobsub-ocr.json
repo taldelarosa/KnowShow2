@@ -1,0 +1,121 @@
+{
+  "service": "IVobSubOcrService",
+  "version": "1.0.0",
+  "description": "Performs OCR on VobSub subtitle files using Tesseract",
+  "methods": [
+    {
+      "name": "PerformOcrAsync",
+      "description": "Extracts text from VobSub files using Tesseract OCR",
+      "parameters": [
+        {
+          "name": "idxFilePath",
+          "type": "string",
+          "required": true,
+          "description": "Path to VobSub .idx file",
+          "validation": "Must exist, must be .idx file"
+        },
+        {
+          "name": "subFilePath",
+          "type": "string",
+          "required": true,
+          "description": "Path to VobSub .sub file",
+          "validation": "Must exist, must be .sub file"
+        },
+        {
+          "name": "language",
+          "type": "string",
+          "required": true,
+          "description": "OCR language code (e.g., 'eng', 'spa')",
+          "validation": "Must be non-empty, valid Tesseract language code"
+        },
+        {
+          "name": "cancellationToken",
+          "type": "CancellationToken",
+          "required": true,
+          "description": "Cancellation token for timeout handling"
+        }
+      ],
+      "returns": {
+        "type": "Task<VobSubOcrResult>",
+        "description": "Result containing extracted text and confidence metrics"
+      },
+      "errors": [
+        {
+          "type": "ArgumentNullException",
+          "when": "idxFilePath, subFilePath, or language is null"
+        },
+        {
+          "type": "ArgumentException",
+          "when": "Files don't exist or language is invalid"
+        },
+        {
+          "type": "OperationCanceledException",
+          "when": "OCR processing exceeds timeout"
+        }
+      ]
+    },
+    {
+      "name": "IsTesseractAvailableAsync",
+      "description": "Checks if Tesseract OCR is available on system PATH",
+      "parameters": [],
+      "returns": {
+        "type": "Task<bool>",
+        "description": "True if Tesseract is available, false otherwise"
+      },
+      "errors": []
+    },
+    {
+      "name": "GetOcrLanguageCode",
+      "description": "Converts user language to Tesseract language code",
+      "parameters": [
+        {
+          "name": "language",
+          "type": "string",
+          "required": true,
+          "description": "User-specified language (e.g., 'eng', 'english')"
+        }
+      ],
+      "returns": {
+        "type": "string",
+        "description": "Tesseract language code (e.g., 'eng')"
+      },
+      "errors": []
+    }
+  ],
+  "dependencies": [
+    "tesseract (Tesseract OCR engine)",
+    "Language data files (e.g., eng.traineddata)"
+  ],
+  "test_scenarios": [
+    {
+      "name": "OCR valid VobSub files",
+      "given": "Valid .idx and .sub files with readable text",
+      "when": "PerformOcrAsync called with language='eng'",
+      "then": "Returns Success=true with ExtractedText containing subtitle content"
+    },
+    {
+      "name": "Handle missing files",
+      "given": "Non-existent .idx or .sub file path",
+      "when": "PerformOcrAsync called",
+      "then": "Throws ArgumentException"
+    },
+    {
+      "name": "Handle no text in images",
+      "given": "VobSub files with no recognizable text",
+      "when": "PerformOcrAsync called",
+      "then": "Returns Success=true with empty ExtractedText and ConfidenceScore=0"
+    },
+    {
+      "name": "Check tool availability",
+      "given": "System with Tesseract installed",
+      "when": "IsTesseractAvailableAsync called",
+      "then": "Returns true"
+    },
+    {
+      "name": "Convert language code",
+      "given": "User language 'eng'",
+      "when": "GetOcrLanguageCode('eng') called",
+      "then": "Returns 'eng'"
+    }
+  ]
+}

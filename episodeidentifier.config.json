@@ -1,9 +1,51 @@
 {
   "version": "2.0",
   "maxConcurrency": 3,
-  "matchConfidenceThreshold": 0.5,
-  "renameConfidenceThreshold": 0.5,
-  "fuzzyHashThreshold": 40,
+  "renameConfidenceThreshold": 0.59,
+  "matchingStrategy": "hybrid",
+  "matchingThresholds": {
+    "textBased": {
+      "matchConfidence": 0.7,
+      "renameConfidence": 0.8,
+      "fuzzyHashSimilarity": 70
+    },
+    "pgs": {
+      "matchConfidence": 0.6,
+      "renameConfidence": 0.7,
+      "fuzzyHashSimilarity": 60
+    },
+    "vobSub": {
+      "matchConfidence": 0.5,
+      "renameConfidence": 0.59,
+      "fuzzyHashSimilarity": 50
+    }
+  },
+  "embeddingThresholds": {
+    "textBased": {
+      "embedSimilarity": 0.85,
+      "matchConfidence": 0.70,
+      "renameConfidence": 0.80
+    },
+    "pgs": {
+      "embedSimilarity": 0.80,
+      "matchConfidence": 0.60,
+      "renameConfidence": 0.70
+    },
+    "vobSub": {
+      "embedSimilarity": 0.75,
+      "matchConfidence": 0.50,
+      "renameConfidence": 0.59
+    }
+  },
+  "embeddingModel": {
+    "name": "all-MiniLM-L6-v2",
+    "modelUrl": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx",
+    "tokenizerUrl": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/vocab.txt",
+    "modelSha256": "6fd5d72fe4589f189f8ebc006442dbb529bb7ce38f8082112682524616046452",
+    "tokenizerSha256": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3",
+    "dimensions": 384,
+    "maxTokens": 512
+  },
   "hashingAlgorithm": "CTPH",
   "filenamePatterns": {
     "primaryPattern": "^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
