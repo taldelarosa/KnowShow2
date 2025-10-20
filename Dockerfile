@@ -30,8 +30,17 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     tesseract-ocr-eng \
     tesseract-ocr-jpn \
-    # VobSub to SRT converter for DVD subtitles
-    vobsub2srt \
+    tesseract-ocr-data \
+    # Build dependencies for vobsub2srt
+    build-essential \
+    cmake \
+    git \
+    libtesseract-dev \
+    libleptonica-dev \
+    libavformat-dev \
+    libavcodec-dev \
+    libavutil-dev \
+    libswscale-dev \
     # Python for pgsrip
     python3 \
     python3-pip \
@@ -42,6 +51,15 @@ RUN apt-get update && apt-get install -y \
     sqlite3 \
     gosu \
     && rm -rf /var/lib/apt/lists/*
+
+# Build and install vobsub2srt from source (not available in Debian repos)
+RUN git clone https://github.com/ruediger/VobSub2SRT.git /tmp/vobsub2srt && \
+    cd /tmp/vobsub2srt && \
+    mkdir build && cd build && \
+    cmake -DCMAKE_BUILD_TYPE=Release .. && \
+    make && \
+    make install && \
+    cd / && rm -rf /tmp/vobsub2srt
 
 # Install pgsrip from source
 # Note: pgsrip is a Python tool, use --break-system-packages for Docker container
