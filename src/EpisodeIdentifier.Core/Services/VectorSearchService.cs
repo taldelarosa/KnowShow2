@@ -1,5 +1,4 @@
 using System.Data;
-using System.Diagnostics;
 using EpisodeIdentifier.Core.Interfaces;
 using EpisodeIdentifier.Core.Models;
 using Microsoft.Data.Sqlite;
@@ -50,7 +49,6 @@ public class VectorSearchService : IVectorSearchService
         _logger.LogDebug("Searching for top {TopK} similar subtitles (minSimilarity: {MinSimilarity})", 
             topK, minSimilarity);
 
-        var stopwatch = Stopwatch.StartNew();
         var results = new List<VectorSimilarityResult>();
 
         try
@@ -59,8 +57,9 @@ public class VectorSearchService : IVectorSearchService
             connection.Open();
 
             // Query vector index for similar embeddings
-            // Note: vectorlite syntax may vary - this is a placeholder implementation
-            // Actual implementation will depend on vectorlite API
+            // Vectorlite uses: vector_distance(vector1, vector2, distance_type)
+            // distance_type: 'cosine' for cosine distance, 'l2' for Euclidean
+            // Cosine similarity = 1 - cosine distance
             var query = @"
                 SELECT 
                     sh.Id,
@@ -69,10 +68,10 @@ public class VectorSearchService : IVectorSearchService
                     sh.Episode,
                     sh.EpisodeName,
                     sh.SubtitleSourceFormat,
-                    (1.0 - vector_distance(sh.Embedding, @queryEmbedding)) as Similarity
+                    (1.0 - vector_distance(sh.Embedding, @queryEmbedding, 'cosine')) as Similarity
                 FROM SubtitleHashes sh
                 WHERE sh.Embedding IS NOT NULL
-                    AND (1.0 - vector_distance(sh.Embedding, @queryEmbedding)) >= @minSimilarity
+                    AND (1.0 - vector_distance(sh.Embedding, @queryEmbedding, 'cosine')) >= @minSimilarity
                 ORDER BY Similarity DESC
                 LIMIT @topK";
 
@@ -114,11 +113,6 @@ public class VectorSearchService : IVectorSearchService
             }
 
             _logger.LogInformation("Found {Count} similar subtitles", results.Count);
-            stopwatch.Stop();
-            _logger.LogInformation(
-                "Vector search completed in {ElapsedMs}ms ({ResultCount} results, throughput: {QueriesPerSec:F1} queries/sec)",
-                stopwatch.ElapsedMilliseconds, results.Count, 1000.0 / Math.Max(1, stopwatch.ElapsedMilliseconds));
-
             return results;
         }
         catch (Exception ex)
@@ -256,6 +250,14 @@ public class VectorSearchService : IVectorSearchService
             {
                 using var connection = new SqliteConnection($"Data Source={_databasePath}");
                 connection.Open();
+                
+                // Enable extension loading
+                using var enableExtensionsCmd = connection.CreateCommand();
+                enableExtensionsCmd.CommandText = "SELECT 1";  // Dummy query to ensure connection is active
+                enableExtensionsCmd.ExecuteNonQuery();
+                
+                // Enable loading extensions via the connection API
+                connection.EnableExtensions(true);
 
                 // Load extension
                 using var command = connection.CreateCommand();
@@ -279,21 +281,45 @@ public class VectorSearchService : IVectorSearchService
 
     private string GetVectorliteExtensionPath()
     {
-        // Determine platform-specific extension file
-        var extensionDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "external", "vectorlite");
-
+        var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        
+        // Try multiple possible locations in order of preference
+        string[] possiblePaths;
+        
         if (OperatingSystem.IsWindows())
         {
-            return Path.Combine(extensionDir, "vectorlite-win-x64.dll");
+            possiblePaths = new[]
+            {
+                Path.Combine(baseDir, "vectorlite.dll"),
+                Path.Combine(baseDir, "external", "vectorlite", "vectorlite-win-x64.dll"),
+                Path.Combine(baseDir, "native", "vectorlite.dll")
+            };
         }
         else if (OperatingSystem.IsLinux())
         {
-            return Path.Combine(extensionDir, "vectorlite-linux-x64.so");
+            possiblePaths = new[]
+            {
+                Path.Combine(baseDir, "vectorlite.so"),
+                Path.Combine(baseDir, "external", "vectorlite", "vectorlite-linux-x64.so"),
+                Path.Combine(baseDir, "native", "vectorlite.so")
+            };
         }
         else
         {
             throw new PlatformNotSupportedException($"Vectorlite not supported on this platform");
         }
+        
+        // Return the first path that exists
+        foreach (var path in possiblePaths)
+        {
+            if (File.Exists(path))
+            {
+                return path;
+            }
+        }
+        
+        // If no file found, return the first preferred path (for error messages)
+        return possiblePaths[0];
     }
 
     private byte[] SerializeEmbedding(float[] embedding)
