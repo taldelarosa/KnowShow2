@@ -47,7 +47,7 @@ His mother died when he was 10.
 We believe he's holding the victims in some kind of industrial space.
 We need to find them before he kills again.";
 
-        var config = PerformanceTestHelpers.LoadConfiguration();
+        var config = TestHelpers.LoadConfiguration();
         var modelManager = new ModelManager(_modelLogger, config.EmbeddingModel);
         var embeddingService = new EmbeddingService(_embeddingLogger, modelManager);
 
@@ -74,7 +74,7 @@ We need to find them before he kills again.";
             .Select(i => $"Test subtitle {i}: This is sample dialog for performance testing.")
             .ToList();
 
-        var config = PerformanceTestHelpers.LoadConfiguration();
+        var config = TestHelpers.LoadConfiguration();
         var modelManager = new ModelManager(_modelLogger, config.EmbeddingModel);
         var embeddingService = new EmbeddingService(_embeddingLogger, modelManager);
 
@@ -96,9 +96,9 @@ We need to find them before he kills again.";
     public void VectorSearch_With834Entries_CompletesWithin2Seconds()
     {
         // Arrange: Create test database with 834 entries (matching bones.db)
-        PerformanceTestHelpers.CreateTestDatabase(_testDbPath, entryCount: 834);
+        TestHelpers.CreateTestDatabase(_testDbPath, entryCount: 834);
         
-        var config = PerformanceTestHelpers.LoadConfiguration();
+        var config = TestHelpers.LoadConfiguration();
         var modelManager = new ModelManager(_modelLogger, config.EmbeddingModel);
         var embeddingService = new EmbeddingService(_embeddingLogger, modelManager);
         var vectorSearchService = new VectorSearchService(_vectorLogger, _testDbPath);
@@ -128,9 +128,9 @@ We need to find them before he kills again.";
     public void EndToEnd_EmbeddingPlusSearch_CompletesWithin7Seconds()
     {
         // Arrange: Test complete workflow (embedding + search)
-        PerformanceTestHelpers.CreateTestDatabase(_testDbPath, entryCount: 834);
+        TestHelpers.CreateTestDatabase(_testDbPath, entryCount: 834);
         
-        var config = PerformanceTestHelpers.LoadConfiguration();
+        var config = TestHelpers.LoadConfiguration();
         var modelManager = new ModelManager(_modelLogger, config.EmbeddingModel);
         var embeddingService = new EmbeddingService(_embeddingLogger, modelManager);
         var vectorSearchService = new VectorSearchService(_vectorLogger, _testDbPath);
