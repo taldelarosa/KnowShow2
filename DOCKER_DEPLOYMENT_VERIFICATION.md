@@ -30,10 +30,12 @@ All required system packages are installed in the Docker image:
 **Resolution:** Added `<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>` to .csproj ItemGroup
 
 **Files Configured:**
+
 - `src/EpisodeIdentifier.Core/native/vectorlite.so` (3.3 MB) - Linux x64
 - `src/EpisodeIdentifier.Core/native/vectorlite.dll` (1.5 MB) - Windows x64
 
 **Verification:**
+
 ```bash
 # Build verification
 $ ls -lh src/EpisodeIdentifier.Core/bin/Release/net8.0/vectorlite*
@@ -69,6 +71,7 @@ The all-MiniLM-L6-v2 ONNX model (~86MB) is **NOT** included in the Docker image.
 - Tokenizer Vocab: `/root/.episodeidentifier/models/all-MiniLM-L6-v2/vocab.txt`
 
 **Docker Implications:**
+
 - First run will require internet access to download model
 - Subsequent runs use cached model from volume mount or container state
 - Consider pre-downloading in Docker build stage for offline deployments (future enhancement)
@@ -117,6 +120,7 @@ The `episodeidentifier.config.json` includes ML-related settings:
 ### 1. Dockerfile
 
 **Added vobsub2srt package:**
+
 ```dockerfile
 RUN apt-get update && apt-get install -y \
     ...
@@ -131,6 +135,7 @@ RUN apt-get update && apt-get install -y \
 ### 2. EpisodeIdentifier.Core.csproj
 
 **Added CopyToPublishDirectory for vectorlite binaries:**
+
 ```xml
 <!-- Copy vectorlite native binaries to output directory -->
 <ItemGroup>

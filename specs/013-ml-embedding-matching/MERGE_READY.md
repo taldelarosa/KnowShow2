@@ -18,17 +18,19 @@ Feature 013 successfully implements ML embedding-based semantic similarity match
 ## Pre-Merge Checklist
 
 ### ✅ Code Quality (PASSED)
+
 - [x] All 33 automated tasks completed (T001-T033)
 - [x] All tests pass: **730 passed, 0 failed, 52 skipped**
-  - Unit: 392 passed
-  - Integration: 111 passed, 5 skipped (require model download)
-  - Contract: 227 passed, 47 skipped (require model download)
+    - Unit: 392 passed
+    - Integration: 111 passed, 5 skipped (require model download)
+    - Contract: 227 passed, 47 skipped (require model download)
 - [x] Code compiles with zero errors
 - [x] Only existing obsolete warnings (unrelated to feature)
 - [x] Code follows C# conventions and project patterns
 - [x] XML documentation on all public APIs
 
 ### ✅ Testing (PASSED)
+
 - [x] Contract tests created for all 3 new services (40 tests)
 - [x] Integration tests cover all 4 user stories (5 tests)
 - [x] No test regressions (existing tests still pass)
@@ -36,6 +38,7 @@ Feature 013 successfully implements ML embedding-based semantic similarity match
 - [x] Skipped tests properly documented (require external dependencies)
 
 ### ✅ Documentation (PASSED)
+
 - [x] IMPLEMENTATION_COMPLETE.md created with full details
 - [x] CONFIGURATION_GUIDE.md updated with ML embedding section
 - [x] .github/copilot-instructions.md updated
@@ -43,6 +46,7 @@ Feature 013 successfully implements ML embedding-based semantic similarity match
 - [x] XML docs on all public interfaces/classes
 
 ### ✅ Architecture (PASSED)
+
 - [x] Strategy pattern enables gradual migration (embedding/fuzzy/hybrid)
 - [x] Backward compatibility maintained (fuzzy hash still supported)
 - [x] Dependency injection properly wired
@@ -50,17 +54,20 @@ Feature 013 successfully implements ML embedding-based semantic similarity match
 - [x] Database migration script created
 
 ### ⏸️ Manual Validation (PENDING - Non-Blocker)
+
 - [ ] T034: Criminal Minds S06E19 VobSub quickstart validation
-  - **Reason**: Requires actual VobSub test files not available in dev environment
-  - **Blocker Status**: NO - Can be validated post-merge in test environment
-  - **Mitigation**: Comprehensive automated test coverage (730 tests)
+    - **Reason**: Requires actual VobSub test files not available in dev environment
+    - **Blocker Status**: NO - Can be validated post-merge in test environment
+    - **Mitigation**: Comprehensive automated test coverage (730 tests)
 
 ---
 
 ## Merge Impact Analysis
 
 ### New Files (27 files)
+
 **Data Models** (5 files, 500 LOC):
+
 - `SubtitleEmbedding.cs` - 384-dim vector with serialization
 - `SubtitleSourceFormat.cs` - Text/PGS/VobSub enum
 - `VectorSimilarityResult.cs` - Search results
@@ -68,30 +75,36 @@ Feature 013 successfully implements ML embedding-based semantic similarity match
 - `EmbeddingMatchThresholds.cs` - Per-format thresholds
 
 **Interfaces** (3 files, 185 LOC):
+
 - `IEmbeddingService.cs` - Embedding generation contract
 - `IVectorSearchService.cs` - Vector search contract
 - `IModelManager.cs` - Model management contract
 
 **Services** (4 files, 1,092 LOC):
+
 - `ModelManager.cs` - Model download & caching
 - `EmbeddingService.cs` - ONNX inference
 - `VectorSearchService.cs` - Vector similarity search
 - `DatabaseMigrationService.cs` - Batch embedding generation
 
 **Tests** (3 files, 914 LOC):
+
 - `EmbeddingServiceContractTests.cs` - 13 tests
 - `VectorSearchServiceContractTests.cs` - 13 tests
 - `ModelManagerContractTests.cs` - 14 tests
 - `EmbeddingMatchingIntegrationTests.cs` - 5 tests
 
 **Database**:
+
 - `013_add_embedding_columns.sql` - Schema migration (24 LOC)
 
 **Documentation**:
+
 - `IMPLEMENTATION_COMPLETE.md` - Completion summary (318 LOC)
 - `MERGE_READY.md` - This document (400+ LOC)
 
 ### Modified Files (7 files)
+
 - `EpisodeIdentificationService.cs` - Added TryEmbeddingIdentification() (~150 LOC added)
 - `Program.cs` - DI wiring + --migrate-embeddings command (~50 LOC added)
 - `episodeidentifier.config.json` - Added matchingStrategy + embeddingThresholds
@@ -101,23 +114,29 @@ Feature 013 successfully implements ML embedding-based semantic similarity match
 - `specs/013-ml-embedding-matching/plan.md` - Marked as complete
 
 ### Breaking Changes
+
 **None**. Feature is fully backward compatible:
+
 - Existing fuzzy hash matching still works
 - Default strategy is "embedding" but can be changed to "fuzzy"
 - All existing CLI commands work unchanged
 - Database migration is optional (old entries use fuzzy hash)
 
 ### Dependencies Added
+
 **NuGet Packages**:
+
 - `Microsoft.ML.OnnxRuntime` v1.16.3 (~5MB)
 - `Microsoft.ML.Tokenizers` v0.21.0-preview (~200KB)
 
 **External Binaries** (not yet included):
+
 - vectorlite SQLite extension (Linux: .so, Windows: .dll)
-  - Location: `external/vectorlite/` (placeholder README only)
-  - **Post-Merge TODO**: Download actual binaries for target platforms
+    - Location: `external/vectorlite/` (placeholder README only)
+    - **Post-Merge TODO**: Download actual binaries for target platforms
 
 **ONNX Model** (auto-downloaded on first use):
+
 - `all-MiniLM-L6-v2-fp16.onnx` (~45MB)
 - Downloads to: `~/.episodeidentifier/models/`
 - SHA256 verification: Placeholder hashes (TODO: Update with actual)
@@ -127,6 +146,7 @@ Feature 013 successfully implements ML embedding-based semantic similarity match
 ## Post-Merge Tasks
 
 ### High Priority (P0)
+
 1. **Download vectorlite binaries** for Linux/Windows
    - Update `external/vectorlite/` with actual .so/.dll files
    - Test on both platforms
@@ -142,6 +162,7 @@ Feature 013 successfully implements ML embedding-based semantic similarity match
    - Document results
 
 ### Medium Priority (P1)
+
 4. **Implement proper BPE tokenization**
    - Current: Placeholder (whitespace split)
    - Target: Microsoft.ML.Tokenizers BPE
@@ -159,6 +180,7 @@ Feature 013 successfully implements ML embedding-based semantic similarity match
    - Memory usage during batch operations
 
 ### Low Priority (P2)
+
 7. **Consider GPU acceleration**
    - Evaluate CUDA/DirectML for ONNX inference
    - Potential 5-10x speedup for large batches
@@ -178,30 +200,37 @@ Feature 013 successfully implements ML embedding-based semantic similarity match
 If critical issues are discovered post-merge:
 
 ### Option 1: Revert Merge (Clean)
+
 ```bash
 git checkout main
 git revert <merge-commit-sha> -m 1
 git push origin main
 ```
+
 **Impact**: Removes all feature code, returns to fuzzy hash only
 
 ### Option 2: Disable Feature (Soft)
+
 Update `episodeidentifier.config.json`:
+
 ```json
 {
   "matchingStrategy": "fuzzy",  // Switch back to legacy
   "embeddingThresholds": { ... }  // Ignored when using fuzzy
 }
 ```
+
 **Impact**: Feature code remains but is bypassed
 
 ### Option 3: Hybrid Fallback (Safest)
+
 ```json
 {
   "matchingStrategy": "hybrid",  // Try embedding, fallback to fuzzy
   "embeddingThresholds": { ... }
 }
 ```
+
 **Impact**: Uses new feature where it works, falls back to old on errors
 
 ---
@@ -209,6 +238,7 @@ Update `episodeidentifier.config.json`:
 ## Deployment Steps
 
 ### Step 1: Merge to Main
+
 ```bash
 git checkout main
 git pull origin main
@@ -217,6 +247,7 @@ git push origin main
 ```
 
 ### Step 2: Build & Test
+
 ```bash
 dotnet clean
 dotnet restore
@@ -225,6 +256,7 @@ dotnet test --configuration Release
 ```
 
 ### Step 3: Run Database Migration
+
 ```bash
 # Backup database first!
 cp episodeidentifier.db episodeidentifier.db.backup.$(date +%Y%m%d)
@@ -236,6 +268,7 @@ dotnet run -- --migrate-embeddings
 ```
 
 ### Step 4: Test Identification
+
 ```bash
 # Test with a known file
 dotnet run -- --identify /path/to/test-file.mkv
@@ -245,6 +278,7 @@ dotnet run -- --identify /path/to/test-file.mkv
 ```
 
 ### Step 5: Monitor & Validate
+
 - Check log files for errors or warnings
 - Monitor embedding generation time (<5s target)
 - Verify model downloads successfully (~45MB)
@@ -272,6 +306,7 @@ dotnet run -- --identify /path/to/test-file.mkv
 Post-merge validation criteria (within 7 days):
 
 ### Functional Metrics
+
 - [ ] Model downloads successfully on Linux and Windows
 - [ ] --migrate-embeddings processes existing database without errors
 - [ ] VobSub → Text matching achieves >85% similarity (T034 validation)
@@ -279,12 +314,14 @@ Post-merge validation criteria (within 7 days):
 - [ ] No increase in error rate from production logs
 
 ### Performance Metrics
+
 - [ ] Embedding generation: <5s per subtitle
 - [ ] Vector search: <2s for 1000 entries
 - [ ] Migration: <7min for 300 entries (with maxConcurrency=4)
 - [ ] Memory usage: <500MB during batch processing
 
 ### Quality Metrics
+
 - [ ] Zero test regressions (all 730 tests still pass)
 - [ ] No new compiler warnings introduced
 - [ ] Code coverage maintained or improved
@@ -300,6 +337,7 @@ Post-merge validation criteria (within 7 days):
 **Documentation**: `specs/013-ml-embedding-matching/IMPLEMENTATION_COMPLETE.md`
 
 **For Issues**:
+
 1. Check `IMPLEMENTATION_COMPLETE.md` Known Limitations section
 2. Review `CONFIGURATION_GUIDE.md` ML Embedding section
 3. Check test output for specific error messages

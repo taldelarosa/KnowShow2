@@ -13,8 +13,8 @@ internal class TestAppConfigService : IAppConfigService
     public AppConfig Config { get; private set; }
 
     public int MaxConcurrency => Config.MaxConcurrency;
-    public ConfigurationResult? LastConfigurationResult => ConfigurationResult.Success(new Configuration 
-    { 
+    public ConfigurationResult? LastConfigurationResult => ConfigurationResult.Success(new Configuration
+    {
         MaxConcurrency = Config.MaxConcurrency,
         MatchingThresholds = new MatchingThresholds
         {
@@ -46,8 +46,8 @@ internal class TestAppConfigService : IAppConfigService
 
     public Task<ConfigurationResult> LoadConfiguration()
     {
-        var config = new Configuration 
-        { 
+        var config = new Configuration
+        {
             MaxConcurrency = Config.MaxConcurrency,
             MatchingThresholds = new MatchingThresholds
             {

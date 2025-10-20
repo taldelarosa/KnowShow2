@@ -21,7 +21,7 @@ public class EmbeddingMatchingIntegrationTests : IDisposable
     public EmbeddingMatchingIntegrationTests()
     {
         _testDatabasePath = Path.Combine(Path.GetTempPath(), $"test_embedding_{Guid.NewGuid()}.db");
-        
+
         using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
         _modelManagerLogger = loggerFactory.CreateLogger<ModelManager>();
         _embeddingLogger = loggerFactory.CreateLogger<EmbeddingService>();
@@ -67,20 +67,20 @@ public class EmbeddingMatchingIntegrationTests : IDisposable
         InitializeTestDatabase();
 
         var vectorSearchService = new VectorSearchService(_vectorSearchLogger, _testDatabasePath);
-        
+
         // Create a query embedding (in real scenario, this would be from OCR subtitle)
         var queryEmbedding = CreateTestEmbedding();
 
         // Act: Search for similar subtitles
         var results = vectorSearchService.SearchBySimilarity(
-            queryEmbedding, 
-            topK: 5, 
+            queryEmbedding,
+            topK: 5,
             minSimilarity: 0.70);
 
         // Assert
         Assert.NotEmpty(results);
         Assert.True(results.Count <= 5);
-        
+
         // Results should be ordered by similarity descending
         for (int i = 1; i < results.Count; i++)
         {
@@ -111,7 +111,7 @@ public class EmbeddingMatchingIntegrationTests : IDisposable
 
         // Assert: Should complete in <30 seconds for 5 entries
         Assert.Equal(5, embeddings.Count);
-        Assert.True(stopwatch.Elapsed.TotalSeconds < 30, 
+        Assert.True(stopwatch.Elapsed.TotalSeconds < 30,
             $"Migration took {stopwatch.Elapsed.TotalSeconds:F2}s (expected <30s)");
     }
 
@@ -145,11 +145,11 @@ public class EmbeddingMatchingIntegrationTests : IDisposable
         Assert.True(config.TextBased.IsValid(out var textError), $"TextBased should be valid: {textError}");
         Assert.True(config.Pgs.IsValid(out var pgsError), $"PGS should be valid: {pgsError}");
         Assert.True(config.VobSub.IsValid(out var vobSubError), $"VobSub should be valid: {vobSubError}");
-        
+
         // Verify thresholds are in logical order
         Assert.True(config.TextBased.EmbedSimilarity > config.Pgs.EmbedSimilarity);
         Assert.True(config.Pgs.EmbedSimilarity > config.VobSub.EmbedSimilarity);
-        
+
         // Verify each format has rename > match > embed thresholds
         Assert.True(config.TextBased.RenameConfidence > config.TextBased.MatchConfidence);
         Assert.True(config.Pgs.RenameConfidence > config.Pgs.MatchConfidence);
@@ -161,7 +161,7 @@ public class EmbeddingMatchingIntegrationTests : IDisposable
     {
         // This test would execute the full CLI command with embedding matching enabled
         // Example: episodeidentifier --identify test.mkv --matching-strategy embedding
-        
+
         // This will be implemented when CLI integration is complete (T025)
         await Task.CompletedTask;
     }
@@ -193,7 +193,7 @@ public class EmbeddingMatchingIntegrationTests : IDisposable
         // Create a dummy 384-dimensional embedding for testing
         var embedding = new float[384];
         var random = new Random(42); // Seeded for reproducibility
-        
+
         for (int i = 0; i < 384; i++)
         {
             embedding[i] = (float)(random.NextDouble() - 0.5);
@@ -211,7 +211,7 @@ public class EmbeddingMatchingIntegrationTests : IDisposable
 
     private List<string> CreateSampleSubtitles(int count)
     {
-        return Enumerable.Range(1, count).Select(i => 
+        return Enumerable.Range(1, count).Select(i =>
             $"This is sample subtitle number {i} for testing embedding generation."
         ).ToList();
     }

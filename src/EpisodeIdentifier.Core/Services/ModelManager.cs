@@ -21,7 +21,7 @@ public class ModelManager : IModelManager
     {
         _logger = logger;
         _modelConfig = modelConfig ?? EmbeddingModelConfiguration.Default;
-        
+
         // Cache directory: ~/.episodeidentifier/models/{ModelName}/
         var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         _modelCacheDirectory = Path.Combine(homeDirectory, ".episodeidentifier", "models", _modelConfig.Name);
@@ -39,7 +39,7 @@ public class ModelManager : IModelManager
         if (File.Exists(modelPath) && File.Exists(tokenizerPath))
         {
             _logger.LogInformation("Model files found in cache: {CacheDir}", _modelCacheDirectory);
-            
+
             // Verify integrity
             if (await VerifyModel(modelPath))
             {
@@ -47,7 +47,7 @@ public class ModelManager : IModelManager
                 await LoadModel();
                 return;
             }
-            
+
             _logger.LogWarning("Model verification failed. Re-downloading...");
         }
 
@@ -165,10 +165,10 @@ public class ModelManager : IModelManager
             }
 
             var isValid = actualHash.Equals(_modelConfig.ModelSha256, StringComparison.OrdinalIgnoreCase);
-            
+
             if (!isValid)
             {
-                _logger.LogError("Model verification failed. Expected: {Expected}, Actual: {Actual}", 
+                _logger.LogError("Model verification failed. Expected: {Expected}, Actual: {Actual}",
                     _modelConfig.ModelSha256, actualHash);
             }
 
@@ -230,13 +230,13 @@ public class ModelManager : IModelManager
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "HTTP error downloading model: {Error}", ex.Message);
-            
+
             // Clean up partial download
             if (File.Exists(destinationPath))
             {
                 File.Delete(destinationPath);
             }
-            
+
             throw;
         }
         catch (IOException ex)

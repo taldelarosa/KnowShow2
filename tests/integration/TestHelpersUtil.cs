@@ -16,32 +16,32 @@ public static class TestHelpers
     public static Configuration LoadConfiguration()
     {
         var configPath = Path.Combine(
-            Directory.GetCurrentDirectory(), 
+            Directory.GetCurrentDirectory(),
             "../../../../episodeidentifier.config.json");
-        
+
         if (!File.Exists(configPath))
         {
             configPath = Path.Combine(
-                Directory.GetCurrentDirectory(), 
+                Directory.GetCurrentDirectory(),
                 "../../../episodeidentifier.config.json");
         }
-        
+
         if (!File.Exists(configPath))
         {
             throw new FileNotFoundException($"Configuration file not found at {configPath}");
         }
-        
+
         var json = File.ReadAllText(configPath);
-        var config = JsonSerializer.Deserialize<Configuration>(json, new JsonSerializerOptions 
-        { 
-            PropertyNameCaseInsensitive = true 
+        var config = JsonSerializer.Deserialize<Configuration>(json, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
         });
-        
+
         if (config == null)
         {
             throw new InvalidOperationException("Failed to deserialize configuration");
         }
-        
+
         return config;
     }
 
@@ -83,7 +83,7 @@ public static class TestHelpers
                 embedding[j] = (float)(random.NextDouble() * 2 - 1); // Range: [-1, 1]
                 sumSquares += embedding[j] * embedding[j];
             }
-            
+
             // Normalize to unit length
             var magnitude = Math.Sqrt(sumSquares);
             for (int j = 0; j < 384; j++)
@@ -100,7 +100,7 @@ public static class TestHelpers
                 INSERT INTO SubtitleHashes 
                 (ShowTitle, Season, Episode, CleanSubtitleText, CtphHash, Embedding, SubtitleFormat, ImportedDate)
                 VALUES (@showTitle, @season, @episode, @text, @hash, @embedding, @format, @date)";
-            
+
             cmd.Parameters.AddWithValue("@showTitle", $"TestShow{i % 10}");
             cmd.Parameters.AddWithValue("@season", (i % 20) + 1);
             cmd.Parameters.AddWithValue("@episode", (i % 25) + 1);
@@ -109,7 +109,7 @@ public static class TestHelpers
             cmd.Parameters.AddWithValue("@embedding", embeddingBytes);
             cmd.Parameters.AddWithValue("@format", 0); // Text
             cmd.Parameters.AddWithValue("@date", DateTime.UtcNow.ToString("o"));
-            
+
             cmd.ExecuteNonQuery();
         }
     }

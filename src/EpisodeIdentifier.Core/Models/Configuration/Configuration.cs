@@ -245,7 +245,7 @@ public class ConfigurationValidator : AbstractValidator<Configuration>
         // Legacy threshold validation (deprecated - kept for backward compatibility)
         // These are only validated if the new MatchingThresholds is not properly configured
 #pragma warning disable CS0618 // Type or member is obsolete
-        When(x => x.MatchingThresholds == null || 
+        When(x => x.MatchingThresholds == null ||
                   (x.MatchingThresholds.TextBased == null && x.MatchingThresholds.PGS == null && x.MatchingThresholds.VobSub == null), () =>
         {
             RuleFor(x => x.MatchConfidenceThreshold)

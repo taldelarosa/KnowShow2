@@ -27,9 +27,11 @@
 **Processing Time:** 00:50 seconds
 
 ### Successful Files
+
 - `D1_t01.mkv` - Status: Success (00.401s)
 
 ### Failed Files  
+
 - `B3_t02.mkv` - Failed (26.558s) - DVD subtitle OCR error
 - `B4_t03.mkv` - Failed (26.558s) - DVD subtitle OCR error  
 - `C1_t00.mkv` - Failed (26.369s) - DVD subtitle OCR error
@@ -41,6 +43,7 @@
 ### Issue: DVD Subtitles Misidentified as PGS
 
 **Error Message:**
+
 ```
 File processing failed: Failed to extract readable text from PGS subtitles using OCR and no text subtitle fallback available
 ```
@@ -49,6 +52,7 @@ File processing failed: Failed to extract readable text from PGS subtitles using
 Files with `dvd_subtitle` codec (VobSub) are being incorrectly routed to PGS OCR processing instead of VobSub OCR processing.
 
 **Evidence:**
+
 ```
 # ffmpeg reports dvd_subtitle codec
 Stream #0:2(eng): Subtitle: dvd_subtitle, 720x480 (default)
@@ -142,13 +146,17 @@ This appears to be a concurrency issue in progress tracking when handling multip
 ## Affected Features
 
 ### Feature 012: DVD Subtitle (VobSub) OCR Support
+
 **Status:** ❌ **Not Working in Bulk Processing**  
+
 - VobSubExtractor service not being invoked
 - vobsub2srt tool not being used  
 - DVD subtitle files failing completely
 
 ### Feature 013: ML Embedding Matching
+
 **Status:** ⚠️ **Cannot Test with DVD Subtitles**  
+
 - Needs text input from VobSub OCR
 - Cannot validate embedding generation for VobSub format
 - Cannot test lower confidence thresholds for DVD OCR (0.75 similarity, 0.50 match confidence)

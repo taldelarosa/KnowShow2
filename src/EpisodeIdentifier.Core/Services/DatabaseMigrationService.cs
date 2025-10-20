@@ -56,7 +56,7 @@ public class DatabaseMigrationService
 
             // Get count of entries needing migration
             result.TotalEntries = await GetEntriesNeedingMigrationCount(connection, cancellationToken);
-            
+
             if (result.TotalEntries == 0)
             {
                 stopwatch.Stop();
@@ -73,7 +73,7 @@ public class DatabaseMigrationService
             while (processedCount < result.TotalEntries && !cancellationToken.IsCancellationRequested)
             {
                 var batchResult = await ProcessBatchAsync(connection, batchSize, cancellationToken);
-                
+
                 result.EntriesProcessed += batchResult.Processed;
                 result.EntriesFailed += batchResult.Failed;
                 processedCount += batchResult.Processed + batchResult.Failed;
@@ -102,10 +102,10 @@ public class DatabaseMigrationService
             stopwatch.Stop();
             result.DurationSeconds = stopwatch.Elapsed.TotalSeconds;
             result.ErrorMessage = ex.Message;
-            
+
             _logger.LogError(ex, "Database migration failed - Error: {Error}, Duration: {Duration:F2}s",
                 ex.Message, result.DurationSeconds);
-            
+
             return result;
         }
     }
@@ -116,7 +116,7 @@ public class DatabaseMigrationService
     {
         using var command = connection.CreateCommand();
         command.CommandText = "PRAGMA table_info(SubtitleHashes)";
-        
+
         using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
@@ -126,7 +126,7 @@ public class DatabaseMigrationService
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -136,7 +136,7 @@ public class DatabaseMigrationService
     {
         using var command = connection.CreateCommand();
         command.CommandText = "SELECT COUNT(*) FROM SubtitleHashes WHERE Embedding IS NULL AND CleanText IS NOT NULL";
-        
+
         var count = await command.ExecuteScalarAsync(cancellationToken);
         return Convert.ToInt32(count);
     }
@@ -152,7 +152,7 @@ public class DatabaseMigrationService
         {
             // Fetch batch of entries
             var entries = await FetchBatchAsync(connection, batchSize, cancellationToken);
-            
+
             if (entries.Count == 0)
             {
                 return result;
@@ -164,7 +164,7 @@ public class DatabaseMigrationService
 
             // Update database
             using var transaction = connection.BeginTransaction();
-            
+
             for (int i = 0; i < entries.Count; i++)
             {
                 try

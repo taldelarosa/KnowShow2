@@ -40,16 +40,19 @@
 ## Phase 3.1: Setup & Interfaces
 
 ### T001 Create IVobSubExtractor interface
+
 **File**: `src/EpisodeIdentifier.Core/Interfaces/IVobSubExtractor.cs`
 **Description**: Define interface contract for VobSub extraction service
 **Contract**: `/mnt/c/Users/Ragma/KnowShow_Specd/specs/012-process-dvd-subtitle/contracts/vobsub-extractor.json`
 
 **Requirements**:
+
 - Method: `Task<VobSubExtractionResult> ExtractAsync(string videoPath, int trackIndex, string outputDirectory, CancellationToken cancellationToken)`
 - Method: `Task<bool> IsMkvExtractAvailableAsync()`
 - Add XML documentation comments from contract
 
 **Acceptance**:
+
 - Interface compiles successfully
 - Method signatures match contract exactly
 - No implementation code (interface only)
@@ -57,17 +60,20 @@
 ---
 
 ### T002 Create IVobSubOcrService interface
+
 **File**: `src/EpisodeIdentifier.Core/Interfaces/IVobSubOcrService.cs`
 **Description**: Define interface contract for VobSub OCR service
 **Contract**: `/mnt/c/Users/Ragma/KnowShow_Specd/specs/012-process-dvd-subtitle/contracts/vobsub-ocr.json`
 
 **Requirements**:
+
 - Method: `Task<VobSubOcrResult> PerformOcrAsync(string idxFilePath, string subFilePath, string language, CancellationToken cancellationToken)`
 - Method: `Task<bool> IsTesseractAvailableAsync()`
 - Method: `string GetOcrLanguageCode(string language)`
 - Add XML documentation comments from contract
 
 **Acceptance**:
+
 - Interface compiles successfully
 - Method signatures match contract exactly
 - No implementation code (interface only)
@@ -77,16 +83,19 @@
 ## Phase 3.2: Data Models
 
 ### T003 [P] Create VobSubExtractionResult model
+
 **File**: `src/EpisodeIdentifier.Core/Models/VobSubExtractionResult.cs`
 **Description**: Create data model for VobSub extraction results
 **Reference**: `/mnt/c/Users/Ragma/KnowShow_Specd/specs/012-process-dvd-subtitle/data-model.md` (lines 26-97)
 
 **Requirements**:
+
 - Properties: `Success` (bool), `IdxFilePath` (string?), `SubFilePath` (string?), `ErrorMessage` (string?), `ExtractionDuration` (TimeSpan), `TrackIndex` (int), `SourceVideoPath` (string)
 - Validation logic: If Success=true, IdxFilePath and SubFilePath must be non-null
 - Add XML documentation comments for each property
 
 **Acceptance**:
+
 - Model compiles successfully
 - All properties defined with correct types
 - No validation logic yet (just data holder)
@@ -94,16 +103,19 @@
 ---
 
 ### T004 [P] Create VobSubOcrResult model
+
 **File**: `src/EpisodeIdentifier.Core/Models/VobSubOcrResult.cs`
 **Description**: Create data model for VobSub OCR results
 **Reference**: `/mnt/c/Users/Ragma/KnowShow_Specd/specs/012-process-dvd-subtitle/data-model.md` (lines 99-178)
 
 **Requirements**:
+
 - Properties: `Success` (bool), `ExtractedText` (string?), `ErrorMessage` (string?), `ConfidenceScore` (double), `ImageCount` (int), `ProcessedImageCount` (int), `OcrDuration` (TimeSpan), `SourceIdxPath` (string), `SourceSubPath` (string)
 - Add XML documentation comments for each property
 - ConfidenceScore range: 0.0 to 100.0
 
 **Acceptance**:
+
 - Model compiles successfully
 - All properties defined with correct types
 - No validation logic yet (just data holder)
@@ -115,11 +127,13 @@
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
 ### T005 [P] Contract test for IVobSubExtractor
+
 **File**: `tests/contract/VobSubExtractorContractTests.cs`
 **Description**: Write failing contract tests for VobSub extraction service
 **Contract**: `/mnt/c/Users/Ragma/KnowShow_Specd/specs/012-process-dvd-subtitle/contracts/vobsub-extractor.json`
 
 **Test Scenarios** (from contract):
+
 1. `ExtractAsync_WithValidMkvAndDvdSubtitle_ReturnsSuccessWithPaths`
    - Given: MKV file with DVD subtitle track at index 3
    - When: ExtractAsync called with valid parameters
@@ -146,12 +160,14 @@
    - Then: Throws OperationCanceledException
 
 **Requirements**:
+
 - Use xUnit framework
 - Use FluentAssertions for assertions
 - Create mock/stub implementation that throws NotImplementedException
 - All tests must FAIL initially
 
 **Acceptance**:
+
 - All 5 tests compile
 - All 5 tests FAIL (NotImplementedException)
 - Tests follow naming convention: MethodName_Scenario_ExpectedResult
@@ -159,11 +175,13 @@
 ---
 
 ### T006 [P] Contract test for IVobSubOcrService
+
 **File**: `tests/contract/VobSubOcrServiceContractTests.cs`
 **Description**: Write failing contract tests for VobSub OCR service
 **Contract**: `/mnt/c/Users/Ragma/KnowShow_Specd/specs/012-process-dvd-subtitle/contracts/vobsub-ocr.json`
 
 **Test Scenarios** (from contract):
+
 1. `PerformOcrAsync_WithValidVobSubFiles_ReturnsSuccessWithText`
    - Given: Valid .idx and .sub files with readable text
    - When: PerformOcrAsync called with language='eng'
@@ -195,12 +213,14 @@
    - Then: Throws OperationCanceledException
 
 **Requirements**:
+
 - Use xUnit framework
 - Use FluentAssertions for assertions
 - Create mock/stub implementation that throws NotImplementedException
 - All tests must FAIL initially
 
 **Acceptance**:
+
 - All 6 tests compile
 - All 6 tests FAIL (NotImplementedException)
 - Tests follow naming convention: MethodName_Scenario_ExpectedResult
@@ -208,11 +228,13 @@
 ---
 
 ### T007 [P] Integration test for VobSub extraction end-to-end
+
 **File**: `tests/integration/VobSubExtractionIntegrationTests.cs`
 **Description**: Write failing integration test for complete VobSub extraction workflow
 **Reference**: `/mnt/c/Users/Ragma/KnowShow_Specd/specs/012-process-dvd-subtitle/quickstart.md` (Test scenario 1)
 
 **Test Scenarios**:
+
 1. `ExtractDvdSubtitleFromCriminalMindsFile_CompletesSuccessfully`
    - Given: Criminal Minds S5 DVD subtitle MKV file
    - When: Full extraction pipeline runs
@@ -224,6 +246,7 @@
    - Then: Returns failure with clear error message
 
 **Requirements**:
+
 - Use actual Criminal Minds test file: `/mnt/z/mkvs/CRIMINAL_MINDS_S5_D3-IfFoMf/CRIMINAL_MINDS_S5_D3_T02.mkv`
 - Use real mkvextract tool (not mocked)
 - Create temporary directory for output
@@ -231,6 +254,7 @@
 - Skip test if mkvextract not available (use `[SkippableFact]`)
 
 **Acceptance**:
+
 - Tests compile successfully
 - Tests FAIL with NotImplementedException
 - Tests have proper setup/teardown for temp directories
@@ -238,11 +262,13 @@
 ---
 
 ### T008 [P] Integration test for VobSub OCR end-to-end
+
 **File**: `tests/integration/VobSubOcrIntegrationTests.cs`
 **Description**: Write failing integration test for complete VobSub OCR workflow
 **Reference**: `/mnt/c/Users/Ragma/KnowShow_Specd/specs/012-process-dvd-subtitle/quickstart.md` (Test scenario 2)
 
 **Test Scenarios**:
+
 1. `OcrExtractedVobSubFiles_ReturnsReadableText`
    - Given: Valid .idx and .sub files extracted from Criminal Minds
    - When: OCR processing runs with language='eng'
@@ -254,6 +280,7 @@
    - Then: Returns failure indicating missing dependency
 
 **Requirements**:
+
 - Use real Tesseract OCR (not mocked)
 - Pre-extract VobSub files in test setup
 - Validate ConfidenceScore > 0 for valid subtitles
@@ -261,6 +288,7 @@
 - Clean up temp files after test
 
 **Acceptance**:
+
 - Tests compile successfully
 - Tests FAIL with NotImplementedException
 - Tests have proper setup/teardown
@@ -268,11 +296,13 @@
 ---
 
 ### T009 Integration test for subtitle priority logic
+
 **File**: `tests/integration/SubtitlePriorityIntegrationTests.cs`
 **Description**: Write failing integration test verifying text > PGS > DVD priority
 **Reference**: `/mnt/c/Users/Ragma/KnowShow_Specd/specs/012-process-dvd-subtitle/quickstart.md` (Test scenario 3)
 
 **Test Scenarios**:
+
 1. `IdentifyFileWithTextAndDvdSubtitles_PrefersTextSubtitles`
    - Given: MKV with both text and DVD subtitles
    - When: Episode identification runs
@@ -289,11 +319,13 @@
    - Then: Extracts and OCRs DVD subtitles successfully
 
 **Requirements**:
+
 - Test against actual Criminal Minds files
 - Verify JSON output includes `subtitleType` field
 - This test depends on Program.cs integration (will fail until T015)
 
 **Acceptance**:
+
 - Tests compile successfully
 - Tests FAIL (integration not yet complete)
 - Test cases cover all priority scenarios
@@ -301,11 +333,13 @@
 ---
 
 ### T010 Integration test for timeout handling
+
 **File**: `tests/integration/DvdSubtitleTimeoutIntegrationTests.cs`
 **Description**: Write failing integration test for 5-minute timeout enforcement
 **Reference**: `/mnt/c/Users/Ragma/KnowShow_Specd/specs/012-process-dvd-subtitle/spec.md` FR-011
 
 **Test Scenarios**:
+
 1. `ExtractLargeVobSubFile_RespectsTimeout`
    - Given: Very large DVD subtitle track (approaching 50MB)
    - When: Extraction runs with 5-second test timeout
@@ -317,12 +351,14 @@
    - Then: Operation cancels and throws OperationCanceledException
 
 **Requirements**:
+
 - Use short timeouts for testing (5 seconds, not 5 minutes)
 - Use CancellationTokenSource with timeout
 - Verify proper cleanup after cancellation
 - May need to create synthetic large test files
 
 **Acceptance**:
+
 - Tests compile successfully
 - Tests FAIL (timeout logic not yet implemented)
 - Tests properly handle cancellation
@@ -332,11 +368,13 @@
 ## Phase 3.4: Core Implementation (ONLY after tests T005-T010 are failing)
 
 ### T011 Implement VobSubExtractor service
+
 **File**: `src/EpisodeIdentifier.Core/Services/VobSubExtractor.cs`
 **Description**: Implement IVobSubExtractor to extract VobSub files using mkvextract
 **Dependencies**: T001 (interface), T003 (model), T005 (contract tests)
 
 **Requirements**:
+
 - Implement `ExtractAsync()` using `System.Diagnostics.Process` to call mkvextract
 - Command: `mkvextract tracks "{videoPath}" {trackIndex}:{outputPath}`
 - Parse stderr for errors (mkvextract outputs progress to stderr)
@@ -347,6 +385,7 @@
 - Implement timeout via CancellationToken
 
 **Acceptance**:
+
 - Contract tests T005 now PASS (all 5 tests green)
 - Integration test T007 now PASS
 - Code follows existing service patterns (e.g., PgsRipService.cs)
@@ -355,11 +394,13 @@
 ---
 
 ### T012 Implement VobSubOcrService - Image extraction
+
 **File**: `src/EpisodeIdentifier.Core/Services/VobSubOcrService.cs`
 **Description**: Implement image extraction from VobSub files (Phase 1 of OCR)
 **Dependencies**: T002 (interface), T004 (model), T006 (contract tests)
 
 **Requirements**:
+
 - Implement method to extract PNG images from VobSub using ffmpeg
 - Command: `ffmpeg -i "{idxFilePath}" -f image2 "{outputDir}/frame_%04d.png"`
 - Create temporary directory for images
@@ -368,6 +409,7 @@
 - Add structured logging
 
 **Acceptance**:
+
 - Can extract images from .idx file
 - Images saved to temp directory with sequential naming
 - Proper error handling if extraction fails
@@ -376,11 +418,13 @@
 ---
 
 ### T013 Implement VobSubOcrService - Tesseract OCR
+
 **File**: `src/EpisodeIdentifier.Core/Services/VobSubOcrService.cs` (continued)
 **Description**: Implement Tesseract OCR processing for extracted images
 **Dependencies**: T012 (image extraction)
 
 **Requirements**:
+
 - Implement `PerformOcrAsync()` using `System.Diagnostics.Process` to call Tesseract
 - Command: `tesseract "{imagePath}" stdout -l {language}`
 - Process each extracted image sequentially or in batches
@@ -392,6 +436,7 @@
 - Clean up temporary image files after processing
 
 **Acceptance**:
+
 - Contract tests T006 now PASS (all 6 tests green)
 - Integration test T008 now PASS
 - Returns meaningful text from VobSub files
@@ -400,11 +445,13 @@
 ---
 
 ### T014 Implement dependency validation
+
 **File**: `src/EpisodeIdentifier.Core/Services/DependencyValidator.cs`
 **Description**: Create service to check for mkvextract and Tesseract availability
 **Dependencies**: None (standalone utility)
 
 **Requirements**:
+
 - Method: `Task<bool> IsMkvExtractAvailableAsync()`
 - Method: `Task<bool> IsTesseractAvailableAsync()`
 - Check both by attempting `--version` command
@@ -413,6 +460,7 @@
 - Used by Program.cs before attempting DVD subtitle processing
 
 **Acceptance**:
+
 - Returns true when tools installed
 - Returns false when tools missing
 - Caches results for performance
@@ -421,15 +469,18 @@
 ---
 
 ### T015 Integrate DVD subtitle processing into Program.cs
+
 **File**: `src/EpisodeIdentifier.Core/Program.cs`
 **Description**: Update main CLI logic to support DVD subtitle extraction and OCR
 **Dependencies**: T011, T013, T014
 
 **Current State** (lines 549-560):
+
 - Detects DVD subtitles
 - Returns UNSUPPORTED_SUBTITLE_FORMAT error
 
 **Required Changes**:
+
 1. Remove temporary UNSUPPORTED_SUBTITLE_FORMAT error (lines 549-560)
 2. Add dependency checks using DependencyValidator
 3. Implement subtitle priority logic:
@@ -449,6 +500,7 @@
 8. Handle cleanup of temp files
 
 **Acceptance**:
+
 - Integration test T009 now PASS (priority logic works)
 - quickstart.md test scenario 2 passes
 - Files with only DVD subtitles process successfully
@@ -458,18 +510,21 @@
 ---
 
 ### T016 Add file size validation
+
 **File**: `src/EpisodeIdentifier.Core/Services/VobSubExtractor.cs` (update)
 **Description**: Add 50MB size limit check before extraction
 **Dependencies**: T011
 **Reference**: `/mnt/c/Users/Ragma/KnowShow_Specd/specs/012-process-dvd-subtitle/spec.md` FR-013
 
 **Requirements**:
+
 - Check subtitle track size before extraction (use ffprobe)
 - Command: `ffprobe -v error -show_entries stream=size -of default=noprint_wrappers=1:nokey=1 -select_streams s:{trackIndex} "{videoPath}"`
 - If size > 50MB, return failure with SUBTITLE_TOO_LARGE error code
 - Log size information
 
 **Acceptance**:
+
 - Rejects tracks over 50MB
 - Returns clear error message
 - Doesn't attempt extraction for oversized tracks
@@ -478,12 +533,14 @@
 ---
 
 ### T017 Implement temp file cleanup
+
 **File**: `src/EpisodeIdentifier.Core/Services/VobSubExtractor.cs` and `VobSubOcrService.cs` (update)
 **Description**: Ensure temporary files are cleaned up after processing
 **Dependencies**: T011, T013
 **Reference**: `/mnt/c/Users/Ragma/KnowShow_Specd/specs/012-process-dvd-subtitle/spec.md` FR-013
 
 **Requirements**:
+
 - Create temp directories with unique names (use Guid)
 - Use try-finally blocks to ensure cleanup
 - Delete temp directory and all contents after processing
@@ -491,6 +548,7 @@
 - Clean up even if extraction/OCR fails
 
 **Acceptance**:
+
 - No temp files remain after successful processing
 - No temp files remain after failed processing
 - Logs cleanup operations
@@ -501,10 +559,12 @@
 ## Phase 3.5: Integration & Polish
 
 ### T018 [P] Add unit tests for edge cases
+
 **File**: `tests/unit/VobSubExtractorTests.cs` and `tests/unit/VobSubOcrServiceTests.cs`
 **Description**: Add unit tests for error handling and edge cases
 
 **Test Coverage**:
+
 1. VobSubExtractor:
    - Null/empty video path
    - Negative track index
@@ -520,12 +580,14 @@
    - Confidence score calculation edge cases
 
 **Requirements**:
+
 - Use xUnit + FluentAssertions
 - Mock file system operations (use IFileSystem)
 - Mock process execution where needed
 - Test boundary conditions
 
 **Acceptance**:
+
 - All unit tests PASS
 - Code coverage > 80% for new services
 - Edge cases properly handled
@@ -533,11 +595,13 @@
 ---
 
 ### T019 Add MISSING_DEPENDENCY error to quickstart.md test
+
 **File**: `tests/integration/DependencyValidationIntegrationTests.cs` (NEW)
 **Description**: Integration test for missing tool error handling
 **Reference**: `/mnt/c/Users/Ragma/KnowShow_Specd/specs/012-process-dvd-subtitle/quickstart.md` (Test scenario 4)
 
 **Test Scenarios**:
+
 1. `IdentifyDvdSubtitleFileWithoutMkvextract_ReturnsMissingDependencyError`
    - Given: mkvextract not on PATH
    - When: DVD subtitle file identification attempted
@@ -549,12 +613,14 @@
    - Then: Returns MISSING_DEPENDENCY error with message about Tesseract
 
 **Requirements**:
+
 - Use integration test approach (not unit test)
 - Temporarily modify PATH in test to hide tools
 - Restore PATH after test
 - Verify JSON error response format
 
 **Acceptance**:
+
 - Tests PASS
 - Error messages are clear and actionable
 - Tests don't permanently modify system PATH
@@ -562,11 +628,13 @@
 ---
 
 ### T020 Performance test DVD subtitle processing
+
 **File**: `tests/integration/DvdSubtitlePerformanceTests.cs` (NEW)
 **Description**: Verify DVD subtitle processing meets performance requirements
 **Reference**: `/mnt/c/Users/Ragma/KnowShow_Specd/specs/012-process-dvd-subtitle/plan.md` (5-minute timeout)
 
 **Test Scenarios**:
+
 1. `ProcessCriminalMindsEpisode_CompletesWithin30Seconds`
    - Given: Standard Criminal Minds episode with DVD subtitles
    - When: Full extraction + OCR pipeline runs
@@ -578,12 +646,14 @@
    - Then: Average time per episode < 25 seconds
 
 **Requirements**:
+
 - Use real Criminal Minds test files
 - Measure actual wall-clock time
 - Log performance metrics
 - Test runs as part of CI/CD if test files available
 
 **Acceptance**:
+
 - Tests PASS
 - Performance meets 5-minute timeout requirement
 - Logs include timing breakdowns (extraction vs OCR)
@@ -591,11 +661,13 @@
 ---
 
 ### T021 Update .github/copilot-instructions.md
+
 **File**: `.github/copilot-instructions.md`
 **Description**: Document DVD subtitle feature in agent context file
 **Dependencies**: T015 (integration complete)
 
 **Requirements**:
+
 - Add VobSubExtractor and VobSubOcrService to Active Technologies section
 - Update Project Structure section with new files
 - Document error codes: MISSING_DEPENDENCY, OCR_FAILED, SUBTITLE_TOO_LARGE
@@ -603,6 +675,7 @@
 - Update Recent Changes with feature summary
 
 **Acceptance**:
+
 - File compiles/validates
 - New services documented
 - Agent context reflects DVD subtitle capability
@@ -610,10 +683,12 @@
 ---
 
 ### T022 [P] Update README.md with DVD subtitle support
+
 **File**: `README.md`
 **Description**: Document DVD subtitle OCR feature in user-facing documentation
 
 **Requirements**:
+
 - Add DVD subtitle support to features list
 - Document required dependencies (mkvextract, Tesseract)
 - Installation instructions for mkvtoolnix and tesseract-ocr
@@ -622,6 +697,7 @@
 - Troubleshooting section for MISSING_DEPENDENCY errors
 
 **Acceptance**:
+
 - README accurately describes DVD subtitle support
 - Installation instructions are clear
 - Examples are executable
@@ -629,11 +705,13 @@
 ---
 
 ### T023 Execute manual testing from quickstart.md
+
 **File**: N/A (manual testing)
 **Description**: Run through all manual test scenarios in quickstart.md
 **Reference**: `/mnt/c/Users/Ragma/KnowShow_Specd/specs/012-process-dvd-subtitle/quickstart.md`
 
 **Test Checklist**:
+
 - [ ] DVD subtitle detection (Test 1)
 - [ ] DVD subtitle processing end-to-end (Test 2)
 - [ ] Subtitle priority verification (Test 3)
@@ -645,6 +723,7 @@
 - [ ] All troubleshooting scenarios
 
 **Acceptance**:
+
 - All quickstart test scenarios PASS
 - JSON output matches expected format
 - Performance within acceptable limits
@@ -687,7 +766,8 @@ Polish Phase (T018-T023):
 
 ## Parallel Execution Examples
 
-### Phase 3.1 - Setup (all parallel):
+### Phase 3.1 - Setup (all parallel)
+
 ```
 Task: "Create IVobSubExtractor interface in src/EpisodeIdentifier.Core/Interfaces/IVobSubExtractor.cs"
 Task: "Create IVobSubOcrService interface in src/EpisodeIdentifier.Core/Interfaces/IVobSubOcrService.cs"
@@ -695,19 +775,22 @@ Task: "Create VobSubExtractionResult model in src/EpisodeIdentifier.Core/Models/
 Task: "Create VobSubOcrResult model in src/EpisodeIdentifier.Core/Models/VobSubOcrResult.cs"
 ```
 
-### Phase 3.2 - Contract Tests (parallel after T001-T004):
+### Phase 3.2 - Contract Tests (parallel after T001-T004)
+
 ```
 Task: "Contract test for IVobSubExtractor in tests/contract/VobSubExtractorContractTests.cs"
 Task: "Contract test for IVobSubOcrService in tests/contract/VobSubOcrServiceContractTests.cs"
 ```
 
-### Phase 3.3 - Integration Tests (parallel after T005-T006):
+### Phase 3.3 - Integration Tests (parallel after T005-T006)
+
 ```
 Task: "Integration test for VobSub extraction in tests/integration/VobSubExtractionIntegrationTests.cs"
 Task: "Integration test for VobSub OCR in tests/integration/VobSubOcrIntegrationTests.cs"
 ```
 
-### Phase 3.5 - Documentation (parallel after T015):
+### Phase 3.5 - Documentation (parallel after T015)
+
 ```
 Task: "Update .github/copilot-instructions.md with DVD subtitle documentation"
 Task: "Update README.md with DVD subtitle support documentation"
@@ -721,6 +804,7 @@ Task: "Update README.md with DVD subtitle support documentation"
 **Estimated Completion**: 5-7 days (with TDD approach)
 
 **Breakdown by Phase**:
+
 - Setup & Interfaces: 4 tasks (2-3 hours)
 - Tests First: 6 tasks (1-2 days) ⚠️ CRITICAL
 - Implementation: 7 tasks (2-3 days)

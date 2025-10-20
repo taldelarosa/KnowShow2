@@ -21,10 +21,10 @@ public interface IEpisodeIdentificationService : IDisposable
     /// <param name="seasonFilter">Optional season number to filter results (requires seriesFilter)</param>
     /// <returns>Episode identification result with match information</returns>
     Task<IdentificationResult> IdentifyEpisodeAsync(
-        string subtitleText, 
+        string subtitleText,
         SubtitleType subtitleType = SubtitleType.TextBased,
-        string? sourceFilePath = null, 
-        double? minConfidence = null, 
-        string? seriesFilter = null, 
+        string? sourceFilePath = null,
+        double? minConfidence = null,
+        string? seriesFilter = null,
         int? seasonFilter = null);
 }

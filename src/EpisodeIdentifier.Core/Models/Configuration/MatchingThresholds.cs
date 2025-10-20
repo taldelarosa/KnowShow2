@@ -12,12 +12,12 @@ public enum SubtitleType
     /// Text-based subtitles (SRT, ASS, WebVTT, etc.) - Highest accuracy
     /// </summary>
     TextBased,
-    
+
     /// <summary>
     /// PGS (Presentation Graphic Stream) subtitles requiring OCR - Medium accuracy
     /// </summary>
     PGS,
-    
+
     /// <summary>
     /// DVD/VobSub subtitles requiring OCR - Lower accuracy
     /// </summary>

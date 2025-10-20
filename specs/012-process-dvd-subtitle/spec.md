@@ -1,7 +1,6 @@
 # Feature Specification: DVD Subtitle (VobSub) OCR Processing# Feature Specification: DVD Subtitle (VobSub) OCR Processing# Feature Specification: [FEATURE NAME]
 
 
-
 **Feature Branch**: `012-process-dvd-subtitle`
 
 **Created**: 2025-10-17
@@ -53,7 +52,6 @@
    ✓ CLARIFIED: Report standard success/fail/ambiguous states2. Extract key concepts from description
 
 
-
 4. Fill User Scenarios & Testing section   → Actors: Episode identification system, video files with DVD subtitles
 
    ✓ User flow: User attempts to identify episode with DVD subtitle format
@@ -65,17 +63,14 @@
    ✓ Each requirement is testable   → Data: DVD subtitle tracks (bitmap format), OCR'ed text output
 
 
-
 6. Identify Key Entities   → Constraints: Only process when text or PGS subtitles unavailable
 
    ✓ VobSub subtitle track, extracted images, OCR text output
 
 
-
 7. Run Review Checklist
 
    ✓ All clarifications resolved with reasonable defaults3. For each unclear aspect:
-
 
 
 8. Return: SUCCESS (spec ready for planning)   [NEEDS CLARIFICATION: Should DVD subtitles be prioritized over text/PGS if all are present?]

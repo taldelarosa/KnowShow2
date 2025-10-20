@@ -28,7 +28,7 @@ public class ModelManagerContractTests
     {
         // Arrange
         var modelManager = CreateModelManager();
-        
+
         // Clean up any cached models for a fresh test
         if (Directory.Exists(_testModelCachePath))
         {
@@ -50,7 +50,7 @@ public class ModelManagerContractTests
     {
         // Arrange
         var modelManager = CreateModelManager();
-        
+
         // First call downloads the model
         await modelManager.EnsureModelAvailable();
         var firstCallInfo = modelManager.GetModelInfo();
@@ -95,7 +95,7 @@ public class ModelManagerContractTests
     {
         // Arrange
         var modelManager = CreateModelManager();
-        
+
         // Clean up any cached models
         if (Directory.Exists(_testModelCachePath))
         {
@@ -136,7 +136,7 @@ public class ModelManagerContractTests
         // Assert
         modelInfo1.Should().NotBeNull();
         modelInfo2.Should().NotBeNull();
-        modelInfo1.Should().BeSameAs(modelInfo2, 
+        modelInfo1.Should().BeSameAs(modelInfo2,
             "GetModelInfo should return cached instance without re-reading disk");
     }
 
@@ -160,7 +160,7 @@ public class ModelManagerContractTests
     {
         // Arrange
         var modelManager = CreateModelManager();
-        
+
         // Create a corrupted file
         var corruptedPath = Path.Combine(_testModelCachePath, "corrupted-model.onnx");
         Directory.CreateDirectory(_testModelCachePath);
@@ -209,7 +209,7 @@ public class ModelManagerContractTests
         var modelManager = CreateModelManager();
         var testUrl = "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx";
         var destinationPath = Path.Combine(_testModelCachePath, "downloaded-model.onnx");
-        
+
         Directory.CreateDirectory(_testModelCachePath);
 
         // Act
@@ -239,7 +239,7 @@ public class ModelManagerContractTests
     {
         // Arrange
         var modelManager = CreateModelManager();
-        
+
         // First call (may download)
         await modelManager.EnsureModelAvailable();
 

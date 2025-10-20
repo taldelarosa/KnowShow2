@@ -98,7 +98,7 @@ public class EmbeddingServiceContractTests
         // Verify embeddings are different (semantic content differs)
         var firstEmbedding = embeddings[0];
         var secondEmbedding = embeddings[1];
-        firstEmbedding.Should().NotBeEquivalentTo(secondEmbedding, 
+        firstEmbedding.Should().NotBeEquivalentTo(secondEmbedding,
             "different text content should produce different embeddings");
     }
 
@@ -177,7 +177,7 @@ public class EmbeddingServiceContractTests
     {
         // Arrange
         var embeddingService = CreateEmbeddingService();
-        
+
         // Simulate loading model by generating an embedding
         embeddingService.GenerateEmbedding("Initialize model with this text");
 
@@ -207,7 +207,7 @@ public class EmbeddingServiceContractTests
 
         // Assert
         embedding.Should().HaveCount(384);
-        stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(5), 
+        stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(5),
             "embedding generation should complete within 5 seconds per contract");
     }
 
@@ -224,7 +224,7 @@ public class EmbeddingServiceContractTests
 
         // Assert
         var similarity = SubtitleEmbedding.CosineSimilarity(embedding1, embedding2);
-        similarity.Should().BeGreaterThan(0.99, 
+        similarity.Should().BeGreaterThan(0.99,
             "identical text should produce nearly identical embeddings (allowing for floating point precision)");
     }
 }

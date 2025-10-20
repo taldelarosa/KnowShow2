@@ -22,13 +22,13 @@ public class EmbeddingPerformanceTests : IDisposable
     public EmbeddingPerformanceTests()
     {
         _testDbPath = Path.Combine(Path.GetTempPath(), $"perf_test_{Guid.NewGuid()}.db");
-        
-        var loggerFactory = LoggerFactory.Create(builder => 
+
+        var loggerFactory = LoggerFactory.Create(builder =>
         {
             builder.AddConsole();
             builder.SetMinimumLevel(LogLevel.Information);
         });
-        
+
         _embeddingLogger = loggerFactory.CreateLogger<EmbeddingService>();
         _modelLogger = loggerFactory.CreateLogger<ModelManager>();
         _vectorLogger = loggerFactory.CreateLogger<VectorSearchService>();
@@ -57,9 +57,9 @@ We need to find them before he kills again.";
         stopwatch.Stop();
 
         // Assert: Performance meets target
-        Assert.True(stopwatch.ElapsedMilliseconds < 5000, 
+        Assert.True(stopwatch.ElapsedMilliseconds < 5000,
             $"Embedding generation took {stopwatch.ElapsedMilliseconds}ms, expected <5000ms");
-        
+
         // Validate embedding properties
         Assert.Equal(384, embedding.Length);
         var magnitude = Math.Sqrt(embedding.Sum(x => x * x));
@@ -85,9 +85,9 @@ We need to find them before he kills again.";
 
         // Assert: Average time per embedding meets target
         var avgTimeMs = stopwatch.ElapsedMilliseconds / (double)embeddings.Count;
-        Assert.True(avgTimeMs < 5000, 
+        Assert.True(avgTimeMs < 5000,
             $"Average embedding time was {avgTimeMs:F1}ms, expected <5000ms");
-        
+
         Assert.Equal(100, embeddings.Count);
         Assert.All(embeddings, emb => Assert.Equal(384, emb.Length));
     }
@@ -97,7 +97,7 @@ We need to find them before he kills again.";
     {
         // Arrange: Create test database with 834 entries (matching bones.db)
         TestHelpers.CreateTestDatabase(_testDbPath, entryCount: 834);
-        
+
         var config = TestHelpers.LoadConfiguration();
         var modelManager = new ModelManager(_modelLogger, config.EmbeddingModel);
         var embeddingService = new EmbeddingService(_embeddingLogger, modelManager);
@@ -110,15 +110,15 @@ We need to find them before he kills again.";
         // Act: Measure vector search time
         var stopwatch = Stopwatch.StartNew();
         var results = vectorSearchService.SearchBySimilarity(
-            queryEmbedding, 
-            topK: 10, 
+            queryEmbedding,
+            topK: 10,
             minSimilarity: 0.5f);
         stopwatch.Stop();
 
         // Assert: Search time meets target
-        Assert.True(stopwatch.ElapsedMilliseconds < 2000, 
+        Assert.True(stopwatch.ElapsedMilliseconds < 2000,
             $"Vector search took {stopwatch.ElapsedMilliseconds}ms, expected <2000ms");
-        
+
         Assert.NotEmpty(results);
         Assert.True(results.Count <= 10);
         Assert.All(results, r => Assert.InRange(r.Similarity, 0.5f, 1.0f));
@@ -129,7 +129,7 @@ We need to find them before he kills again.";
     {
         // Arrange: Test complete workflow (embedding + search)
         TestHelpers.CreateTestDatabase(_testDbPath, entryCount: 834);
-        
+
         var config = TestHelpers.LoadConfiguration();
         var modelManager = new ModelManager(_modelLogger, config.EmbeddingModel);
         var embeddingService = new EmbeddingService(_embeddingLogger, modelManager);
@@ -144,9 +144,9 @@ We need to find them before he kills again.";
         stopwatch.Stop();
 
         // Assert: Total time meets target (5s embedding + 2s search = 7s)
-        Assert.True(stopwatch.ElapsedMilliseconds < 7000, 
+        Assert.True(stopwatch.ElapsedMilliseconds < 7000,
             $"End-to-end took {stopwatch.ElapsedMilliseconds}ms, expected <7000ms");
-        
+
         Assert.NotEmpty(results);
     }
 

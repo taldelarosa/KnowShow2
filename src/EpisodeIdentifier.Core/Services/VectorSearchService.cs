@@ -25,8 +25,8 @@ public class VectorSearchService : IVectorSearchService
 
     /// <inheritdoc/>
     public List<VectorSimilarityResult> SearchBySimilarity(
-        float[] queryEmbedding, 
-        int topK = 10, 
+        float[] queryEmbedding,
+        int topK = 10,
         double minSimilarity = 0.0)
     {
         if (queryEmbedding == null)
@@ -46,7 +46,7 @@ public class VectorSearchService : IVectorSearchService
 
         EnsureVectorliteLoaded();
 
-        _logger.LogDebug("Searching for top {TopK} similar subtitles (minSimilarity: {MinSimilarity})", 
+        _logger.LogDebug("Searching for top {TopK} similar subtitles (minSimilarity: {MinSimilarity})",
             topK, minSimilarity);
 
         var results = new List<VectorSimilarityResult>();
@@ -88,7 +88,7 @@ public class VectorSearchService : IVectorSearchService
             {
                 var similarity = reader.GetDouble(reader.GetOrdinal("Similarity"));
                 var distance = 1.0 - similarity;
-                
+
                 // Calculate confidence based on source format
                 var sourceFormatStr = reader.GetString(reader.GetOrdinal("SubtitleSourceFormat"));
                 var sourceFormat = SubtitleSourceFormatExtensions.FromDbString(sourceFormatStr);
@@ -99,8 +99,8 @@ public class VectorSearchService : IVectorSearchService
                     series: reader.GetString(reader.GetOrdinal("Series")),
                     season: reader.GetString(reader.GetOrdinal("Season")),
                     episode: reader.GetString(reader.GetOrdinal("Episode")),
-                    episodeName: reader.IsDBNull(reader.GetOrdinal("EpisodeName")) 
-                        ? null 
+                    episodeName: reader.IsDBNull(reader.GetOrdinal("EpisodeName"))
+                        ? null
                         : reader.GetString(reader.GetOrdinal("EpisodeName")),
                     sourceFormat: sourceFormat,
                     similarity: similarity,
@@ -118,7 +118,7 @@ public class VectorSearchService : IVectorSearchService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error searching by similarity: {Error}", ex.Message);
-            
+
             // If vectorlite is not available, return empty results for now
             // In production, this should throw
             _logger.LogWarning("Vectorlite may not be loaded - returning empty results");
@@ -174,7 +174,7 @@ public class VectorSearchService : IVectorSearchService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting index stats: {Error}", ex.Message);
-            
+
             return new VectorIndexStats
             {
                 TotalVectors = 0,
@@ -241,7 +241,7 @@ public class VectorSearchService : IVectorSearchService
 
             if (!File.Exists(extensionPath))
             {
-                _logger.LogWarning("Vectorlite extension not found at {Path} - vector search will not be available", 
+                _logger.LogWarning("Vectorlite extension not found at {Path} - vector search will not be available",
                     extensionPath);
                 return;
             }
@@ -250,12 +250,12 @@ public class VectorSearchService : IVectorSearchService
             {
                 using var connection = new SqliteConnection($"Data Source={_databasePath}");
                 connection.Open();
-                
+
                 // Enable extension loading
                 using var enableExtensionsCmd = connection.CreateCommand();
                 enableExtensionsCmd.CommandText = "SELECT 1";  // Dummy query to ensure connection is active
                 enableExtensionsCmd.ExecuteNonQuery();
-                
+
                 // Enable loading extensions via the connection API
                 connection.EnableExtensions(true);
 
@@ -281,10 +281,10 @@ public class VectorSearchService : IVectorSearchService
     private string GetVectorliteExtensionPath()
     {
         var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        
+
         // Try multiple possible locations in order of preference
         string[] possiblePaths;
-        
+
         if (OperatingSystem.IsWindows())
         {
             possiblePaths = new[]
@@ -307,7 +307,7 @@ public class VectorSearchService : IVectorSearchService
         {
             throw new PlatformNotSupportedException($"Vectorlite not supported on this platform");
         }
-        
+
         // Return the first path that exists
         foreach (var path in possiblePaths)
         {
@@ -316,7 +316,7 @@ public class VectorSearchService : IVectorSearchService
                 return path;
             }
         }
-        
+
         // If no file found, return the first preferred path (for error messages)
         return possiblePaths[0];
     }

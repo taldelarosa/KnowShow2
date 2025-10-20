@@ -165,8 +165,8 @@ public class VideoFileProcessingService : IVideoFileProcessingService
 
             // Step 5: Identify episode using the extracted subtitle text
             var identificationResult = await _episodeIdentificationService.IdentifyEpisodeAsync(
-                subtitleText ?? "", 
-                actualSubtitleType, 
+                subtitleText ?? "",
+                actualSubtitleType,
                 filePath);
             result.IdentificationResult = identificationResult;
 
@@ -310,10 +310,10 @@ public class VideoFileProcessingService : IVideoFileProcessingService
                     tempDir,
                     CancellationToken.None);
 
-                if (!extractionResult.Success || string.IsNullOrEmpty(extractionResult.IdxFilePath) || 
+                if (!extractionResult.Success || string.IsNullOrEmpty(extractionResult.IdxFilePath) ||
                     string.IsNullOrEmpty(extractionResult.SubFilePath))
                 {
-                    _logger.LogDebug("VobSub extraction failed for {FilePath}: {Error}", 
+                    _logger.LogDebug("VobSub extraction failed for {FilePath}: {Error}",
                         filePath, extractionResult.ErrorMessage);
                     return (false, null);
                 }
@@ -328,7 +328,7 @@ public class VideoFileProcessingService : IVideoFileProcessingService
 
                 if (!ocrResult.Success || string.IsNullOrWhiteSpace(ocrResult.ExtractedText))
                 {
-                    _logger.LogDebug("VobSub OCR failed for {FilePath}: {Error}", 
+                    _logger.LogDebug("VobSub OCR failed for {FilePath}: {Error}",
                         filePath, ocrResult.ErrorMessage);
                     return (false, null);
                 }

@@ -551,9 +551,9 @@ public class ModelManager : IModelManager
 ### External Binaries
 
 - **vectorlite**: Runtime-loaded SQLite extension
-  - Windows: `vectorlite.dll`
-  - Linux: `vectorlite.so`
-  - macOS: `vectorlite.dylib`
+    - Windows: `vectorlite.dll`
+    - Linux: `vectorlite.so`
+    - macOS: `vectorlite.dylib`
 - **Distributed via**: Python wheel extraction or direct GitHub release download
 
 ### Model Files
@@ -620,6 +620,7 @@ public class ModelManager : IModelManager
 ### Q1: Should we keep fuzzy hashing as fallback?
 
 **A**: **Yes**, keep fuzzy hashing as fallback option via configuration flag:
+
 - Allows A/B testing of matching accuracy
 - Provides degradation path if model unavailable
 - Supports comparison benchmarking

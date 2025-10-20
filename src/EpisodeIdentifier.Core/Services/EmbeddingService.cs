@@ -55,12 +55,12 @@ public class EmbeddingService : IEmbeddingService, IDisposable
 
             // Use EncodeToIds to tokenize the text
             var result = _tokenizer.EncodeToIds(cleanText);
-            
+
             // Convert to long arrays for ONNX
             const int maxSeqLength = 512;
             var tokenIds = result.Take(maxSeqLength).Select(id => (long)id).ToArray();
             var attentionMask = Enumerable.Repeat(1L, tokenIds.Length).ToArray();
-            
+
             if (result.Count > maxSeqLength) _logger.LogDebug("Truncated input from {Original} to {Max} tokens", result.Count, maxSeqLength);
             // Create token_type_ids (all zeros for single sentence)
             var tokenTypeIds = new long[tokenIds.Length];
@@ -79,11 +79,11 @@ public class EmbeddingService : IEmbeddingService, IDisposable
             };
 
             using var results = _session!.Run(inputs);
-            
+
             // Extract embedding from output (typically "last_hidden_state" or "sentence_embedding")
             // For sentence transformers, we need to pool the token embeddings
             var output = results.First().AsEnumerable<float>().ToArray();
-            
+
             // Apply mean pooling to get sentence embedding
             var embedding = ApplyMeanPooling(output, tokenIds.Length);
 
@@ -124,7 +124,7 @@ public class EmbeddingService : IEmbeddingService, IDisposable
 
         var batchStopwatch = Stopwatch.StartNew();
         var embeddings = new List<float[]>();
-        
+
         // For now, process sequentially
         // TODO: Implement true batch processing with dynamic batching for better performance
         foreach (var text in cleanTexts)
@@ -175,11 +175,11 @@ public class EmbeddingService : IEmbeddingService, IDisposable
             // Create ONNX Runtime session
             var sessionOptions = new SessionOptions();
             sessionOptions.GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL;
-            
+
             _session = new InferenceSession(modelInfo.ModelPath, sessionOptions);
             // Load tokenizer from vocab.txt with explicit special tokens
             _logger.LogInformation("Loading BERT tokenizer from {TokenizerPath}", modelInfo.TokenizerPath);
-            
+
             // all-MiniLM-L6-v2 uses WordPiece tokenization with standard BERT special tokens
             var options = new BertOptions
             {
@@ -187,7 +187,7 @@ public class EmbeddingService : IEmbeddingService, IDisposable
                 SeparatorToken = "[SEP]",
                 ClassificationToken = "[CLS]"
             };
-            
+
             _tokenizer = BertTokenizer.CreateAsync(modelInfo.TokenizerPath, options).GetAwaiter().GetResult();
 
             _isInitialized = true;

@@ -66,7 +66,7 @@ public class VobSubOcrServiceContractTests
         // Create a temporary file to serve as the .idx file
         var tempIdxFile = Path.Combine(Path.GetTempPath(), $"temp_test_{Guid.NewGuid()}.idx");
         File.WriteAllText(tempIdxFile, "# dummy idx file");
-        
+
         try
         {
             var subFilePath = "/nonexistent/subtitle.sub";

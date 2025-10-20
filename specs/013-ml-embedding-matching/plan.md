@@ -55,6 +55,7 @@ Replace CTPH fuzzy hashing with ML embedding-based semantic similarity matching 
 **Scale/Scope**: Support same database scale as existing system (tested with 316+ episodes), enhance matching accuracy for OCR-based subtitles without regressing text subtitle performance
 
 **User-Provided Implementation Details**:
+
 - Replace CTPH fuzzy hashing with semantic embeddings using sentence transformers
 - Generate 384-dimensional embeddings from CleanText using all-MiniLM-L6-v2 or similar lightweight model
 - Store embeddings in SQLite database (new Embedding BLOB column)
@@ -62,7 +63,7 @@ Replace CTPH fuzzy hashing with ML embedding-based semantic similarity matching 
 - Support all three subtitle formats (Text, PGS, VobSub) with same embedding approach
 - Add SubtitleFormat column to track format type for analytics
 - Maintain backward compatibility with automatic migration for existing entries
-- Use vectorlite extension: https://github.com/1yefuwang1/vectorlite
+- Use vectorlite extension: <https://github.com/1yefuwang1/vectorlite>
 - Dependencies: Microsoft.ML.OnnxRuntime, lightweight sentence transformer model (<100MB)
 - Testing: Verify VobSub OCR matches text subtitles for Criminal Minds S06E19
 
@@ -71,18 +72,21 @@ Replace CTPH fuzzy hashing with ML embedding-based semantic similarity matching 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 **Simplicity**:
+
 - Projects: 1 (extending existing EpisodeIdentifier.Core - max 3 ✓)
 - Using framework directly? Yes (ONNX Runtime, vectorlite, existing System.CommandLine ✓)
 - Single data model? Yes (extending existing SubtitleHashes table ✓)
 - Avoiding patterns? Yes (no Repository/UoW - using direct services ✓)
 
 **Architecture**:
+
 - EVERY feature as library? Yes (functionality in EpisodeIdentifier.Core library ✓)
 - Libraries listed: EpisodeIdentifier.Core + purpose: Episode identification with ML embedding-based matching
 - CLI per library: Existing CLI with --identify, --store, --bulk-identify commands unchanged
 - Library docs: Will update existing llms.txt format
 
 **Testing (NON-NEGOTIABLE)**:
+
 - RED-GREEN-Refactor cycle enforced? YES (tests written first, must fail, then implement ✓)
 - Git commits show tests before implementation? YES (will follow TDD ✓)
 - Order: Contract→Integration→E2E→Unit strictly followed? YES ✓
@@ -91,11 +95,13 @@ Replace CTPH fuzzy hashing with ML embedding-based semantic similarity matching 
 - FORBIDDEN: Implementation before test, skipping RED phase ✓
 
 **Observability**:
+
 - Structured logging included? YES (Microsoft.Extensions.Logging already used, will add embedding timing metrics ✓)
 - Frontend logs → backend? N/A (CLI application)
 - Error context sufficient? YES (existing error handling with JSON output, will add model loading errors ✓)
 
 **Versioning**:
+
 - Version number assigned? Will increment BUILD version (existing pattern ✓)
 - BUILD increments on every change? YES (following existing practice ✓)
 - Breaking changes handled? NO breaking changes - backward compatible enhancement with migration ✓
@@ -331,6 +337,7 @@ Task 5: Research model download and caching strategies
 *Fill ONLY if Constitution Check has violations that must be justified*
 
 No complexity violations detected. All constitutional requirements satisfied:
+
 - Single project extension
 - Library-first architecture maintained
 - TDD enforced
@@ -342,6 +349,7 @@ No complexity violations detected. All constitutional requirements satisfied:
 *This checklist is updated during execution flow*
 
 **Phase Status**:
+
 - [x] Phase 0: Research complete (/plan command) - research.md generated
 - [x] Phase 1: Design complete (/plan command) - data-model.md, contracts/, quickstart.md, agent file updated
 - [x] Phase 2: Task planning complete (/plan command - describe approach only)
@@ -350,12 +358,14 @@ No complexity violations detected. All constitutional requirements satisfied:
 - [ ] Phase 5: Validation passed (awaiting manual quickstart validation)
 
 **Gate Status**:
+
 - [x] Initial Constitution Check: PASS
 - [x] Post-Design Constitution Check: PASS
 - [x] All NEEDS CLARIFICATION resolved (research.md complete)
 - [x] Complexity deviations documented (none required)
 
 **Implementation Summary** (October 19, 2025):
+
 - **Commits**: 12 commits on branch `013-ml-embedding-matching`
 - **Code**: ~3,800 lines across 27 new/modified files
 - **Tests**: 730 passed, 0 failed, 52 skipped (100% pass rate)

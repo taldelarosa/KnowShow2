@@ -1,11 +1,13 @@
 # DVD Subtitle Processing - Quickstart Guide
 
 ## Overview
+
 This guide covers testing the DVD subtitle OCR feature using Criminal Minds Season 5 files.
 
 ## Prerequisites
 
 ### Install Dependencies
+
 ```bash
 # Install mkvtoolnix (for mkvextract)
 sudo apt-get install mkvtoolnix
@@ -19,6 +21,7 @@ tesseract --version
 ```
 
 ### Build Project
+
 ```bash
 cd /mnt/c/Users/Ragma/KnowShow_Specd
 dotnet build
@@ -27,6 +30,7 @@ dotnet build
 ## Quick Test Commands
 
 ### 1. Test DVD Subtitle Detection
+
 ```bash
 # Should return UNSUPPORTED_SUBTITLE_FORMAT error with DVD subtitle info
 dotnet run --project src/EpisodeIdentifier.Core -- \
@@ -35,6 +39,7 @@ dotnet run --project src/EpisodeIdentifier.Core -- \
 ```
 
 **Expected JSON:**
+
 ```json
 {
   "matched": false,
@@ -45,6 +50,7 @@ dotnet run --project src/EpisodeIdentifier.Core -- \
 ```
 
 ### 2. Test DVD Subtitle Processing (After Implementation)
+
 ```bash
 # Should extract VobSub, perform OCR, and match episode
 dotnet run --project src/EpisodeIdentifier.Core -- \
@@ -54,6 +60,7 @@ dotnet run --project src/EpisodeIdentifier.Core -- \
 ```
 
 **Expected JSON (Success):**
+
 ```json
 {
   "matched": true,
@@ -69,6 +76,7 @@ dotnet run --project src/EpisodeIdentifier.Core -- \
 ```
 
 ### 3. Test Subtitle Priority
+
 ```bash
 # File with both text and DVD subtitles - should prefer text
 dotnet run --project src/EpisodeIdentifier.Core -- \
@@ -79,6 +87,7 @@ dotnet run --project src/EpisodeIdentifier.Core -- \
 **Expected:** Uses text subtitles, NOT DVD subtitles (check `subtitleType` field)
 
 ### 4. Test Missing Dependencies
+
 ```bash
 # Temporarily rename mkvextract to simulate missing tool
 sudo mv /usr/bin/mkvextract /usr/bin/mkvextract.bak
@@ -93,6 +102,7 @@ sudo mv /usr/bin/mkvextract.bak /usr/bin/mkvextract
 ```
 
 **Expected JSON:**
+
 ```json
 {
   "matched": false,
@@ -105,6 +115,7 @@ sudo mv /usr/bin/mkvextract.bak /usr/bin/mkvextract
 ## Test Files
 
 ### Files with DVD Subtitles Only
+
 ```bash
 # These should trigger DVD subtitle OCR path
 /mnt/z/mkvs/CRIMINAL_MINDS_S5_D3-IfFoMf/CRIMINAL_MINDS_S5_D3_T02.mkv
@@ -113,6 +124,7 @@ sudo mv /usr/bin/mkvextract.bak /usr/bin/mkvextract
 ```
 
 ### Files with Text Subtitles
+
 ```bash
 # These should use fast text subtitle path (baseline for comparison)
 /mnt/z/mkvs/CRIMINAL_MINDS_S5_D2-McMIEk/CRIMINAL_MINDS_S5_D2_T01.mkv
@@ -121,6 +133,7 @@ sudo mv /usr/bin/mkvextract.bak /usr/bin/mkvextract
 ## Manual Validation Steps
 
 ### 1. Extract VobSub Manually
+
 ```bash
 # Find DVD subtitle track number
 ffprobe -v error -show_entries stream=index,codec_name \
@@ -137,6 +150,7 @@ ls -lh /tmp/vobsub_test/
 ```
 
 ### 2. Convert VobSub to Images
+
 ```bash
 # Use ffmpeg to extract subtitle images
 ffmpeg -i /tmp/vobsub_test/subtitles.idx \
@@ -147,6 +161,7 @@ ls -lh /tmp/vobsub_test/*.png | head -10
 ```
 
 ### 3. Test Tesseract OCR
+
 ```bash
 # OCR a sample image
 tesseract /tmp/vobsub_test/frame_0001.png stdout -l eng
@@ -157,11 +172,13 @@ tesseract /tmp/vobsub_test/frame_0001.png stdout -l eng
 ## Performance Expectations
 
 ### DVD Subtitle Processing Times
+
 - **Extraction:** ~2-5 seconds per file
 - **OCR Processing:** ~8-15 seconds per file (50MB limit)
 - **Total:** ~10-20 seconds vs. <1 second for text subtitles
 
 ### Bulk Processing Test
+
 ```bash
 # Process all DVD subtitle files in directory
 dotnet run --project src/EpisodeIdentifier.Core -- \
@@ -177,19 +194,24 @@ dotnet run --project src/EpisodeIdentifier.Core -- \
 ## Troubleshooting
 
 ### Issue: "MISSING_DEPENDENCY" Error
+
 **Solution:** Install mkvtoolnix and tesseract-ocr:
+
 ```bash
 sudo apt-get update
 sudo apt-get install mkvtoolnix tesseract-ocr tesseract-ocr-eng
 ```
 
 ### Issue: "OCR_FAILED" Error
+
 **Possible Causes:**
+
 1. Subtitle file exceeds 50MB limit
 2. OCR processing exceeds 5-minute timeout
 3. Language data file missing (e.g., eng.traineddata)
 
 **Solution:**
+
 ```bash
 # Check subtitle size
 ls -lh /tmp/extracted_subtitles/
@@ -202,10 +224,13 @@ tesseract --list-langs
 ```
 
 ### Issue: Low OCR Confidence (<70%)
+
 **Solution:** Files with poor OCR results will still match if confidence > matchConfidenceThreshold (50% default)
 
 ### Issue: Files Not Renaming
+
 **Checklist:**
+
 1. Match confidence > renameConfidenceThreshold? (Check JSON output)
 2. OCR confidence > 70%? (Check ocrConfidence field)
 3. File permissions allow rename?
@@ -213,6 +238,7 @@ tesseract --list-langs
 ## Configuration
 
 ### OCR Settings (in episodeidentifier.config.json)
+
 ```json
 {
   "matchConfidenceThreshold": 50,
@@ -236,7 +262,9 @@ tesseract --list-langs
 - [ ] JSON error responses for all failure modes
 
 ## Next Steps
+
 After completing Phase 2-5 implementation:
+
 1. Run all quick test commands above
 2. Verify JSON responses match expected output
 3. Validate performance metrics

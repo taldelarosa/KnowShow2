@@ -235,14 +235,14 @@ public class Program
         var fallbackConverter = new PgsToTextConverter(loggerFactory.CreateLogger<PgsToTextConverter>());
         var pgsConverter = new EnhancedPgsToTextConverter(loggerFactory.CreateLogger<EnhancedPgsToTextConverter>(), pgsRipService, fallbackConverter);
         var normalizationService = new SubtitleNormalizationService(loggerFactory.CreateLogger<SubtitleNormalizationService>());
-        
+
         // ML embedding services for semantic similarity matching
         var embeddingModelConfig = fuzzyHashConfigService.LastConfigurationResult?.Configuration?.EmbeddingModel
             ?? EpisodeIdentifier.Core.Models.Configuration.EmbeddingModelConfiguration.Default;
         var modelManager = new ModelManager(loggerFactory.CreateLogger<ModelManager>(), embeddingModelConfig);
         var embeddingService = new EmbeddingService(loggerFactory.CreateLogger<EmbeddingService>(), modelManager);
         var vectorSearchService = new VectorSearchService(loggerFactory.CreateLogger<VectorSearchService>(), hashDb.FullName);
-        
+
         var hashService = new FuzzyHashService(hashDb.FullName, loggerFactory.CreateLogger<FuzzyHashService>(), normalizationService, embeddingService);
         var filenameParser = new SubtitleFilenameParser(loggerFactory.CreateLogger<SubtitleFilenameParser>(), legacyConfigService);
         var textExtractor = new VideoTextSubtitleExtractor(loggerFactory.CreateLogger<VideoTextSubtitleExtractor>());
@@ -272,7 +272,7 @@ public class Program
             if (migrateEmbeddings)
             {
                 loggerFactory.CreateLogger<Program>().LogInformation("Starting embedding migration for existing database entries");
-                
+
                 var migrationService = new DatabaseMigrationService(
                     loggerFactory.CreateLogger<DatabaseMigrationService>(),
                     embeddingService,
@@ -632,6 +632,7 @@ public class Program
                 }
 
                 // Priority 2: Try PGS subtitle processing
+                string? extractedPgsSubtitleText = null; // Declare outside scope for goto label access
                 var pgsTracks = subtitleTracks.Where(t =>
                     t.CodecName == "hdmv_pgs_subtitle").ToList();
 
@@ -641,9 +642,9 @@ public class Program
 
                     // Extract and OCR subtitle images directly from video file
                     var ocrLanguage = GetOcrLanguageCode(language);
-                    var subtitleText = await pgsConverter.ConvertPgsFromVideoToText(input.FullName, pgsTrack.Index, ocrLanguage);
+                    extractedPgsSubtitleText = await pgsConverter.ConvertPgsFromVideoToText(input.FullName, pgsTrack.Index, ocrLanguage);
 
-                    if (!string.IsNullOrWhiteSpace(subtitleText))
+                    if (!string.IsNullOrWhiteSpace(extractedPgsSubtitleText))
                     {
                         // PGS extraction successful - proceed with identification
                         goto ProcessIdentification;
@@ -672,7 +673,7 @@ public class Program
             ProcessIdentification:
                 // PGS subtitle text is available - proceed with identification
                 var ocrLang = GetOcrLanguageCode(language);
-                var pgsSubtitleText = extractedPgsSubtitleText;
+                var pgsSubtitleText = extractedPgsSubtitleText; // Use the subtitle text extracted above
 
                 if (string.IsNullOrWhiteSpace(pgsSubtitleText))
                 {
@@ -700,11 +701,11 @@ public class Program
                 try
                 {
                     result = await episodeIdentificationService.IdentifyEpisodeAsync(
-                        pgsSubtitleText, 
-                        SubtitleType.PGS, 
-                        input.FullName, 
-                        null, 
-                        series, 
+                        pgsSubtitleText,
+                        SubtitleType.PGS,
+                        input.FullName,
+                        null,
+                        series,
                         season);
                 }
                 catch (ArgumentException ex)
@@ -722,7 +723,7 @@ public class Program
                 }
 
                 // Get the appropriate rename threshold based on subtitle type
-                var pgsRenameThreshold = legacyConfigService.Config.MatchingThresholds?.PGS.RenameConfidence 
+                var pgsRenameThreshold = legacyConfigService.Config.MatchingThresholds?.PGS.RenameConfidence
 #pragma warning disable CS0618 // Type or member is obsolete
                     ?? (decimal)legacyConfigService.Config.RenameConfidenceThreshold;
 #pragma warning restore CS0618
@@ -909,15 +910,15 @@ public class Program
 
             // Match against database using the episode identification service
             var result = await episodeIdentificationService.IdentifyEpisodeAsync(
-                subtitleText, 
-                SubtitleType.TextBased, 
-                videoFilePath, 
-                null, 
-                seriesFilter, 
+                subtitleText,
+                SubtitleType.TextBased,
+                videoFilePath,
+                null,
+                seriesFilter,
                 seasonFilter);
 
             // Get the appropriate rename threshold based on subtitle type
-            var renameThreshold = legacyConfigService.Config.MatchingThresholds?.TextBased.RenameConfidence 
+            var renameThreshold = legacyConfigService.Config.MatchingThresholds?.TextBased.RenameConfidence
 #pragma warning disable CS0618 // Type or member is obsolete
                 ?? (decimal)legacyConfigService.Config.RenameConfidenceThreshold;
 #pragma warning restore CS0618
@@ -1094,7 +1095,7 @@ public class Program
                     seasonFilter);
 
                 // Get the appropriate rename threshold based on subtitle type
-                var renameThreshold = legacyConfigService.Config.MatchingThresholds?.VobSub.RenameConfidence 
+                var renameThreshold = legacyConfigService.Config.MatchingThresholds?.VobSub.RenameConfidence
 #pragma warning disable CS0618 // Type or member is obsolete
                     ?? (decimal)legacyConfigService.Config.RenameConfidenceThreshold;
 #pragma warning restore CS0618

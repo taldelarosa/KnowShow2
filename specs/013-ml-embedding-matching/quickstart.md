@@ -89,6 +89,7 @@ dotnet run -- --identify \
 ```
 
 **Success Criteria**:
+
 - ✓ VobSub is extracted and OCR'd correctly
 - ✓ Embedding is generated from OCR text
 - ✓ Match found with confidence >85%
@@ -129,6 +130,7 @@ dotnet run -- --migrate-embeddings \
 ```
 
 **Success Criteria**:
+
 - ✓ Migration detects entries without embeddings
 - ✓ Progress reporting shows percentage complete
 - ✓ All entries get embeddings generated
@@ -191,6 +193,7 @@ dotnet run -- --identify \
 ```
 
 **Success Criteria**:
+
 - ✓ High threshold rejects matches below threshold
 - ✓ Low threshold accepts more matches
 - ✓ Configuration hot-reloads without restart
@@ -225,6 +228,7 @@ dotnet run -- --help
 ```
 
 **Success Criteria**:
+
 - ✓ All existing commands work as before
 - ✓ Output format remains JSON compatible
 - ✓ --help shows same command structure
@@ -260,6 +264,7 @@ dotnet run -- --identify \
 ```
 
 **Verification**:
+
 ```bash
 # Check model cached locally
 ls -lh ~/.config/EpisodeIdentifier/models/
@@ -370,6 +375,7 @@ time dotnet run -- --identify \
 ```
 
 **Performance Targets**:
+
 - Embedding generation: <5 seconds per subtitle
 - Vector search: <2 seconds for 1000 entries
 - Migration: <7 minutes for 300 entries (4 workers)

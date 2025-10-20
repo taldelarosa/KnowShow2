@@ -11,11 +11,13 @@ This document defines the data models required for DVD subtitle extraction and O
 ## Existing Models (No Changes)
 
 ### SubtitleTrackInfo
+
 **Location**: `src/EpisodeIdentifier.Core/Models/SubtitleTrackInfo.cs`
 
 Already supports DVD subtitles with `CodecName = "dvd_subtitle"`. No changes needed.
 
 **Fields**:
+
 - `int Index`: Stream index in video file
 - `string CodecName`: Codec identifier (e.g., "dvd_subtitle", "hdmv_pgs_subtitle", "subrip")
 - `string? Language`: Language code (e.g., "eng", "spa")
@@ -44,20 +46,23 @@ Already supports DVD subtitles with `CodecName = "dvd_subtitle"`. No changes nee
 | `SourceVideoPath` | `string` | Yes | Source video file path | Must be non-empty |
 
 **Validation Rules**:
+
 - If `Success == true`:
-  - `IdxFilePath` must be non-null and file must exist
-  - `SubFilePath` must be non-null and file must exist
-  - `ErrorMessage` should be null
+    - `IdxFilePath` must be non-null and file must exist
+    - `SubFilePath` must be non-null and file must exist
+    - `ErrorMessage` should be null
 - If `Success == false`:
-  - `ErrorMessage` must be non-null and non-empty
-  - `IdxFilePath` and `SubFilePath` may be null
+    - `ErrorMessage` must be non-null and non-empty
+    - `IdxFilePath` and `SubFilePath` may be null
 
 **State Transitions**:
+
 ```
 [Initial] → [Extracting] → [Success/Failure]
 ```
 
 **Example**:
+
 ```csharp
 // Success case
 new VobSubExtractionResult
@@ -106,18 +111,20 @@ new VobSubExtractionResult
 | `Language` | `string` | Yes | OCR language code used | Must be non-empty |
 
 **Validation Rules**:
+
 - If `Success == true`:
-  - `ExtractedText` must be non-null and non-empty
-  - `CharacterCount` must be > 0
-  - `ConfidenceScore` should be > 0.0 (typically 0.5-1.0)
-  - `ErrorMessage` should be null
+    - `ExtractedText` must be non-null and non-empty
+    - `CharacterCount` must be > 0
+    - `ConfidenceScore` should be > 0.0 (typically 0.5-1.0)
+    - `ErrorMessage` should be null
 - If `Success == false`:
-  - `ErrorMessage` must be non-null and non-empty
-  - `ExtractedText` may be null or empty
-  - `CharacterCount` may be 0
+    - `ErrorMessage` must be non-null and non-empty
+    - `ExtractedText` may be null or empty
+    - `CharacterCount` may be 0
 
 **Text Normalization**:
 The `ExtractedText` field should contain normalized text:
+
 - Whitespace collapsed
 - Timecodes removed (if present)
 - HTML tags removed
@@ -125,16 +132,19 @@ The `ExtractedText` field should contain normalized text:
 - Leading/trailing whitespace trimmed
 
 **Confidence Calculation**:
+
 ```
 ConfidenceScore = (Sum of all character confidences) / (Total characters)
 ```
 
 **State Transitions**:
+
 ```
 [Initial] → [Image Extraction] → [OCR Processing] → [Text Normalization] → [Success/Failure]
 ```
 
 **Example**:
+
 ```csharp
 // Success case
 new VobSubOcrResult
@@ -206,12 +216,14 @@ IdentificationResult (existing)
 ## Error Handling
 
 ### Extraction Errors
+
 - **mkvextract not found**: Return failure with `ErrorMessage = "mkvextract tool not found. Please install mkvtoolnix."`
 - **Invalid track index**: Return failure with `ErrorMessage = "Track {index} not found or not a subtitle track"`
 - **Extraction failed**: Return failure with stderr from mkvextract
 - **Timeout**: Throw `OperationCanceledException` (handled by caller)
 
 ### OCR Errors
+
 - **Tesseract not found**: Return failure with `ErrorMessage = "tesseract OCR engine not found. Please install tesseract-ocr."`
 - **No images extracted**: Return failure with `ErrorMessage = "No subtitle images could be extracted from VobSub files"`
 - **No text recognized**: Return success with `ExtractedText = ""` and `ConfidenceScore = 0.0`
@@ -249,17 +261,20 @@ Both models should be serializable to JSON for logging and debugging purposes:
 ## Testing Considerations
 
 ### Unit Tests
+
 - Test validation rules for both models
 - Test serialization/deserialization
 - Test state transitions
 
 ### Integration Tests
+
 - Use real video files with DVD subtitles
 - Verify file paths in extraction results point to actual files
 - Verify OCR results contain expected text patterns
 - Test error scenarios with missing tools
 
 ### Contract Tests
+
 - Verify model structure matches interface contracts
 - Ensure all required fields are populated
 - Validate error message formats

@@ -356,10 +356,10 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
             // Generate embedding for input subtitle
             _logger.LogDebug("Generating embedding for subtitle text - Operation: {OperationId}, TextLength: {TextLength}",
                 operationId, subtitleText.Length);
-            
+
             var embeddingStartTime = stopwatch.ElapsedMilliseconds;
             float[] queryEmbedding;
-            
+
             try
             {
                 queryEmbedding = _embeddingService.GenerateEmbedding(subtitleText);
@@ -371,7 +371,7 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
                     operationId, stopwatch.ElapsedMilliseconds);
                 return null;
             }
-            
+
             var embeddingDuration = stopwatch.ElapsedMilliseconds - embeddingStartTime;
             _logger.LogDebug("Embedding generated - Operation: {OperationId}, Duration: {Duration}ms",
                 operationId, embeddingDuration);
@@ -410,10 +410,10 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
             // Filter by series/season if provided
             if (!string.IsNullOrEmpty(seriesFilter))
             {
-                results = results.Where(r => 
+                results = results.Where(r =>
                     r.Series.Equals(seriesFilter, StringComparison.OrdinalIgnoreCase))
                     .ToList();
-                
+
                 if (seasonFilter.HasValue)
                 {
                     var seasonString = seasonFilter.Value.ToString("D2");
@@ -454,7 +454,7 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
                 EpisodeName = bestMatch.EpisodeName,
                 MatchConfidence = bestMatch.Confidence,
                 MatchingMethod = "Embedding",
-                AmbiguityNotes = results.Count > 1 
+                AmbiguityNotes = results.Count > 1
                     ? $"Found {results.Count} similar episodes, selected best match (similarity: {bestMatch.Similarity:P1})"
                     : null
             };

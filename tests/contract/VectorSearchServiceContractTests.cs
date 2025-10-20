@@ -42,9 +42,9 @@ public class VectorSearchServiceContractTests
         // Assert
         results.Should().NotBeNull();
         results.Should().HaveCountLessOrEqualTo(topK, "should not exceed requested top K");
-        results.Should().BeInDescendingOrder(r => r.Similarity, 
+        results.Should().BeInDescendingOrder(r => r.Similarity,
             "results should be ordered by similarity (highest first)");
-        
+
         foreach (var result in results)
         {
             result.Series.Should().NotBeNullOrEmpty();
@@ -212,7 +212,7 @@ public class VectorSearchServiceContractTests
         results1.Should().HaveCount(results2.Count);
         for (int i = 0; i < results1.Count; i++)
         {
-            results1[i].Id.Should().Be(results2[i].Id, 
+            results1[i].Id.Should().Be(results2[i].Id,
                 "same query should return same results in same order");
             results1[i].Similarity.Should().BeApproximately(results2[i].Similarity, 0.0001,
                 "similarity scores should be consistent");
@@ -238,8 +238,8 @@ public class VectorSearchServiceContractTests
             result.Season.Should().NotBeNullOrEmpty();
             result.Episode.Should().NotBeNullOrEmpty();
             result.SourceFormat.Should().BeOneOf(
-                SubtitleSourceFormat.Text, 
-                SubtitleSourceFormat.PGS, 
+                SubtitleSourceFormat.Text,
+                SubtitleSourceFormat.PGS,
                 SubtitleSourceFormat.VobSub);
             result.Similarity.Should().BeInRange(0.0, 1.0);
             result.Confidence.Should().BeInRange(0.0, 1.0);

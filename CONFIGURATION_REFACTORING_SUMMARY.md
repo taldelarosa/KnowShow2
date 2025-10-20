@@ -9,6 +9,7 @@ Successfully reconfigured the EpisodeIdentifier configuration system to support 
 ### Problem Addressed
 
 Previously, there was confusion between two related but distinct threshold concepts:
+
 1. **`FuzzyHashThreshold`** (0-100): The raw CTPH similarity score
 2. **`MatchConfidenceThreshold`** (0.0-1.0): The minimum confidence after converting the similarity score
 
@@ -29,6 +30,7 @@ Additionally, all subtitle types (text-based, PGS OCR, VobSub OCR) used the same
 Created three new classes:
 
 #### `SubtitleType` Enum
+
 ```csharp
 public enum SubtitleType
 {
@@ -39,6 +41,7 @@ public enum SubtitleType
 ```
 
 #### `SubtitleTypeThresholds` Class
+
 ```csharp
 public class SubtitleTypeThresholds
 {
@@ -49,6 +52,7 @@ public class SubtitleTypeThresholds
 ```
 
 #### `MatchingThresholds` Class
+
 ```csharp
 public class MatchingThresholds
 {
@@ -63,10 +67,12 @@ public class MatchingThresholds
 ### 2. Configuration Updates
 
 **Updated Files**:
+
 - `src/EpisodeIdentifier.Core/Models/Configuration/Configuration.cs`
 - `src/EpisodeIdentifier.Core/Models/AppConfig.cs`
 
 **Changes**:
+
 - Added `MatchingThresholds` property to both `Configuration` and `AppConfig`
 - Marked old properties (`MatchConfidenceThreshold`, `RenameConfidenceThreshold`, `FuzzyHashThreshold`) as `[Obsolete]`
 - Updated FluentValidation rules to validate the new nested structure
@@ -75,6 +81,7 @@ public class MatchingThresholds
 ### 3. Service Updates
 
 **Updated Files**:
+
 - `src/EpisodeIdentifier.Core/Interfaces/IEpisodeIdentificationService.cs`
 - `src/EpisodeIdentifier.Core/Services/EpisodeIdentificationService.cs`
 - `src/EpisodeIdentifier.Core/Services/VideoFileProcessingService.cs`
@@ -82,22 +89,25 @@ public class MatchingThresholds
 - `src/EpisodeIdentifier.Core/Program.cs`
 
 **Changes**:
+
 - `IdentifyEpisodeAsync()` now accepts `SubtitleType` parameter (defaults to `TextBased`)
 - Services select appropriate thresholds using `config.MatchingThresholds.GetThresholdsForType(subtitleType)`
 - Program.cs passes correct subtitle type when calling identification:
-  - `SubtitleType.TextBased` for text subtitle extraction
-  - `SubtitleType.PGS` for PGS subtitle processing
-  - `SubtitleType.VobSub` for DVD subtitle processing
+    - `SubtitleType.TextBased` for text subtitle extraction
+    - `SubtitleType.PGS` for PGS subtitle processing
+    - `SubtitleType.VobSub` for DVD subtitle processing
 - All rename threshold checks updated to use type-specific thresholds with fallback to legacy properties
 
 ### 4. Configuration Files
 
 **Updated Files**:
+
 - `episodeidentifier.config.json`
 - `episodeidentifier.config.template.json`
 - `episodeidentifier.config.example.json`
 
 **New Structure**:
+
 ```json
 {
   "version": "2.0",
@@ -128,27 +138,31 @@ public class MatchingThresholds
 ### 5. Test Updates
 
 **Updated Files**:
+
 - `tests/unit/ConfigurationValidationTests.cs`
 
 **Changes**:
+
 - Updated `CreateValidConfiguration()` helper to create new threshold structure
 - Added comprehensive tests for new `MatchingThresholds` validation
 - Separated tests into:
-  - **MatchingThresholds Validation Tests**: Test new structure
-  - **Legacy Threshold Tests**: Test backward compatibility with obsolete properties
+    - **MatchingThresholds Validation Tests**: Test new structure
+    - **Legacy Threshold Tests**: Test backward compatibility with obsolete properties
 - Tests verify:
-  - Null `MatchingThresholds` triggers validation error
-  - Each subtitle type validates ranges correctly (0.0-1.0 for confidence, 0-100 for fuzzy hash)
-  - `RenameConfidence` must be >= `MatchConfidence` for each type
-  - `FuzzyHashSimilarity` must be > 0 (cannot be zero)
-  - Legacy properties still validated when new structure is null
+    - Null `MatchingThresholds` triggers validation error
+    - Each subtitle type validates ranges correctly (0.0-1.0 for confidence, 0-100 for fuzzy hash)
+    - `RenameConfidence` must be >= `MatchConfidence` for each type
+    - `FuzzyHashSimilarity` must be > 0 (cannot be zero)
+    - Legacy properties still validated when new structure is null
 
 ### 6. Documentation
 
 **Updated Files**:
+
 - `.github/copilot-instructions.md`
 
 **Changes**:
+
 - Added new "Configuration" section explaining the `MatchingThresholds` structure
 - Updated "Recent Changes" section with configuration refactor details
 - Documented the relationship between `FuzzyHashSimilarity` and confidence scores
@@ -158,6 +172,7 @@ public class MatchingThresholds
 Based on subtitle processing method accuracy:
 
 ### Text-Based Subtitles (Highest Accuracy)
+
 ```json
 "textBased": {
   "matchConfidence": 0.7,
@@ -165,10 +180,12 @@ Based on subtitle processing method accuracy:
   "fuzzyHashSimilarity": 70
 }
 ```
+
 - Most reliable, can use higher thresholds
 - Lower false positive rate
 
 ### PGS Subtitles (Medium Accuracy)
+
 ```json
 "pgs": {
   "matchConfidence": 0.6,
@@ -176,10 +193,12 @@ Based on subtitle processing method accuracy:
   "fuzzyHashSimilarity": 60
 }
 ```
+
 - OCR-based, some errors expected
 - Moderate thresholds balance accuracy and flexibility
 
 ### VobSub Subtitles (Lower Accuracy)
+
 ```json
 "vobSub": {
   "matchConfidence": 0.5,
@@ -187,6 +206,7 @@ Based on subtitle processing method accuracy:
   "fuzzyHashSimilarity": 50
 }
 ```
+
 - DVD subtitles often have lower OCR quality
 - Lower thresholds accommodate OCR imperfections
 - Still provides reasonable matching while minimizing false negatives
@@ -201,6 +221,7 @@ The refactoring maintains full backward compatibility:
 4. **Validation preserves old behavior**: Legacy properties are validated only when new structure is missing
 
 Example of fallback code:
+
 ```csharp
 var renameThreshold = legacyConfigService.Config.MatchingThresholds?.TextBased.RenameConfidence 
     ?? (decimal)legacyConfigService.Config.RenameConfidenceThreshold;
@@ -232,28 +253,34 @@ var renameThreshold = legacyConfigService.Config.MatchingThresholds?.TextBased.R
 ## Files Modified
 
 ### Core Implementation
+
 - `src/EpisodeIdentifier.Core/Models/Configuration/MatchingThresholds.cs` (NEW)
 - `src/EpisodeIdentifier.Core/Models/Configuration/Configuration.cs`
 - `src/EpisodeIdentifier.Core/Models/AppConfig.cs`
 
 ### Interfaces
+
 - `src/EpisodeIdentifier.Core/Interfaces/IEpisodeIdentificationService.cs`
 
 ### Services
+
 - `src/EpisodeIdentifier.Core/Services/EpisodeIdentificationService.cs`
 - `src/EpisodeIdentifier.Core/Services/VideoFileProcessingService.cs`
 - `src/EpisodeIdentifier.Core/Services/SubtitleWorkflowCoordinator.cs`
 - `src/EpisodeIdentifier.Core/Program.cs`
 
 ### Configuration Files
+
 - `episodeidentifier.config.json`
 - `episodeidentifier.config.template.json`
 - `episodeidentifier.config.example.json`
 
 ### Tests
+
 - `tests/unit/ConfigurationValidationTests.cs`
 
 ### Documentation
+
 - `.github/copilot-instructions.md`
 
 ## Next Steps
@@ -266,6 +293,7 @@ var renameThreshold = legacyConfigService.Config.MatchingThresholds?.TextBased.R
 ## Completion Status
 
 ✅ All todos completed:
+
 1. ✅ Create new MatchingThresholds configuration model
 2. ✅ Update Configuration.cs model and validation
 3. ✅ Update all services to use new threshold structure
