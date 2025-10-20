@@ -41,6 +41,7 @@ RUN apt-get update && apt-get install -y \
     libavcodec-dev \
     libavutil-dev \
     libswscale-dev \
+    libtiff-dev \
     # Python for pgsrip
     python3 \
     python3-pip \
@@ -71,6 +72,7 @@ RUN apt-get update && apt-get install -y \
         libavcodec-dev \
         libavutil-dev \
         libswscale-dev \
+        libtiff-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pgsrip from source
