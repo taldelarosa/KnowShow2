@@ -260,9 +260,8 @@ public class VectorSearchService : IVectorSearchService
                 connection.EnableExtensions(true);
 
                 // Load extension
-                using var command = connection.CreateCommand();
-                command.CommandText = $"SELECT load_extension('{extensionPath}')";
-                command.ExecuteNonQuery();
+                // Load extension using the dedicated API to avoid SQL injection risk
+                connection.LoadExtension(extensionPath);
 
                 _vectorliteLoaded = true;
                 _logger.LogInformation("Vectorlite extension loaded successfully");
