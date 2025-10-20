@@ -31,14 +31,6 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     tesseract-ocr-eng \
     tesseract-ocr-jpn \
-    tesseract-ocr-data \
-    # Runtime dependencies for vobsub2srt (must be kept)
-    libtesseract4 \
-    libleptonica5 \
-    libavformat59 \
-    libavcodec59 \
-    libavutil57 \
-    libswscale6 \
     # Build dependencies for vobsub2srt (will be removed)
     build-essential \
     cmake \
@@ -68,6 +60,7 @@ RUN apt-get update && apt-get install -y \
     && make install \
     && cd / && rm -rf /tmp/vobsub2srt \
     # Remove build dependencies to reduce image size
+    # Keep the runtime libraries that were installed as dependencies
     && apt-get purge -y --auto-remove \
         build-essential \
         cmake \
