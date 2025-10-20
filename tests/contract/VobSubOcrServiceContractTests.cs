@@ -108,7 +108,7 @@ public class VobSubOcrServiceContractTests
         result.ErrorMessage.Should().BeNullOrEmpty();
     }
 
-    [Fact]
+    [Fact(Skip = "Requires vobsub2srt to be installed - not available in CI")]
     public async Task IsTesseractAvailableAsync_WhenToolInstalled_ReturnsTrue()
     {
         // Arrange

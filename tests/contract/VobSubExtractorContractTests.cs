@@ -92,7 +92,7 @@ public class VobSubExtractorContractTests
         }
     }
 
-    [Fact]
+    [Fact(Skip = "Requires mkvtoolnix (mkvextract) to be installed - not available in CI")]
     public async Task IsMkvExtractAvailableAsync_WhenToolInstalled_ReturnsTrue()
     {
         // Arrange
