@@ -52,14 +52,9 @@ RUN apt-get update && apt-get install -y \
     sqlite3 \
     gosu \
     && rm -rf /var/lib/apt/lists/* \
-    # Build and install vobsub2srt from source (not available in Debian repos)
-    && git clone https://github.com/ruediger/VobSub2SRT.git /tmp/vobsub2srt \
-    && cd /tmp/vobsub2srt \
-    && mkdir build && cd build \
-    && cmake -DCMAKE_BUILD_TYPE=Release .. \
-    && make \
-    && make install \
-    && cd / && rm -rf /tmp/vobsub2srt \
+    # TODO: vobsub2srt is currently disabled due to incompatibility with Tesseract 5.x
+    # VobSub functionality will need to be implemented using direct Tesseract calls
+    # See: https://github.com/ruediger/VobSub2SRT/issues for compatibility issues \
     # Remove build dependencies to reduce image size
     # Keep the runtime libraries that were installed as dependencies
     && apt-get purge -y --auto-remove \
