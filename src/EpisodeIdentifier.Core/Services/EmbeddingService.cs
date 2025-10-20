@@ -204,29 +204,6 @@ public class EmbeddingService : IEmbeddingService, IDisposable
         }
     }
 
-    private long[] TokenizeText(string text)
-    {
-        // Simple whitespace tokenization for now
-        // TODO: Replace with actual BPE tokenizer using Microsoft.ML.Tokenizers
-        // For proof-of-concept, this creates simple token IDs
-        
-        var words = text.ToLowerInvariant()
-            .Split(new[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-
-        var tokenIds = new List<long> { 101 }; // [CLS] token
-        
-        foreach (var word in words.Take(510)) // Reserve space for [CLS] and [SEP]
-        {
-            // Simple hash-based token ID generation (placeholder)
-            var tokenId = Math.Abs(word.GetHashCode() % 30000) + 1000;
-            tokenIds.Add(tokenId);
-        }
-        
-        tokenIds.Add(102); // [SEP] token
-
-        return tokenIds.ToArray();
-    }
-
     private long[] CreateAttentionMask(int sequenceLength)
     {
         // All ones for attention mask (attend to all tokens)
