@@ -40,7 +40,13 @@
 
 ## Summary
 
-Replace CTPH fuzzy hashing with ML embedding-based semantic similarity matching for subtitle identification. System generates 384-dimensional embeddings from CleanText using all-MiniLM-L6-v2 ONNX model, stores embeddings in SQLite with vectorlite extension, and uses cosine similarity for matching. Solves OCR subtitle matching problem where VobSub/PGS subtitles show 0% fuzzy hash similarity to text subtitles despite 99.3% content similarity. Maintains CLI compatibility, supports configurable thresholds per format (Text/PGS/VobSub), and provides automatic database migration for existing entries.
+Replace CTPH fuzzy hashing with ML embedding-based semantic similarity matching for subtitle
+identification. System generates 384-dimensional embeddings from CleanText using all-MiniLM-L6-v2
+ONNX model, stores embeddings in SQLite with vectorlite extension, and uses cosine similarity for
+matching. Solves OCR subtitle matching problem where VobSub/PGS subtitles show 0% fuzzy hash
+similarity to text subtitles despite 99.3% content similarity. Maintains CLI compatibility,
+supports configurable thresholds per format (Text/PGS/VobSub), and provides automatic database
+migration for existing entries.
 
 ## Technical Context
 

@@ -207,9 +207,11 @@ Currently, these files are rejected with an error message stating that DVD subti
 
 - **NFR-001**: DVD subtitle processing MUST complete within the configured timeout (default 5 minutes per file)
 
-- **NFR-002**: System MUST handle DVD subtitle tracks up to 50MB in size without memory issues (process images incrementally)
+- **NFR-002**: System MUST handle DVD subtitle tracks up to 50MB in size without memory issues
+  (process images incrementally)
 
-- **NFR-003**: OCR accuracy MUST achieve at least 70% character recognition rate for reliable episode matching (measured against ground truth)A user has video files containing DVD subtitles (VobSub format) ripped from physical DVDs or Blu-rays. These files do not have text-based subtitles (SRT, ASS) or PGS subtitles. The user wants the episode identification system to extract the subtitle content from the DVD subtitle track, convert it to text through OCR, and use that text to identify which episode the video file represents.
+- **NFR-003**: OCR accuracy MUST achieve at least 70% character recognition rate for reliable
+  episode matching (measured against ground truth)
 
 - **NFR-004**: Temporary extraction files MUST be cleaned up after processing completion or failure
 
