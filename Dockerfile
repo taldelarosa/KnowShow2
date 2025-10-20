@@ -20,7 +20,8 @@ RUN dotnet publish src/EpisodeIdentifier.Core/EpisodeIdentifier.Core.csproj -c R
 # Stage 2: Create runtime image with all dependencies
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 
-# Install system dependencies
+# Install system dependencies and build vobsub2srt
+# Build dependencies are removed in the same layer to reduce image size
 RUN apt-get update && apt-get install -y \
     # FFmpeg for video/audio processing
     ffmpeg \
@@ -31,7 +32,14 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr-eng \
     tesseract-ocr-jpn \
     tesseract-ocr-data \
-    # Build dependencies for vobsub2srt
+    # Runtime dependencies for vobsub2srt (must be kept)
+    libtesseract4 \
+    libleptonica5 \
+    libavformat59 \
+    libavcodec59 \
+    libavutil57 \
+    libswscale6 \
+    # Build dependencies for vobsub2srt (will be removed)
     build-essential \
     cmake \
     git \
@@ -50,16 +58,27 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     sqlite3 \
     gosu \
+    && rm -rf /var/lib/apt/lists/* \
+    # Build and install vobsub2srt from source (not available in Debian repos)
+    && git clone https://github.com/ruediger/VobSub2SRT.git /tmp/vobsub2srt \
+    && cd /tmp/vobsub2srt \
+    && mkdir build && cd build \
+    && cmake -DCMAKE_BUILD_TYPE=Release .. \
+    && make \
+    && make install \
+    && cd / && rm -rf /tmp/vobsub2srt \
+    # Remove build dependencies to reduce image size
+    && apt-get purge -y --auto-remove \
+        build-essential \
+        cmake \
+        git \
+        libtesseract-dev \
+        libleptonica-dev \
+        libavformat-dev \
+        libavcodec-dev \
+        libavutil-dev \
+        libswscale-dev \
     && rm -rf /var/lib/apt/lists/*
-
-# Build and install vobsub2srt from source (not available in Debian repos)
-RUN git clone https://github.com/ruediger/VobSub2SRT.git /tmp/vobsub2srt && \
-    cd /tmp/vobsub2srt && \
-    mkdir build && cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Release .. && \
-    make && \
-    make install && \
-    cd / && rm -rf /tmp/vobsub2srt
 
 # Install pgsrip from source
 # Note: pgsrip is a Python tool, use --break-system-packages for Docker container
