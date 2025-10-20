@@ -4,6 +4,7 @@ using System.IO.Abstractions;
 using EpisodeIdentifier.Core.Interfaces;
 using EpisodeIdentifier.Core.Services;
 using EpisodeIdentifier.Core.Services.Hashing;
+using EpisodeIdentifier.Core.Models.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EpisodeIdentifier.Core.Extensions;
@@ -47,20 +48,44 @@ public static class ServiceCollectionExtensions
         services.AddScoped<EnhancedPgsToTextConverter>();
         services.AddScoped<VideoTextSubtitleExtractor>();
 
+        // DVD subtitle (VobSub) support (Feature 012)
+        services.AddScoped<IVobSubExtractor>(provider =>
+            new VobSubExtractor(provider.GetRequiredService<ILogger<VobSubExtractor>>()));
+        services.AddScoped<IVobSubOcrService>(provider =>
+            new VobSubOcrService(provider.GetRequiredService<ILogger<VobSubOcrService>>()));
+
         // Text subtitle parsing support (optional but useful for tests)
         services.AddScoped<ISubtitleFormatHandler, SrtFormatHandler>();
         services.AddScoped<ISubtitleFormatHandler, AssFormatHandler>();
         services.AddScoped<ISubtitleFormatHandler, VttFormatHandler>();
         services.AddScoped<ITextSubtitleExtractor, TextSubtitleExtractor>();
 
+        // ML embedding services for semantic similarity matching (Feature 013)
+        services.AddScoped<IModelManager>(provider =>
+        {
+            var config = EmbeddingModelConfiguration.Default;
+            return new ModelManager(provider.GetRequiredService<ILogger<ModelManager>>(), config);
+        });
+        services.AddScoped<IEmbeddingService>(provider =>
+            new EmbeddingService(
+                provider.GetRequiredService<ILogger<EmbeddingService>>(),
+                provider.GetRequiredService<IModelManager>()));
+        services.AddScoped<IVectorSearchService>(provider =>
+            new VectorSearchService(
+                provider.GetRequiredService<ILogger<VectorSearchService>>(),
+                ":memory:")); // Use in-memory for tests, override in production
+
         // Hashing and matching
         services.AddScoped<SubtitleNormalizationService>();
         services.AddScoped<FuzzyHashService>(provider =>
-            new FuzzyHashService(
+        {
+            var embeddingService = provider.GetRequiredService<IEmbeddingService>();
+            return new FuzzyHashService(
                 ":memory:", // isolated, in-memory DB for tests and lightweight scenarios
                 provider.GetRequiredService<ILogger<FuzzyHashService>>(),
-                provider.GetRequiredService<SubtitleNormalizationService>()
-            ));
+                provider.GetRequiredService<SubtitleNormalizationService>(),
+                embeddingService);
+        });
 
         // CTPH hashing (enhanced pipeline)
         services.AddScoped<ICTPhHashingService, CTPhHashingService>();
