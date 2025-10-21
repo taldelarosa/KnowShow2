@@ -40,7 +40,8 @@ public class EmbeddingService : IEmbeddingService, IDisposable
             throw new ArgumentException("Text cannot be empty or whitespace", nameof(cleanText));
         }
 
-        EnsureModelInitialized();
+        // Initialize model synchronously (uses async internally)
+        EnsureModelInitializedAsync().GetAwaiter().GetResult();
 
         var stopwatch = Stopwatch.StartNew();
         _logger.LogDebug("Generating embedding for text ({Length} chars)", cleanText.Length);
@@ -152,11 +153,11 @@ public class EmbeddingService : IEmbeddingService, IDisposable
         return _modelManager.GetModelInfo();
     }
 
-    private void EnsureModelInitialized()
+    private async Task EnsureModelInitializedAsync()
     {
         if (_isInitialized) return;
 
-        _initLock.Wait();
+        await _initLock.WaitAsync();
         try
         {
             if (_isInitialized) return;
@@ -164,7 +165,7 @@ public class EmbeddingService : IEmbeddingService, IDisposable
             _logger.LogInformation("Initializing ONNX Runtime session...");
 
             // Ensure model is downloaded and available
-            _modelManager.EnsureModelAvailable().Wait();
+            await _modelManager.EnsureModelAvailable();
 
             var modelInfo = _modelManager.GetModelInfo();
             if (modelInfo == null)
@@ -177,18 +178,12 @@ public class EmbeddingService : IEmbeddingService, IDisposable
             sessionOptions.GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL;
 
             _session = new InferenceSession(modelInfo.ModelPath, sessionOptions);
-            // Load tokenizer from vocab.txt with explicit special tokens
+
+            // Load tokenizer from vocab.txt (WordPiece/BERT format)
             _logger.LogInformation("Loading BERT tokenizer from {TokenizerPath}", modelInfo.TokenizerPath);
 
             // all-MiniLM-L6-v2 uses WordPiece tokenization with standard BERT special tokens
-            var options = new BertOptions
-            {
-                UnknownToken = "[UNK]",
-                SeparatorToken = "[SEP]",
-                ClassificationToken = "[CLS]"
-            };
-
-            _tokenizer = BertTokenizer.CreateAsync(modelInfo.TokenizerPath, options).GetAwaiter().GetResult();
+            _tokenizer = await BertTokenizer.CreateAsync(modelInfo.TokenizerPath);
 
             _isInitialized = true;
             _logger.LogInformation("ONNX Runtime session initialized successfully");
