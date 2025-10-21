@@ -9,7 +9,19 @@ public class AppConfig
     /// Matching thresholds for different subtitle types.
     /// </summary>
     [JsonPropertyName("matchingThresholds")]
-    public MatchingThresholds? MatchingThresholds { get; set; }
+    public MatchingThresholds? MatchingThresholds { get; set; } = new();
+
+    /// <summary>
+    /// Matching strategy selection: "embedding", "fuzzy", or "hybrid".
+    /// </summary>
+    [JsonPropertyName("matchingStrategy")]
+    public string MatchingStrategy { get; set; } = "embedding";
+
+    /// <summary>
+    /// Embedding-based match thresholds for different subtitle formats.
+    /// </summary>
+    [JsonPropertyName("embeddingThresholds")]
+    public EmbeddingMatchThresholds? EmbeddingThresholds { get; set; } = new();
 
     /// <summary>
     /// [DEPRECATED] Use MatchingThresholds.TextBased.MatchConfidence instead.
@@ -21,11 +33,11 @@ public class AppConfig
 
     /// <summary>
     /// [DEPRECATED] Use MatchingThresholds.TextBased.RenameConfidence instead.
-    /// Minimum confidence threshold required for automatic file renaming (default: 0.85)
+    /// Minimum confidence threshold required for automatic file renaming (default: 0.50)
     /// </summary>
     [Obsolete("Use MatchingThresholds.TextBased.RenameConfidence instead. This property will be removed in a future version.")]
     [JsonPropertyName("renameConfidenceThreshold")]
-    public double RenameConfidenceThreshold { get; set; } = 0.85;
+    public double RenameConfidenceThreshold { get; set; } = 0.50;
 
     /// <summary>
     /// Regex patterns for parsing series/season/episode/episode name from filenames
