@@ -36,7 +36,7 @@ public class SubtitleTypeThresholds
     /// For CTPH hashing, this is calculated from the fuzzy hash similarity (0-100) divided by 100.
     /// </summary>
     [Range(0.0, 1.0)]
-    public decimal MatchConfidence { get; set; }
+    public decimal MatchConfidence { get; set; } = 0.7m;
 
     /// <summary>
     /// Minimum confidence threshold for file renaming (0.0-1.0).
@@ -44,7 +44,7 @@ public class SubtitleTypeThresholds
     /// Only matches above this threshold will trigger automatic file renaming.
     /// </summary>
     [Range(0.0, 1.0)]
-    public decimal RenameConfidence { get; set; }
+    public decimal RenameConfidence { get; set; } = 0.8m;
 
     /// <summary>
     /// Minimum fuzzy hash similarity score for matches (0-100).
@@ -54,7 +54,7 @@ public class SubtitleTypeThresholds
     /// Lower values mean more lenient matching (more potential matches, but may include false positives).
     /// </summary>
     [Range(0, 100)]
-    public int FuzzyHashSimilarity { get; set; }
+    public int FuzzyHashSimilarity { get; set; } = 70;
 }
 
 /// <summary>
@@ -66,26 +66,41 @@ public class MatchingThresholds
     /// <summary>
     /// Thresholds for text-based subtitles (SRT, ASS, WebVTT).
     /// These are the most accurate and should have the highest thresholds.
-    /// Recommended: MatchConfidence=0.7, RenameConfidence=0.8, FuzzyHashSimilarity=70
+    /// Recommended: MatchConfidence=0.7, RenameConfidence=0.5, FuzzyHashSimilarity=70
     /// </summary>
     [Required]
-    public SubtitleTypeThresholds TextBased { get; set; } = new();
+    public SubtitleTypeThresholds TextBased { get; set; } = new() 
+    {
+        MatchConfidence = 0.7m,
+        RenameConfidence = 0.5m,
+        FuzzyHashSimilarity = 70
+    };
 
     /// <summary>
     /// Thresholds for PGS (Presentation Graphic Stream) subtitles.
     /// These require OCR and may have some errors.
-    /// Recommended: MatchConfidence=0.6, RenameConfidence=0.7, FuzzyHashSimilarity=60
+    /// Recommended: MatchConfidence=0.6, RenameConfidence=0.5, FuzzyHashSimilarity=60
     /// </summary>
     [Required]
-    public SubtitleTypeThresholds PGS { get; set; } = new();
+    public SubtitleTypeThresholds PGS { get; set; } = new()
+    {
+        MatchConfidence = 0.6m,
+        RenameConfidence = 0.5m,
+        FuzzyHashSimilarity = 60
+    };
 
     /// <summary>
     /// Thresholds for DVD/VobSub subtitles.
     /// These require OCR and typically have lower quality.
-    /// Recommended: MatchConfidence=0.5, RenameConfidence=0.6, FuzzyHashSimilarity=50
+    /// Recommended: MatchConfidence=0.5, RenameConfidence=0.5, FuzzyHashSimilarity=50
     /// </summary>
     [Required]
-    public SubtitleTypeThresholds VobSub { get; set; } = new();
+    public SubtitleTypeThresholds VobSub { get; set; } = new()
+    {
+        MatchConfidence = 0.5m,
+        RenameConfidence = 0.5m,
+        FuzzyHashSimilarity = 50
+    };
 
     /// <summary>
     /// Get the appropriate thresholds for a given subtitle type.

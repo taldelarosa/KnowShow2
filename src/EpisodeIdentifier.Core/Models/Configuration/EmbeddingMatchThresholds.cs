@@ -14,7 +14,7 @@ public class EmbeddingMatchThresholds
     {
         EmbedSimilarity = 0.85,
         MatchConfidence = 0.70,
-        RenameConfidence = 0.80
+        RenameConfidence = 0.50
     };
 
     /// <summary>
@@ -24,7 +24,7 @@ public class EmbeddingMatchThresholds
     {
         EmbedSimilarity = 0.80,
         MatchConfidence = 0.60,
-        RenameConfidence = 0.70
+        RenameConfidence = 0.50
     };
 
     /// <summary>
@@ -34,7 +34,7 @@ public class EmbeddingMatchThresholds
     {
         EmbedSimilarity = 0.75,
         MatchConfidence = 0.50,
-        RenameConfidence = 0.60
+        RenameConfidence = 0.50
     };
 
     /// <summary>

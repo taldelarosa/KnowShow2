@@ -170,16 +170,35 @@ public class VideoFileProcessingService : IVideoFileProcessingService
                 filePath);
             result.IdentificationResult = identificationResult;
 
-            // Get the appropriate rename threshold based on actual subtitle type
-            var renameThreshold = actualSubtitleType switch
+            // Get the appropriate rename threshold based on actual subtitle type and matching strategy
+            decimal? renameThreshold = null;
+            
+            // Check if using embedding-based matching
+            if (identificationResult.MatchingMethod?.Equals("Embedding", StringComparison.OrdinalIgnoreCase) == true)
+            
+            {
+                // Use EmbeddingThresholds for embedding-based matches
+                renameThreshold = actualSubtitleType switch
+                {
+                    SubtitleType.TextBased => (decimal?)_configService.Config.EmbeddingThresholds?.TextBased.RenameConfidence,
+                    SubtitleType.PGS => (decimal?)_configService.Config.EmbeddingThresholds?.Pgs.RenameConfidence,
+                    SubtitleType.VobSub => (decimal?)_configService.Config.EmbeddingThresholds?.VobSub.RenameConfidence,
+                    _ => (decimal?)_configService.Config.EmbeddingThresholds?.TextBased.RenameConfidence
+                };
+            }
+            
+            // Fallback to fuzzy hash MatchingThresholds if embedding threshold not found
+            renameThreshold ??= actualSubtitleType switch
             {
                 SubtitleType.TextBased => _configService.Config.MatchingThresholds?.TextBased.RenameConfidence,
                 SubtitleType.PGS => _configService.Config.MatchingThresholds?.PGS.RenameConfidence,
                 SubtitleType.VobSub => _configService.Config.MatchingThresholds?.VobSub.RenameConfidence,
                 _ => _configService.Config.MatchingThresholds?.TextBased.RenameConfidence
-            }
+            };
+            
+            // Final fallback to legacy config value
 #pragma warning disable CS0618 // Type or member is obsolete
-            ?? (decimal)_configService.Config.RenameConfidenceThreshold;
+            renameThreshold ??= (decimal)_configService.Config.RenameConfidenceThreshold;
 #pragma warning restore CS0618
 
             // Log configuration info for debugging

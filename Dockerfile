@@ -62,7 +62,7 @@ RUN apt-get update && apt-get install -y \
     && cd /tmp \
     && git clone https://github.com/ruediger/VobSub2SRT.git \
     && cd VobSub2SRT \
-    # Fetch and apply PR #101 (Tesseract 4 support)
+    # Fetch and apply PR #101 (Tesseract 4/5 support)
     && curl -L https://patch-diff.githubusercontent.com/raw/ruediger/VobSub2SRT/pull/101.patch | git apply \
     && mkdir build \
     && cd build \
