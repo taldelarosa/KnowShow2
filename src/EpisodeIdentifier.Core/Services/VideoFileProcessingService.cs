@@ -174,8 +174,8 @@ public class VideoFileProcessingService : IVideoFileProcessingService
             decimal? renameThreshold = null;
             
             // Check if using embedding-based matching
-            if (identificationResult.MatchingMethod?.Equals("Embedding", StringComparison.OrdinalIgnoreCase) == true ||
-                identificationResult.MatchingMethod?.Equals("embedding", StringComparison.OrdinalIgnoreCase) == true)
+            if (identificationResult.MatchingMethod?.Equals("Embedding", StringComparison.OrdinalIgnoreCase) == true)
+            
             {
                 // Use EmbeddingThresholds for embedding-based matches
                 renameThreshold = actualSubtitleType switch
