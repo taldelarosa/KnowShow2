@@ -26,10 +26,11 @@ public class EmbeddingModelConfiguration
     /// <summary>
     /// URL to download the tokenizer configuration file.
     /// Must be compatible with the model (typically from same repository).
+    /// For BERT/WordPiece models, this should point to vocab.txt.
     /// </summary>
     [Required]
     [Url]
-    public string TokenizerUrl { get; set; } = "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json";
+    public string TokenizerUrl { get; set; } = "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/vocab.txt";
 
     /// <summary>
     /// SHA256 hash of the model file for integrity verification.
@@ -67,7 +68,7 @@ public class EmbeddingModelConfiguration
     {
         Name = "all-MiniLM-L6-v2",
         ModelUrl = "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx",
-        TokenizerUrl = "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer.json",
+        TokenizerUrl = "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/vocab.txt",
         ModelSha256 = "SKIP", // Skip verification for default config
         TokenizerSha256 = "SKIP",
         Dimensions = 384,
