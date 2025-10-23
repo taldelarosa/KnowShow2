@@ -247,5 +247,5 @@ public class ModelManager : IModelManager
     }
 
     private string GetModelPath() => Path.Combine(_modelCacheDirectory, "model.onnx");
-    private string GetTokenizerPath() => Path.Combine(_modelCacheDirectory, "tokenizer.json");
+    private string GetTokenizerPath() => Path.Combine(_modelCacheDirectory, "vocab.txt");
 }

@@ -55,12 +55,45 @@ public class VectorSearchService : IVectorSearchService
         {
             using var connection = new SqliteConnection($"Data Source={_databasePath}");
             connection.Open();
+            
+            // Load vectorlite extension on this connection
+            LoadVectorliteOnConnection(connection);
 
-            // Query vector index for similar embeddings
+            // Create temporary table to hold query embedding
+            // This is a workaround because vectorlite's vector_distance doesn't work well with parameters
+            using (var tempTableCmd = connection.CreateCommand())
+            {
+                tempTableCmd.CommandText = @"
+                    CREATE TEMP TABLE IF NOT EXISTS query_embedding (
+                        embedding BLOB
+                    )";
+                tempTableCmd.ExecuteNonQuery();
+            }
+            
+            // Clear and insert query embedding
+            using (var clearCmd = connection.CreateCommand())
+            {
+                clearCmd.CommandText = "DELETE FROM query_embedding";
+                clearCmd.ExecuteNonQuery();
+            }
+            
+            using (var insertCmd = connection.CreateCommand())
+            {
+                insertCmd.CommandText = "INSERT INTO query_embedding (embedding) VALUES (@embedding)";
+                insertCmd.Parameters.AddWithValue("@embedding", SerializeEmbedding(queryEmbedding));
+                insertCmd.ExecuteNonQuery();
+            }
+            
+            _logger.LogInformation("Query embedding inserted into temp table");
+
+            // Query vector index for similar embeddings using CTE to avoid redundant subquery execution
             // Vectorlite uses: vector_distance(vector1, vector2, distance_type)
             // distance_type: 'cosine' for cosine distance, 'l2' for Euclidean
             // Cosine similarity = 1 - cosine distance
             var query = @"
+                WITH qe AS (
+                    SELECT embedding FROM query_embedding LIMIT 1
+                )
                 SELECT 
                     sh.Id,
                     sh.Series,
@@ -68,24 +101,43 @@ public class VectorSearchService : IVectorSearchService
                     sh.Episode,
                     sh.EpisodeName,
                     sh.SubtitleSourceFormat,
-                    (1.0 - vector_distance(sh.Embedding, @queryEmbedding, 'cosine')) as Similarity
+                    (1.0 - vector_distance(qe.embedding, sh.Embedding, 'cosine')) as Similarity
                 FROM SubtitleHashes sh
+                CROSS JOIN qe
                 WHERE sh.Embedding IS NOT NULL
-                    AND (1.0 - vector_distance(sh.Embedding, @queryEmbedding, 'cosine')) >= @minSimilarity
+                    AND (1.0 - vector_distance(qe.embedding, sh.Embedding, 'cosine')) >= @minSimilarity
                 ORDER BY Similarity DESC
                 LIMIT @topK";
 
             using var command = connection.CreateCommand();
             command.CommandText = query;
-            command.Parameters.AddWithValue("@queryEmbedding", SerializeEmbedding(queryEmbedding));
             command.Parameters.AddWithValue("@minSimilarity", minSimilarity);
             command.Parameters.AddWithValue("@topK", topK);
 
-            using var reader = command.ExecuteReader();
-            int rank = 1;
-
-            while (reader.Read())
+            _logger.LogInformation("Executing query: {Query}", query);
+            _logger.LogInformation("Parameters: minSimilarity={MinSim}, topK={TopK}", minSimilarity, topK);
+            _logger.LogInformation("About to execute reader...");
+            
+            SqliteDataReader reader;
+            try
             {
+                reader = command.ExecuteReader();
+                _logger.LogInformation("Reader created successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to execute reader: {Message}", ex.Message);
+                throw;
+            }
+            
+            using (reader)
+            {
+                int rank = 1;
+                
+                _logger.LogInformation("Query executed successfully, reading results...");
+
+                while (reader.Read())
+                {
                 var similarity = reader.GetDouble(reader.GetOrdinal("Similarity"));
                 var distance = 1.0 - similarity;
 
@@ -111,8 +163,10 @@ public class VectorSearchService : IVectorSearchService
 
                 results.Add(result);
             }
-
+            
             _logger.LogInformation("Found {Count} similar subtitles", results.Count);
+            } // end using reader
+            
             return results;
         }
         catch (Exception ex)
@@ -275,6 +329,22 @@ public class VectorSearchService : IVectorSearchService
         finally
         {
             _loadLock.Release();
+        }
+    }
+    
+    private void LoadVectorliteOnConnection(SqliteConnection connection)
+    {
+        if (!_vectorliteLoaded) return;
+        
+        try
+        {
+            var extensionPath = GetVectorliteExtensionPath();
+            connection.EnableExtensions(true);
+            connection.LoadExtension(extensionPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load vectorlite on connection: {Error}", ex.Message);
         }
     }
 
