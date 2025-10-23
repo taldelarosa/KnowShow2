@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # Paths
-SUBTITLE_DIR="/mnt/void_subtitles/Criminal Minds"
+SUBTITLE_DIR="/mnt/void_subtitles/subtitles/Criminal Minds"
 APP_DLL="./src/EpisodeIdentifier.Core/bin/Release/net8.0/EpisodeIdentifier.Core.dll"
 HASH_DB="./production_hashes.db"
 LOG_FILE="./criminal_minds_import_$(date +%Y%m%d_%H%M%S).log"
