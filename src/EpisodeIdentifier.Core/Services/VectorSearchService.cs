@@ -60,7 +60,8 @@ public class VectorSearchService : IVectorSearchService
             LoadVectorliteOnConnection(connection);
 
             // Create temporary table to hold query embedding
-            // This is a workaround because vectorlite's vector_distance doesn't work well with parameters
+            // This is a workaround because vectorlite's vector_distance() cannot accept BLOB parameters directly.
+            // The function requires the vector data to be provided inline or from a table column, not as a bound parameter.
             using (var tempTableCmd = connection.CreateCommand())
             {
                 tempTableCmd.CommandText = @"
