@@ -113,7 +113,7 @@ public class VectorSearchService : IVectorSearchService
 
             _logger.LogInformation("Executing query: {Query}", query);
             _logger.LogInformation("Parameters: minSimilarity={MinSim}, topK={TopK}", minSimilarity, topK);
-            _logger.LogInformation("About to execute reader...");
+            _logger.LogDebug("About to execute reader...");
             
             SqliteDataReader reader;
             try
