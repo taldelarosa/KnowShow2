@@ -60,8 +60,7 @@ public class VectorSearchService : IVectorSearchService
             LoadVectorliteOnConnection(connection);
 
             // Create temporary table to hold query embedding
-            // This is a workaround because vectorlite's vector_distance() cannot accept BLOB parameters directly.
-            // The function requires the vector data to be provided inline or from a table column, not as a bound parameter.
+            // This is a workaround because vectorlite's vector_distance doesn't work well with parameters
             using (var tempTableCmd = connection.CreateCommand())
             {
                 tempTableCmd.CommandText = @"
@@ -87,11 +86,14 @@ public class VectorSearchService : IVectorSearchService
             
             _logger.LogInformation("Query embedding inserted into temp table");
 
-            // Query vector index for similar embeddings using the temp table
+            // Query vector index for similar embeddings using CTE to avoid redundant subquery execution
             // Vectorlite uses: vector_distance(vector1, vector2, distance_type)
             // distance_type: 'cosine' for cosine distance, 'l2' for Euclidean
             // Cosine similarity = 1 - cosine distance
             var query = @"
+                WITH qe AS (
+                    SELECT embedding FROM query_embedding LIMIT 1
+                )
                 SELECT 
                     sh.Id,
                     sh.Series,
@@ -99,10 +101,11 @@ public class VectorSearchService : IVectorSearchService
                     sh.Episode,
                     sh.EpisodeName,
                     sh.SubtitleSourceFormat,
-                    (1.0 - vector_distance((SELECT embedding FROM query_embedding LIMIT 1), sh.Embedding, 'cosine')) as Similarity
+                    (1.0 - vector_distance(qe.embedding, sh.Embedding, 'cosine')) as Similarity
                 FROM SubtitleHashes sh
+                CROSS JOIN qe
                 WHERE sh.Embedding IS NOT NULL
-                    AND (1.0 - vector_distance((SELECT embedding FROM query_embedding LIMIT 1), sh.Embedding, 'cosine')) >= @minSimilarity
+                    AND (1.0 - vector_distance(qe.embedding, sh.Embedding, 'cosine')) >= @minSimilarity
                 ORDER BY Similarity DESC
                 LIMIT @topK";
 
@@ -113,7 +116,7 @@ public class VectorSearchService : IVectorSearchService
 
             _logger.LogInformation("Executing query: {Query}", query);
             _logger.LogInformation("Parameters: minSimilarity={MinSim}, topK={TopK}", minSimilarity, topK);
-            _logger.LogDebug("About to execute reader...");
+            _logger.LogInformation("About to execute reader...");
             
             SqliteDataReader reader;
             try
