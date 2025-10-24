@@ -15,11 +15,18 @@ public interface IVectorSearchService
     /// <param name="queryEmbedding">384-dimensional query embedding to search for</param>
     /// <param name="topK">Number of top results to return (default: 10)</param>
     /// <param name="minSimilarity">Minimum similarity threshold (0.0-1.0) to include in results</param>
+    /// <param name="seriesFilter">Optional series name to filter results (case-insensitive)</param>
+    /// <param name="seasonFilter">Optional season string (e.g., "09") to filter results</param>
     /// <returns>List of matching subtitles ordered by similarity (highest first)</returns>
     /// <exception cref="ArgumentNullException">Thrown when queryEmbedding is null</exception>
     /// <exception cref="ArgumentException">Thrown when queryEmbedding is not 384 dimensions or topK is invalid</exception>
     /// <exception cref="InvalidOperationException">Thrown when vectorlite extension not loaded</exception>
-    List<VectorSimilarityResult> SearchBySimilarity(float[] queryEmbedding, int topK = 10, double minSimilarity = 0.0);
+    List<VectorSimilarityResult> SearchBySimilarity(
+        float[] queryEmbedding, 
+        int topK = 10, 
+        double minSimilarity = 0.0,
+        string? seriesFilter = null,
+        string? seasonFilter = null);
 
     /// <summary>
     /// Check if vectorlite SQLite extension is loaded and operational.

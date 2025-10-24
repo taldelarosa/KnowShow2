@@ -394,32 +394,24 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
             var effectiveMinSimilarity = minConfidence ?? threshold.EmbedSimilarity;
 
             // Search for similar embeddings
-            _logger.LogDebug("Searching for similar embeddings - Operation: {OperationId}, MinSimilarity: {MinSimilarity}, TopK: 10",
-                operationId, effectiveMinSimilarity);
+            _logger.LogDebug("Searching for similar embeddings - Operation: {OperationId}, MinSimilarity: {MinSimilarity}, TopK: 10, SeriesFilter: {SeriesFilter}, SeasonFilter: {SeasonFilter}",
+                operationId, effectiveMinSimilarity, seriesFilter ?? "none", seasonFilter?.ToString() ?? "none");
 
             var searchStartTime = stopwatch.ElapsedMilliseconds;
+            
+            // Convert seasonFilter int to string (without zero-padding to match database format)
+            string? seasonFilterString = seasonFilter.HasValue ? seasonFilter.Value.ToString() : null;
+            
             var results = _vectorSearchService.SearchBySimilarity(
                 queryEmbedding,
                 topK: 10,
-                minSimilarity: effectiveMinSimilarity);
+                minSimilarity: effectiveMinSimilarity,
+                seriesFilter: seriesFilter,
+                seasonFilter: seasonFilterString);
             var searchDuration = stopwatch.ElapsedMilliseconds - searchStartTime;
 
             _logger.LogDebug("Vector search completed - Operation: {OperationId}, ResultCount: {ResultCount}, Duration: {Duration}ms",
                 operationId, results.Count, searchDuration);
-
-            // Filter by series/season if provided
-            if (!string.IsNullOrEmpty(seriesFilter))
-            {
-                results = results.Where(r =>
-                    r.Series.Equals(seriesFilter, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-
-                if (seasonFilter.HasValue)
-                {
-                    var seasonString = seasonFilter.Value.ToString("D2");
-                    results = results.Where(r => r.Season == seasonString).ToList();
-                }
-            }
 
             if (results.Count == 0)
             {

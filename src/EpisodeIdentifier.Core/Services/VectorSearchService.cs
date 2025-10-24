@@ -27,7 +27,9 @@ public class VectorSearchService : IVectorSearchService
     public List<VectorSimilarityResult> SearchBySimilarity(
         float[] queryEmbedding,
         int topK = 10,
-        double minSimilarity = 0.0)
+        double minSimilarity = 0.0,
+        string? seriesFilter = null,
+        string? seasonFilter = null)
     {
         if (queryEmbedding == null)
         {
@@ -86,11 +88,30 @@ public class VectorSearchService : IVectorSearchService
             
             _logger.LogInformation("Query embedding inserted into temp table");
 
+            // Build WHERE clause with optional series/season filters
+            var whereConditions = new List<string>
+            {
+                "sh.Embedding IS NOT NULL",
+                "(1.0 - vector_distance(qe.embedding, sh.Embedding, 'cosine')) >= @minSimilarity"
+            };
+
+            if (!string.IsNullOrEmpty(seriesFilter))
+            {
+                whereConditions.Add("LOWER(sh.Series) = LOWER(@seriesFilter)");
+            }
+
+            if (!string.IsNullOrEmpty(seasonFilter))
+            {
+                whereConditions.Add("sh.Season = @seasonFilter");
+            }
+
+            var whereClause = string.Join(" AND ", whereConditions);
+
             // Query vector index for similar embeddings using CTE to avoid redundant subquery execution
             // Vectorlite uses: vector_distance(vector1, vector2, distance_type)
             // distance_type: 'cosine' for cosine distance, 'l2' for Euclidean
             // Cosine similarity = 1 - cosine distance
-            var query = @"
+            var query = $@"
                 WITH qe AS (
                     SELECT embedding FROM query_embedding LIMIT 1
                 )
@@ -104,8 +125,7 @@ public class VectorSearchService : IVectorSearchService
                     (1.0 - vector_distance(qe.embedding, sh.Embedding, 'cosine')) as Similarity
                 FROM SubtitleHashes sh
                 CROSS JOIN qe
-                WHERE sh.Embedding IS NOT NULL
-                    AND (1.0 - vector_distance(qe.embedding, sh.Embedding, 'cosine')) >= @minSimilarity
+                WHERE {whereClause}
                 ORDER BY Similarity DESC
                 LIMIT @topK";
 
@@ -113,9 +133,20 @@ public class VectorSearchService : IVectorSearchService
             command.CommandText = query;
             command.Parameters.AddWithValue("@minSimilarity", minSimilarity);
             command.Parameters.AddWithValue("@topK", topK);
+            
+            if (!string.IsNullOrEmpty(seriesFilter))
+            {
+                command.Parameters.AddWithValue("@seriesFilter", seriesFilter);
+            }
+            
+            if (!string.IsNullOrEmpty(seasonFilter))
+            {
+                command.Parameters.AddWithValue("@seasonFilter", seasonFilter);
+            }
 
             _logger.LogInformation("Executing query: {Query}", query);
-            _logger.LogInformation("Parameters: minSimilarity={MinSim}, topK={TopK}", minSimilarity, topK);
+            _logger.LogInformation("Parameters: minSimilarity={MinSim}, topK={TopK}, seriesFilter={SeriesFilter}, seasonFilter={SeasonFilter}", 
+                minSimilarity, topK, seriesFilter ?? "null", seasonFilter ?? "null");
             _logger.LogInformation("About to execute reader...");
             
             SqliteDataReader reader;
