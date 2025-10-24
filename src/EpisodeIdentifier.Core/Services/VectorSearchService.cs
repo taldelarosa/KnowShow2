@@ -102,7 +102,8 @@ public class VectorSearchService : IVectorSearchService
 
             if (!string.IsNullOrEmpty(seasonFilter))
             {
-                whereConditions.Add("sh.Season = @seasonFilter");
+                // Match season with or without leading zero (e.g., "9" matches both "9" and "09")
+                whereConditions.Add("(sh.Season = @seasonFilter OR sh.Season = @seasonFilterPadded)");
             }
 
             var whereClause = string.Join(" AND ", whereConditions);
@@ -142,6 +143,17 @@ public class VectorSearchService : IVectorSearchService
             if (!string.IsNullOrEmpty(seasonFilter))
             {
                 command.Parameters.AddWithValue("@seasonFilter", seasonFilter);
+                // Also add zero-padded version (e.g., "9" -> "09")
+                int seasonNum;
+                if (int.TryParse(seasonFilter, out seasonNum))
+                {
+                    command.Parameters.AddWithValue("@seasonFilterPadded", seasonNum.ToString("D2"));
+                }
+                else
+                {
+                    // If not a number, just use the same value for both
+                    command.Parameters.AddWithValue("@seasonFilterPadded", seasonFilter);
+                }
             }
 
             _logger.LogInformation("Executing query: {Query}", query);
