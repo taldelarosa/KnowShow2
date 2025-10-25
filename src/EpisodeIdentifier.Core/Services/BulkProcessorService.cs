@@ -734,7 +734,7 @@ public class BulkProcessorService : IBulkProcessor
             await semaphore.WaitAsync(cancellationToken);
             try
             {
-                await ProcessSingleFileAsync(request.RequestId, filePath, result, cancellationToken);
+                await ProcessSingleFileAsync(request.RequestId, filePath, result, request.Options, cancellationToken);
             }
             finally
             {
@@ -748,7 +748,7 @@ public class BulkProcessorService : IBulkProcessor
     /// <summary>
     /// Processes a single file with comprehensive error handling and categorization.
     /// </summary>
-    private async Task ProcessSingleFileAsync(string requestId, string filePath, BulkProcessingResult result, CancellationToken cancellationToken)
+    private async Task ProcessSingleFileAsync(string requestId, string filePath, BulkProcessingResult result, BulkProcessingOptions options, CancellationToken cancellationToken)
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var fileResult = new FileProcessingResult
@@ -783,7 +783,7 @@ public class BulkProcessorService : IBulkProcessor
                 await ValidateFileForProcessingAsync(filePath, cancellationToken);
 
                 // Main processing logic
-                await ProcessFileWithTimeoutAsync(filePath, requestId, fileResult, cancellationToken);
+                await ProcessFileWithTimeoutAsync(filePath, requestId, fileResult, options, cancellationToken);
 
                 // Post-processing validation
                 await ValidateProcessingResultAsync(filePath, cancellationToken);
@@ -899,7 +899,7 @@ public class BulkProcessorService : IBulkProcessor
     /// <summary>
     /// Processes a file with configurable timeout support.
     /// </summary>
-    private async Task ProcessFileWithTimeoutAsync(string filePath, string requestId, FileProcessingResult fileResult, CancellationToken cancellationToken)
+    private async Task ProcessFileWithTimeoutAsync(string filePath, string requestId, FileProcessingResult fileResult, BulkProcessingOptions options, CancellationToken cancellationToken)
     {
         // Get timeout from progress tracker if available
         var progress = _progressTracker.GetProgress(requestId);
@@ -914,7 +914,7 @@ public class BulkProcessorService : IBulkProcessor
 
             try
             {
-                await ProcessFileWithIdentificationAsync(filePath, fileResult, timeoutCts.Token);
+                await ProcessFileWithIdentificationAsync(filePath, fileResult, options, timeoutCts.Token);
             }
             catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
             {
@@ -923,7 +923,7 @@ public class BulkProcessorService : IBulkProcessor
         }
         else
         {
-            await ProcessFileWithIdentificationAsync(filePath, fileResult, cancellationToken);
+            await ProcessFileWithIdentificationAsync(filePath, fileResult, options, cancellationToken);
         }
     }
 
@@ -1002,17 +1002,20 @@ public class BulkProcessorService : IBulkProcessor
     /// <summary>
     /// Processes a file with actual episode identification and optional renaming.
     /// </summary>
-    private async Task ProcessFileWithIdentificationAsync(string filePath, FileProcessingResult fileResult, CancellationToken cancellationToken)
+    private async Task ProcessFileWithIdentificationAsync(string filePath, FileProcessingResult fileResult, BulkProcessingOptions options, CancellationToken cancellationToken)
     {
         try
         {
-            _logger.LogDebug("Processing file for episode identification: {FilePath}", filePath);
+            _logger.LogDebug("Processing file for episode identification: {FilePath}, SeriesFilter: {SeriesFilter}, SeasonFilter: {SeasonFilter}",
+                filePath, options.SeriesFilter ?? "none", options.SeasonFilter?.ToString() ?? "none");
 
             // Use the complete video processing service to handle the entire workflow
             var processingResult = await _videoFileProcessingService.ProcessVideoFileAsync(
                 filePath,
                 shouldRename: true, // TODO: Make this configurable based on request options
                 language: null, // TODO: Make this configurable based on request options
+                seriesFilter: options.SeriesFilter,
+                seasonFilter: options.SeasonFilter,
                 cancellationToken: cancellationToken);
 
             // Convert the processing result to the expected format for bulk processing

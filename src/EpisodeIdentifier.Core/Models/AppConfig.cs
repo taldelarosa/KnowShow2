@@ -58,6 +58,13 @@ public class AppConfig
     /// </summary>
     [JsonPropertyName("maxConcurrency")]
     public int MaxConcurrency { get; set; } = 1;
+
+    /// <summary>
+    /// TextRank-based filtering configuration for plot-relevant sentence extraction.
+    /// When enabled, filters subtitle text before embedding generation to improve matching accuracy.
+    /// </summary>
+    [JsonPropertyName("textRankFiltering")]
+    public TextRankConfiguration? TextRankFiltering { get; set; } = new();
 }
 
 public class FilenamePatterns

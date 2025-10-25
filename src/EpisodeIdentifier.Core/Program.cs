@@ -243,7 +243,10 @@ public class Program
         var embeddingService = new EmbeddingService(loggerFactory.CreateLogger<EmbeddingService>(), modelManager);
         var vectorSearchService = new VectorSearchService(loggerFactory.CreateLogger<VectorSearchService>(), hashDb.FullName);
 
-        var hashService = new FuzzyHashService(hashDb.FullName, loggerFactory.CreateLogger<FuzzyHashService>(), normalizationService, embeddingService);
+        // Create TextRank service for plot-relevant sentence extraction (Feature 014)
+        var textRankService = new TextRankService(loggerFactory.CreateLogger<TextRankService>());
+
+        var hashService = new FuzzyHashService(hashDb.FullName, loggerFactory.CreateLogger<FuzzyHashService>(), normalizationService, embeddingService, textRankService, fuzzyHashConfigService);
         var filenameParser = new SubtitleFilenameParser(loggerFactory.CreateLogger<SubtitleFilenameParser>(), legacyConfigService);
         var textExtractor = new VideoTextSubtitleExtractor(loggerFactory.CreateLogger<VideoTextSubtitleExtractor>());
         var filenameService = new FilenameService(legacyConfigService);
@@ -264,7 +267,9 @@ public class Program
             fileSystem,
             enhancedCtphService,
             embeddingService,
-            vectorSearchService);
+            vectorSearchService,
+            hashDb.FullName,
+            textRankService);
 
         try
         {
@@ -276,7 +281,9 @@ public class Program
                 var migrationService = new DatabaseMigrationService(
                     loggerFactory.CreateLogger<DatabaseMigrationService>(),
                     embeddingService,
-                    hashDb.FullName);
+                    hashDb.FullName,
+                    textRankService,
+                    fuzzyHashConfigService);
 
                 var result = await migrationService.MigrateAllEntriesAsync(batchSize: 100);
 
@@ -526,6 +533,8 @@ public class Program
                 bulkProcessingOptions.Recursive = true;
                 bulkProcessingOptions.IncludeExtensions = new List<string> { ".mkv", ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v" };
                 bulkProcessingOptions.ContinueOnError = true;
+                bulkProcessingOptions.SeriesFilter = series;
+                bulkProcessingOptions.SeasonFilter = season;
 
                 var request = new BulkProcessingRequest
                 {

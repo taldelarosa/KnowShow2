@@ -107,6 +107,18 @@ public class BulkProcessingOptions
     public Dictionary<string, object> AdditionalOptions { get; set; } = new();
 
     /// <summary>
+    /// Gets or sets optional series name to filter identification results.
+    /// When specified, only episodes from this series will be considered during identification.
+    /// </summary>
+    public string? SeriesFilter { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional season number to filter identification results.
+    /// Requires SeriesFilter to be specified. When specified, only episodes from this season will be considered.
+    /// </summary>
+    public int? SeasonFilter { get; set; }
+
+    /// <summary>
     /// Creates a new BulkProcessingOptions instance with MaxConcurrency read from configuration.
     /// Uses centralized validation to ensure proper range checking and fallback behavior.
     /// </summary>
