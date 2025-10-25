@@ -1,0 +1,174 @@
+{
+  "contractName": "ITextRankService",
+  "version": "1.0.0",
+  "description": "Service for extracting plot-relevant sentences from subtitle text using TextRank graph-based ranking algorithm",
+  "namespace": "EpisodeIdentifier.Core.Interfaces",
+  "methods": [
+    {
+      "name": "ExtractPlotRelevantSentences",
+      "description": "Extract plot-relevant sentences from subtitle text using TextRank scoring and configurable selection threshold",
+      "parameters": [
+        {
+          "name": "subtitleText",
+          "type": "string",
+          "description": "Full subtitle text to analyze",
+          "constraints": [
+            "Not null",
+            "Not empty"
+          ]
+        },
+        {
+          "name": "sentencePercentage",
+          "type": "int",
+          "description": "Percentage of sentences to select (10-50)",
+          "constraints": [
+            "10 <= value <= 50"
+          ]
+        },
+        {
+          "name": "minSentences",
+          "type": "int",
+          "description": "Absolute minimum sentences required (fallback threshold)",
+          "constraints": [
+            "5 <= value <= 100"
+          ],
+          "default": 15
+        },
+        {
+          "name": "minPercentage",
+          "type": "int",
+          "description": "Minimum percentage of original sentences required (fallback threshold)",
+          "constraints": [
+            "5 <= value <= 50",
+            "value < sentencePercentage"
+          ],
+          "default": 10
+        }
+      ],
+      "returns": {
+        "type": "TextRankExtractionResult",
+        "description": "Extraction result with filtered text and statistics"
+      },
+      "throws": [
+        {
+          "exception": "ArgumentNullException",
+          "condition": "subtitleText is null or empty"
+        },
+        {
+          "exception": "ArgumentOutOfRangeException",
+          "condition": "sentencePercentage, minSentences, or minPercentage outside valid range"
+        }
+      ],
+      "behavior": [
+        "Segments subtitle text into individual sentences",
+        "Builds sentence similarity graph using bag-of-words cosine similarity",
+        "Applies PageRank algorithm to calculate sentence importance scores",
+        "Selects top N% of sentences by score",
+        "If selection < minSentences OR < minPercentage of original: triggers fallback (returns full text)",
+        "Reconstructs selected sentences in original document order",
+        "Returns TextRankExtractionResult with statistics for logging"
+      ]
+    },
+    {
+      "name": "CalculateTextRankScores",
+      "description": "Calculate TextRank importance scores for a list of sentences (for debugging/analysis)",
+      "parameters": [
+        {
+          "name": "sentences",
+          "type": "List<string>",
+          "description": "List of sentences to score",
+          "constraints": [
+            "Not null",
+            "Count >= 2"
+          ]
+        }
+      ],
+      "returns": {
+        "type": "Dictionary<int, double>",
+        "description": "Map of sentence index to TextRank score (0.0-1.0, normalized)"
+      },
+      "throws": [
+        {
+          "exception": "ArgumentNullException",
+          "condition": "sentences is null"
+        },
+        {
+          "exception": "ArgumentException",
+          "condition": "sentences.Count < 2"
+        }
+      ],
+      "behavior": [
+        "Builds sentence similarity graph",
+        "Applies iterative PageRank until convergence",
+        "Normalizes scores to sum to 1.0",
+        "Returns score dictionary indexed by sentence position"
+      ]
+    }
+  ],
+  "dependencies": [
+    "TextRankExtractionResult",
+    "SentenceScore",
+    "TextRankConfiguration"
+  ],
+  "testScenarios": [
+    {
+      "name": "Extract plot-relevant sentences from verbose subtitle",
+      "given": "Subtitle with 500 sentences (300 filler, 200 plot-relevant)",
+      "when": "ExtractPlotRelevantSentences called with 25% threshold",
+      "then": [
+        "Returns ~125 sentences (25% of 500)",
+        "Selected sentences contain key plot points",
+        "FallbackTriggered = false",
+        "AverageScore > 0.5",
+        "ProcessingTimeMs < 1000"
+      ]
+    },
+    {
+      "name": "Trigger fallback for insufficient sentence count",
+      "given": "Subtitle with 50 sentences",
+      "when": "ExtractPlotRelevantSentences called with 25% threshold (would select 12 sentences)",
+      "then": [
+        "Returns full text (50 sentences)",
+        "FallbackTriggered = true",
+        "FallbackReason = 'Selected count (12) below minimum threshold (15)'"
+      ]
+    },
+    {
+      "name": "Trigger fallback for low percentage",
+      "given": "Subtitle with 200 sentences, all with very low TextRank scores",
+      "when": "ExtractPlotRelevantSentences selects only 8 sentences (4%)",
+      "then": [
+        "Returns full text",
+        "FallbackTriggered = true",
+        "FallbackReason = 'Selected percentage (4%) below minimum (10%)'"
+      ]
+    },
+    {
+      "name": "Handle single-sentence subtitle",
+      "given": "Subtitle with only 1 sentence",
+      "when": "ExtractPlotRelevantSentences called",
+      "then": [
+        "Returns original sentence",
+        "FallbackTriggered = true",
+        "FallbackReason = 'Insufficient sentences for TextRank (1 < 2)'"
+      ]
+    },
+    {
+      "name": "Calculate TextRank scores correctly",
+      "given": "List of 10 sentences with varying similarity",
+      "when": "CalculateTextRankScores called",
+      "then": [
+        "Returns dictionary with 10 entries",
+        "All scores between 0.0 and 1.0",
+        "Scores sum to approximately 1.0 (normalized)",
+        "Sentences with more connections have higher scores"
+      ]
+    }
+  ],
+  "performance": {
+    "sentenceSegmentation": "< 10ms for 500 sentences",
+    "graphConstruction": "< 200ms for 500 sentences (O(n²) comparisons)",
+    "pageRankIteration": "< 100ms (converges in ~30 iterations)",
+    "totalProcessing": "< 500ms per subtitle file"
+  }
+}

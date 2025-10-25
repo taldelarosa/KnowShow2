@@ -75,6 +75,10 @@ public static class ServiceCollectionExtensions
                 provider.GetRequiredService<ILogger<VectorSearchService>>(),
                 ":memory:")); // Use in-memory for tests, override in production
 
+        // TextRank filtering service for plot-relevant sentence extraction (Feature 014)
+        services.AddScoped<ITextRankService>(provider =>
+            new TextRankService(provider.GetRequiredService<ILogger<TextRankService>>()));
+
         // Hashing and matching
         services.AddScoped<SubtitleNormalizationService>();
         services.AddScoped<FuzzyHashService>(provider =>

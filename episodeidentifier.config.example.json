@@ -37,6 +37,20 @@
     }
   },
   
+  // TextRank-Based Filtering (Feature 014)
+  // Extracts plot-relevant sentences before embedding generation to improve matching accuracy
+  // Best for verbose subtitles with conversational filler
+  "textRankFiltering": {
+    "enabled": false,                 // Enable/disable TextRank filtering (default: false, opt-in feature)
+    "sentencePercentage": 25,         // Percentage of sentences to select (10-50%, default: 25%)
+    "minSentences": 15,               // Absolute minimum sentences required (5-100, default: 15)
+    "minPercentage": 10,              // Minimum percentage to retain (5-50%, default: 10%)
+    "dampingFactor": 0.85,            // PageRank damping factor (0.5-0.95, default: 0.85)
+    "convergenceThreshold": 0.0001,   // PageRank convergence threshold (0.00001-0.01, default: 0.0001)
+    "maxIterations": 100,             // Maximum PageRank iterations (10-500, default: 100)
+    "similarityThreshold": 0.1        // Minimum sentence similarity for graph edges (0.0-0.5, default: 0.1)
+  },
+  
   // hashingAlgorithm: Algorithm used for content hashing (CTPH recommended)
   "hashingAlgorithm": "CTPH",
   

@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using EpisodeIdentifier.Core.Models;
+using EpisodeIdentifier.Core.Models.Configuration;
 using EpisodeIdentifier.Core.Interfaces;
 using FuzzySharp;
 using System.Text;
@@ -16,18 +17,22 @@ public class FuzzyHashService : IDisposable
     private readonly ILogger<FuzzyHashService> _logger;
     private readonly SubtitleNormalizationService _normalizationService;
     private readonly IEmbeddingService? _embeddingService;
+    private readonly ITextRankService? _textRankService;
+    private readonly IConfigurationService? _configurationService;
     private readonly SqliteConnection? _sharedConnection; // For in-memory databases
     private readonly string _connectionString = string.Empty; // Cached for file-based dbs
     private readonly ConcurrentBag<SqliteConnection> _readConnections = new();
     private readonly SemaphoreSlim? _readConnSemaphore; // gate pooled read connections
     private readonly int _maxReadConnections = 0;
 
-    public FuzzyHashService(string dbPath, ILogger<FuzzyHashService> logger, SubtitleNormalizationService normalizationService, IEmbeddingService? embeddingService = null)
+    public FuzzyHashService(string dbPath, ILogger<FuzzyHashService> logger, SubtitleNormalizationService normalizationService, IEmbeddingService? embeddingService = null, ITextRankService? textRankService = null, IConfigurationService? configurationService = null)
     {
         _dbPath = dbPath;
         _logger = logger;
         _normalizationService = normalizationService;
         _embeddingService = embeddingService;
+        _textRankService = textRankService;
+        _configurationService = configurationService;
 
         // For in-memory databases, keep a shared connection alive
         if (dbPath == ":memory:")
@@ -435,7 +440,38 @@ public class FuzzyHashService : IDisposable
         {
             try
             {
-                var embedding = _embeddingService.GenerateEmbedding(normalized.NoHtmlAndTimecodes);
+                // Apply TextRank filtering if enabled
+                string textForEmbedding = normalized.NoHtmlAndTimecodes;
+                
+                if (_configurationService != null && _textRankService != null)
+                {
+                    var configResult = await _configurationService.LoadConfiguration();
+                    var config = configResult.Configuration;
+                    
+                    if (config?.TextRankFiltering?.Enabled == true)
+                    {
+                        var extractionResult = _textRankService.ExtractPlotRelevantSentences(
+                            normalized.NoHtmlAndTimecodes,
+                            config.TextRankFiltering.SentencePercentage,
+                            config.TextRankFiltering.MinSentences,
+                            config.TextRankFiltering.MinPercentage);
+                        
+                        if (!extractionResult.FallbackTriggered)
+                        {
+                            textForEmbedding = extractionResult.FilteredText;
+                            _logger.LogDebug("TextRank filtering: {Selected}/{Total} sentences for {Series} S{Season}E{Episode}",
+                                extractionResult.SelectedSentenceCount, extractionResult.TotalSentenceCount,
+                                subtitle.Series, subtitle.Season, subtitle.Episode);
+                        }
+                        else
+                        {
+                            _logger.LogDebug("TextRank fallback: {Reason} for {Series} S{Season}E{Episode}",
+                                extractionResult.FallbackReason, subtitle.Series, subtitle.Season, subtitle.Episode);
+                        }
+                    }
+                }
+                
+                var embedding = _embeddingService.GenerateEmbedding(textForEmbedding);
                 embeddingBytes = new byte[embedding.Length * sizeof(float)];
                 Buffer.BlockCopy(embedding, 0, embeddingBytes, 0, embeddingBytes.Length);
                 _logger.LogDebug("Generated {Dimensions}-dim embedding for {Series} S{Season}E{Episode}",

@@ -7,21 +7,28 @@ namespace EpisodeIdentifier.Core.Services;
 /// <summary>
 /// Service for migrating existing SubtitleHashes entries to include ML embeddings.
 /// Batch-generates embeddings for entries that don't have them yet.
+/// Applies TextRank filtering if enabled in configuration.
 /// </summary>
 public class DatabaseMigrationService
 {
     private readonly ILogger<DatabaseMigrationService> _logger;
     private readonly IEmbeddingService _embeddingService;
+    private readonly ITextRankService? _textRankService;
+    private readonly IConfigurationService? _configurationService;
     private readonly string _databasePath;
 
     public DatabaseMigrationService(
         ILogger<DatabaseMigrationService> logger,
         IEmbeddingService embeddingService,
-        string databasePath)
+        string databasePath,
+        ITextRankService? textRankService = null,
+        IConfigurationService? configurationService = null)
     {
         _logger = logger;
         _embeddingService = embeddingService;
         _databasePath = databasePath;
+        _textRankService = textRankService;
+        _configurationService = configurationService;
     }
 
     /// <summary>
@@ -158,9 +165,41 @@ public class DatabaseMigrationService
                 return result;
             }
 
+            // Apply TextRank filtering if enabled
+            var textsForEmbedding = new List<string>();
+            
+            if (_textRankService != null && _configurationService != null)
+            {
+                var configResult = await _configurationService.LoadConfiguration();
+                var config = configResult.Configuration;
+                
+                if (config?.TextRankFiltering?.Enabled == true)
+                {
+                    _logger.LogDebug("Applying TextRank filtering to batch of {Count} entries", entries.Count);
+                    
+                    foreach (var entry in entries)
+                    {
+                        var extractionResult = _textRankService.ExtractPlotRelevantSentences(
+                            entry.CleanText,
+                            config.TextRankFiltering.SentencePercentage,
+                            config.TextRankFiltering.MinSentences,
+                            config.TextRankFiltering.MinPercentage);
+                        
+                        textsForEmbedding.Add(extractionResult.FallbackTriggered ? entry.CleanText : extractionResult.FilteredText);
+                    }
+                }
+                else
+                {
+                    textsForEmbedding = entries.Select(e => e.CleanText).ToList();
+                }
+            }
+            else
+            {
+                textsForEmbedding = entries.Select(e => e.CleanText).ToList();
+            }
+
             // Generate embeddings
-            var cleanTexts = entries.Select(e => e.CleanText).ToList();
-            var embeddings = _embeddingService.BatchGenerateEmbeddings(cleanTexts);
+            var embeddings = _embeddingService.BatchGenerateEmbeddings(textsForEmbedding);
 
             // Update database
             using var transaction = connection.BeginTransaction();

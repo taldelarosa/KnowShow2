@@ -62,6 +62,8 @@ public class VideoFileProcessingService : IVideoFileProcessingService
         string filePath,
         bool shouldRename = false,
         string? language = null,
+        string? seriesFilter = null,
+        int? seasonFilter = null,
         CancellationToken cancellationToken = default)
     {
         var result = new VideoFileProcessingResult
@@ -72,7 +74,8 @@ public class VideoFileProcessingService : IVideoFileProcessingService
 
         try
         {
-            _logger.LogDebug("Starting video file processing: {FilePath}", filePath);
+            _logger.LogDebug("Starting video file processing: {FilePath}, SeriesFilter: {SeriesFilter}, SeasonFilter: {SeasonFilter}", 
+                filePath, seriesFilter ?? "none", seasonFilter?.ToString() ?? "none");
 
             // Step 1: Validate file format
             if (!await _videoFormatValidator.IsValidForProcessing(filePath))
@@ -103,27 +106,38 @@ public class VideoFileProcessingService : IVideoFileProcessingService
                 return result;
             }
 
-            // Step 4: Try to extract subtitle text (priority: PGS > VobSub > Text)
+            // Step 4: Try to extract subtitle text (priority: Text > PGS > VobSub)
+            // Text subtitles are most accurate (no OCR needed), then PGS (high quality OCR), then VobSub (lower quality OCR)
             string? subtitleText = null;
             SubtitleType actualSubtitleType = SubtitleType.TextBased;
 
-            // Check for PGS tracks (highest image quality)
-            var pgsTracks = subtitleTracks.Where(t =>
-                t.CodecName == "hdmv_pgs_subtitle").ToList();
-
-            if (pgsTracks.Any())
+            // Priority 1: Try text subtitles first (most accurate, no OCR needed)
+            var textSubtitleResult = await TryExtractTextSubtitle(filePath, language);
+            if (textSubtitleResult.Success)
             {
-                // Try PGS extraction
-                var pgsTrack = PgsTrackSelector.SelectBestTrack(pgsTracks, language);
-                var ocrLanguage = GetOcrLanguageCode(language);
-                subtitleText = await _pgsConverter.ConvertPgsFromVideoToText(filePath, pgsTrack.Index, ocrLanguage);
-                if (!string.IsNullOrWhiteSpace(subtitleText))
+                subtitleText = textSubtitleResult.SubtitleText;
+                actualSubtitleType = SubtitleType.TextBased;
+            }
+
+            // Priority 2: If no text subtitles, try PGS (high quality image subtitles)
+            if (string.IsNullOrWhiteSpace(subtitleText))
+            {
+                var pgsTracks = subtitleTracks.Where(t =>
+                    t.CodecName == "hdmv_pgs_subtitle").ToList();
+
+                if (pgsTracks.Any())
                 {
-                    actualSubtitleType = SubtitleType.PGS;
+                    var pgsTrack = PgsTrackSelector.SelectBestTrack(pgsTracks, language);
+                    var ocrLanguage = GetOcrLanguageCode(language);
+                    subtitleText = await _pgsConverter.ConvertPgsFromVideoToText(filePath, pgsTrack.Index, ocrLanguage);
+                    if (!string.IsNullOrWhiteSpace(subtitleText))
+                    {
+                        actualSubtitleType = SubtitleType.PGS;
+                    }
                 }
             }
 
-            // If PGS failed or not available, try VobSub (DVD subtitles)
+            // Priority 3: If neither text nor PGS available, try VobSub (DVD subtitles, lower quality OCR)
             if (string.IsNullOrWhiteSpace(subtitleText))
             {
                 var vobSubResult = await TryExtractVobSubSubtitle(filePath, language);
@@ -134,40 +148,22 @@ public class VideoFileProcessingService : IVideoFileProcessingService
                 }
             }
 
-            // If VobSub failed or not available, try text subtitles
+            // If all extraction methods failed
             if (string.IsNullOrWhiteSpace(subtitleText))
             {
-                var textSubtitleResult = await TryExtractTextSubtitle(filePath, language);
-                if (textSubtitleResult.Success)
-                {
-                    subtitleText = textSubtitleResult.SubtitleText;
-                    actualSubtitleType = SubtitleType.TextBased;
-                }
-                else if (pgsTracks.Any())
-                {
-                    // PGS tracks existed but OCR failed and no other fallback
-                    result.Error = new IdentificationError
-                    {
-                        Code = "OCR_FAILED",
-                        Message = "Failed to extract readable text from PGS subtitles using OCR and no text subtitle fallback available"
-                    };
-                    result.ProcessingCompleted = DateTime.UtcNow;
-                    return result;
-                }
-                else
-                {
-                    // No supported subtitle tracks or all extraction methods failed
-                    result.Error = IdentificationError.NoSubtitlesFound;
-                    result.ProcessingCompleted = DateTime.UtcNow;
-                    return result;
-                }
+                result.Error = IdentificationError.NoSubtitlesFound;
+                result.ProcessingCompleted = DateTime.UtcNow;
+                return result;
             }
 
             // Step 5: Identify episode using the extracted subtitle text
             var identificationResult = await _episodeIdentificationService.IdentifyEpisodeAsync(
                 subtitleText ?? "",
                 actualSubtitleType,
-                filePath);
+                filePath,
+                null,
+                seriesFilter,
+                seasonFilter);
             result.IdentificationResult = identificationResult;
 
             // Get the appropriate rename threshold based on actual subtitle type and matching strategy

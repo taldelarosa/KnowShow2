@@ -19,19 +19,30 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
     private readonly EnhancedCTPhHashingService? _enhancedCtphService;
     private readonly IEmbeddingService? _embeddingService;
     private readonly IVectorSearchService? _vectorSearchService;
+    private readonly ITextRankService? _textRankService;
+    private readonly SubtitleNormalizationService _normalizationService;
+    private readonly string? _databasePath;
 
     public EpisodeIdentificationService(
         ILogger<EpisodeIdentificationService> logger,
         IFileSystem? fileSystem = null,
         EnhancedCTPhHashingService? enhancedCtphService = null,
         IEmbeddingService? embeddingService = null,
-        IVectorSearchService? vectorSearchService = null)
+        IVectorSearchService? vectorSearchService = null,
+        string? databasePath = null,
+        ITextRankService? textRankService = null,
+        SubtitleNormalizationService? normalizationService = null)
     {
         _logger = logger;
         _fileSystem = fileSystem ?? new System.IO.Abstractions.FileSystem();
         _enhancedCtphService = enhancedCtphService;
         _embeddingService = embeddingService;
         _vectorSearchService = vectorSearchService;
+        _textRankService = textRankService;
+        _databasePath = databasePath;
+        _normalizationService = normalizationService ?? new SubtitleNormalizationService(
+            _logger as ILogger<SubtitleNormalizationService> ??
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<SubtitleNormalizationService>.Instance);
         _ctphHashingService = new CTPhHashingService(
             _logger as ILogger<CTPhHashingService> ??
             Microsoft.Extensions.Logging.Abstractions.NullLogger<CTPhHashingService>.Instance,
@@ -85,6 +96,13 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
             _logger.LogInformation("Starting episode identification - Operation: {OperationId}, SubtitleLength: {SubtitleLength}, SourceFile: {SourceFilePath}, MinConfidence: {MinConfidence}",
                 operationId, subtitleText.Length, sourceFilePath ?? "none", minConfidence ?? 0.0);
 
+            // Normalize subtitle text first (remove timecodes, HTML tags, etc.) - CRITICAL for matching
+            var normalized = _normalizationService.CreateNormalizedVersions(subtitleText);
+            var cleanSubtitleText = normalized.NoHtmlAndTimecodes;
+            
+            _logger.LogDebug("Subtitle text normalized - Operation: {OperationId}, Original: {OriginalLength}, Clean: {CleanLength}",
+                operationId, subtitleText.Length, cleanSubtitleText.Length);
+
             // Load configuration to determine matching strategy
             var configCheckTime = stopwatch.ElapsedMilliseconds;
             var fuzzyConfig = await Program.GetFuzzyHashConfigurationAsync();
@@ -124,12 +142,19 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
                     break;
 
                 case "hybrid":
-                    // Try embedding first, fallback to fuzzy
+                    // Try embedding first, fallback to fuzzy if ambiguous or low confidence
                     result = await TryEmbeddingIdentification(subtitleText, subtitleType, fuzzyConfig, minConfidence, operationId, seriesFilter, seasonFilter);
-                    if (result == null)
+                    if (result == null || (result.IsAmbiguous && result.MatchConfidence < 0.60))
                     {
-                        _logger.LogDebug("Embedding matching failed, falling back to fuzzy hashing - Operation: {OperationId}", operationId);
-                        result = await TryFuzzyHashIdentification(subtitleText, subtitleType, sourceFilePath, fuzzyConfig, minConfidence, operationId, seriesFilter, seasonFilter);
+                        _logger.LogInformation("Embedding matching ambiguous or low confidence ({Confidence:P1}), falling back to fuzzy hashing - Operation: {OperationId}", 
+                            result?.MatchConfidence ?? 0, operationId);
+                        var fuzzyResult = await TryFuzzyHashIdentification(subtitleText, subtitleType, sourceFilePath, fuzzyConfig, minConfidence, operationId, seriesFilter, seasonFilter);
+                        if (fuzzyResult != null)
+                        {
+                            _logger.LogInformation("Fuzzy hash provided better match - Operation: {OperationId}, FuzzyConfidence: {FuzzyConf:P1} vs EmbeddingConfidence: {EmbedConf:P1}",
+                                operationId, fuzzyResult.MatchConfidence, result?.MatchConfidence ?? 0);
+                            result = fuzzyResult;
+                        }
                     }
                     break;
 
@@ -344,6 +369,13 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
 
         try
         {
+            // Normalize subtitle text first (remove timecodes, HTML tags, etc.) - CRITICAL for matching
+            var normalized = _normalizationService.CreateNormalizedVersions(subtitleText);
+            var cleanSubtitleText = normalized.NoHtmlAndTimecodes;
+            
+            _logger.LogDebug("Subtitle text normalized for embedding - Operation: {OperationId}, Original: {OriginalLength}, Clean: {CleanLength}",
+                operationId, subtitleText.Length, cleanSubtitleText.Length);
+
             // Check if embedding services are available
             if (_embeddingService == null || _vectorSearchService == null)
             {
@@ -355,14 +387,38 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
 
             // Generate embedding for input subtitle
             _logger.LogDebug("Generating embedding for subtitle text - Operation: {OperationId}, TextLength: {TextLength}",
-                operationId, subtitleText.Length);
+                operationId, cleanSubtitleText.Length);
 
             var embeddingStartTime = stopwatch.ElapsedMilliseconds;
             float[] queryEmbedding;
 
             try
             {
-                queryEmbedding = _embeddingService.GenerateEmbedding(subtitleText);
+                // Apply TextRank filtering if enabled
+                string textForEmbedding = cleanSubtitleText;
+                if (config.TextRankFiltering?.Enabled == true && _textRankService != null)
+                {
+                    var filteringStartTime = stopwatch.ElapsedMilliseconds;
+                    var extractionResult = _textRankService.ExtractPlotRelevantSentences(
+                        cleanSubtitleText,
+                        config.TextRankFiltering.SentencePercentage,
+                        config.TextRankFiltering.MinSentences,
+                        config.TextRankFiltering.MinPercentage);
+
+                    var filteringDuration = stopwatch.ElapsedMilliseconds - filteringStartTime;
+                    
+                    _logger.LogDebug("TextRank filtering completed - Operation: {OperationId}, Duration: {Duration}ms, " +
+                                    "TotalSentences: {TotalSentences}, SelectedSentences: {SelectedSentences}, " +
+                                    "SelectionPercentage: {SelectionPercentage:F1}%, FallbackTriggered: {FallbackTriggered}, FallbackReason: {FallbackReason}",
+                        operationId, filteringDuration,
+                        extractionResult.TotalSentenceCount, extractionResult.SelectedSentenceCount,
+                        extractionResult.SelectionPercentage, extractionResult.FallbackTriggered,
+                        extractionResult.FallbackReason ?? "none");
+
+                    textForEmbedding = extractionResult.FilteredText;
+                }
+
+                queryEmbedding = _embeddingService.GenerateEmbedding(textForEmbedding);
             }
             catch (Exception ex)
             {
@@ -394,32 +450,24 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
             var effectiveMinSimilarity = minConfidence ?? threshold.EmbedSimilarity;
 
             // Search for similar embeddings
-            _logger.LogDebug("Searching for similar embeddings - Operation: {OperationId}, MinSimilarity: {MinSimilarity}, TopK: 10",
-                operationId, effectiveMinSimilarity);
+            _logger.LogDebug("Searching for similar embeddings - Operation: {OperationId}, MinSimilarity: {MinSimilarity}, TopK: 10, SeriesFilter: {SeriesFilter}, SeasonFilter: {SeasonFilter}",
+                operationId, effectiveMinSimilarity, seriesFilter ?? "none", seasonFilter?.ToString() ?? "none");
 
             var searchStartTime = stopwatch.ElapsedMilliseconds;
+            
+            // Convert seasonFilter int to string (without zero-padding to match database format)
+            string? seasonFilterString = seasonFilter.HasValue ? seasonFilter.Value.ToString() : null;
+            
             var results = _vectorSearchService.SearchBySimilarity(
                 queryEmbedding,
                 topK: 10,
-                minSimilarity: effectiveMinSimilarity);
+                minSimilarity: effectiveMinSimilarity,
+                seriesFilter: seriesFilter,
+                seasonFilter: seasonFilterString);
             var searchDuration = stopwatch.ElapsedMilliseconds - searchStartTime;
 
             _logger.LogDebug("Vector search completed - Operation: {OperationId}, ResultCount: {ResultCount}, Duration: {Duration}ms",
                 operationId, results.Count, searchDuration);
-
-            // Filter by series/season if provided
-            if (!string.IsNullOrEmpty(seriesFilter))
-            {
-                results = results.Where(r =>
-                    r.Series.Equals(seriesFilter, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-
-                if (seasonFilter.HasValue)
-                {
-                    var seasonString = seasonFilter.Value.ToString("D2");
-                    results = results.Where(r => r.Season == seasonString).ToList();
-                }
-            }
 
             if (results.Count == 0)
             {
@@ -427,6 +475,34 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
                 _logger.LogInformation("No embedding matches found - Operation: {OperationId}, Duration: {Duration}ms",
                     operationId, stopwatch.ElapsedMilliseconds);
                 return null;
+            }
+
+            // Log all top results for debugging
+            _logger.LogInformation("Top {Count} embedding matches for debugging - Operation: {OperationId}:", results.Count, operationId);
+            for (int i = 0; i < results.Count; i++)
+            {
+                var result = results[i];
+                _logger.LogInformation("  #{Rank}: S{Season}E{Episode} - {EpisodeName} - Similarity: {Similarity:P1}, Confidence: {Confidence:P1}",
+                    i + 1, result.Season, result.Episode, result.EpisodeName ?? "Unknown", result.Similarity, result.Confidence);
+            }
+
+            // Check if top results are very close (within 2% similarity)
+            var topSimilarity = results[0].Similarity;
+            var closeResults = results.Where(r => (topSimilarity - r.Similarity) <= 0.02).ToList();
+            
+            if (closeResults.Count >= 2 && _databasePath != null)
+            {
+                _logger.LogInformation("Top {Count} results within 2% similarity - applying fast text disambiguation - Operation: {OperationId}", 
+                    closeResults.Count, operationId);
+                
+                // Fast text-based disambiguation
+                var reranked = await FastTextDisambiguation(subtitleText, closeResults, operationId);
+                if (reranked != null && reranked.Count > 0)
+                {
+                    results = reranked.Concat(results.Except(closeResults)).ToList();
+                    _logger.LogInformation("After text disambiguation, new top match: S{Season}E{Episode} - Operation: {OperationId}", 
+                        results[0].Season, results[0].Episode, operationId);
+                }
             }
 
             // Get best match
@@ -485,6 +561,314 @@ public class EpisodeIdentificationService : IEpisodeIdentificationService
                 Message = errorMessage
             }
         };
+    }
+
+    /// <summary>
+    /// Summarization-based disambiguation using chunk embeddings.
+    /// Splits text into 25% chunks, generates summaries via embeddings, then compares.
+    /// </summary>
+    private async Task<List<VectorSimilarityResult>?> FastTextDisambiguation(
+        string queryText,
+        List<VectorSimilarityResult> candidates,
+        Guid operationId)
+    {
+        if (string.IsNullOrEmpty(_databasePath) || _embeddingService == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            using var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={_databasePath}");
+            await connection.OpenAsync();
+
+            // Group by episode to avoid redundant work
+            var episodeGroups = candidates.GroupBy(c => new { c.Season, c.Episode }).ToList();
+            
+            // Generate summary embedding for query text (4 chunks of 25% each)
+            var querySummaryEmbedding = await GenerateSummaryEmbedding(queryText, operationId);
+            if (querySummaryEmbedding == null)
+            {
+                _logger.LogWarning("Failed to generate query summary embedding - Operation: {OperationId}", operationId);
+                return null;
+            }
+            
+            var scored = new List<(VectorSimilarityResult result, double summaryScore, double finalScore)>();
+
+            foreach (var group in episodeGroups)
+            {
+                var representative = group.First();
+                
+                using var command = connection.CreateCommand();
+                command.CommandText = "SELECT CleanText FROM SubtitleHashes WHERE Season = @season AND Episode = @episode LIMIT 1";
+                command.Parameters.AddWithValue("@season", representative.Season);
+                command.Parameters.AddWithValue("@episode", representative.Episode);
+                
+                var storedText = await command.ExecuteScalarAsync() as string;
+                if (string.IsNullOrEmpty(storedText))
+                {
+                    foreach (var candidate in group)
+                    {
+                        scored.Add((candidate, 0, candidate.Similarity));
+                    }
+                    continue;
+                }
+
+                // Generate summary embedding for stored text
+                var storedSummaryEmbedding = await GenerateSummaryEmbedding(storedText, operationId);
+                if (storedSummaryEmbedding == null)
+                {
+                    _logger.LogWarning("Failed to generate stored summary embedding for S{Season}E{Episode} - Operation: {OperationId}",
+                        representative.Season, representative.Episode, operationId);
+                    foreach (var candidate in group)
+                    {
+                        scored.Add((candidate, 0, candidate.Similarity));
+                    }
+                    continue;
+                }
+                
+                // Calculate cosine similarity between summary embeddings
+                var summaryScore = CalculateCosineSimilarity(querySummaryEmbedding, storedSummaryEmbedding);
+                
+                // Combined score: 30% full-text embedding + 70% summary embedding
+                var finalScore = (representative.Similarity * 0.3) + (summaryScore * 0.7);
+                
+                _logger.LogInformation("S{Season}E{Episode}: FullEmbed={Embed:P1}, SummaryEmbed={Summary:P1}, Final={Final:P1} - Operation: {OperationId}",
+                    representative.Season, representative.Episode, representative.Similarity, summaryScore, finalScore, operationId);
+                
+                foreach (var candidate in group)
+                {
+                    scored.Add((candidate, summaryScore, finalScore));
+                }
+            }
+
+            // Sort by final score
+            return scored.OrderByDescending(x => x.finalScore).Select(x => x.result).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during summarization-based disambiguation - Operation: {OperationId}", operationId);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Generate a summary embedding by splitting text into 4 chunks (25% each),
+    /// embedding each chunk, then averaging the embeddings.
+    /// NOTE: This doesn't generate actual summaries, it just chunks and averages embeddings.
+    /// </summary>
+    private Task<float[]?> GenerateSummaryEmbedding(string text, Guid operationId)
+    {
+        if (_embeddingService == null || string.IsNullOrEmpty(text))
+        {
+            return Task.FromResult<float[]?>(null);
+        }
+
+        try
+        {
+            // Split into 4 equal chunks (25% each)
+            var chunkSize = text.Length / 4;
+            var chunks = new List<string>();
+            
+            for (int i = 0; i < 4; i++)
+            {
+                var start = i * chunkSize;
+                var length = (i == 3) ? (text.Length - start) : chunkSize; // Last chunk gets remainder
+                var chunk = text.Substring(start, length);
+                chunks.Add(chunk);
+                
+                // Log first 200 chars of each chunk for debugging
+                var preview = chunk.Length > 200 ? chunk.Substring(0, 200) + "..." : chunk;
+                _logger.LogInformation("Chunk {ChunkNum} (length={Length}): {Preview} - Operation: {OperationId}",
+                    i + 1, chunk.Length, preview, operationId);
+            }
+
+            // Generate embedding for each chunk
+            var chunkEmbeddings = new List<float[]>();
+            foreach (var chunk in chunks)
+            {
+                var embedding = _embeddingService.GenerateEmbedding(chunk);
+                chunkEmbeddings.Add(embedding);
+            }
+
+            // Average the embeddings to create summary embedding
+            var dimensions = chunkEmbeddings[0].Length;
+            var summaryEmbedding = new float[dimensions];
+            
+            for (int i = 0; i < dimensions; i++)
+            {
+                summaryEmbedding[i] = chunkEmbeddings.Average(e => e[i]);
+            }
+
+            return Task.FromResult<float[]?>(summaryEmbedding);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating summary embedding - Operation: {OperationId}", operationId);
+            return Task.FromResult<float[]?>(null);
+        }
+    }
+
+    /// <summary>
+    /// Calculate cosine similarity between two embedding vectors.
+    /// </summary>
+    private double CalculateCosineSimilarity(float[] embedding1, float[] embedding2)
+    {
+        if (embedding1.Length != embedding2.Length)
+        {
+            throw new ArgumentException("Embeddings must have the same dimension");
+        }
+
+        double dotProduct = 0;
+        double norm1 = 0;
+        double norm2 = 0;
+
+        for (int i = 0; i < embedding1.Length; i++)
+        {
+            dotProduct += embedding1[i] * embedding2[i];
+            norm1 += embedding1[i] * embedding1[i];
+            norm2 += embedding2[i] * embedding2[i];
+        }
+
+        if (norm1 == 0 || norm2 == 0)
+        {
+            return 0;
+        }
+
+        return dotProduct / (Math.Sqrt(norm1) * Math.Sqrt(norm2));
+    }
+
+    /// <summary>
+    /// Extract sample from beginning and end of text for better episode discrimination.
+    /// Takes first N and last N characters.
+    /// </summary>
+    private string ExtractSample(string text, int sampleSize)
+    {
+        if (text.Length <= sampleSize * 2)
+        {
+            return text;
+        }
+        
+        var beginning = text.Substring(0, sampleSize);
+        var end = text.Substring(text.Length - sampleSize, sampleSize);
+        return beginning + end;
+    }
+
+    /// <summary>
+    /// Extract n-grams (substrings of length n) from text.
+    /// Returns a set of lowercase n-grams.
+    /// </summary>
+    private HashSet<string> ExtractNgrams(string text, int n)
+    {
+        var ngrams = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var cleaned = new string(text.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToLowerInvariant();
+        
+        for (int i = 0; i <= cleaned.Length - n; i++)
+        {
+            ngrams.Add(cleaned.Substring(i, n));
+        }
+        
+        return ngrams;
+    }
+
+    /// <summary>
+    /// Re-ranks ambiguous embedding matches using character-level text similarity.
+    /// Retrieves subtitle text from database and compares with query text using fuzzy matching.
+    /// </summary>
+    private async Task<List<VectorSimilarityResult>?> RerankByTextSimilarity(
+        string queryText,
+        List<VectorSimilarityResult> candidates,
+        Guid operationId)
+    {
+        if (string.IsNullOrEmpty(_databasePath))
+        {
+            _logger.LogWarning("Database path not available for text-based re-ranking - Operation: {OperationId}", operationId);
+            return null;
+        }
+
+        try
+        {
+            using var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={_databasePath}");
+            await connection.OpenAsync();
+
+            // Group candidates by episode to avoid redundant comparisons
+            var episodeGroups = candidates
+                .GroupBy(c => new { c.Season, c.Episode })
+                .ToList();
+
+            _logger.LogInformation("Grouped {TotalCandidates} candidates into {UniqueEpisodes} unique episodes for text comparison - Operation: {OperationId}",
+                candidates.Count, episodeGroups.Count, operationId);
+
+            var rerankedCandidates = new List<(VectorSimilarityResult result, double textScore, double combinedScore)>();
+
+            // Sample first 5000 characters for fast comparison (enough to distinguish episodes)
+            var querySample = queryText.Length > 5000 ? queryText.Substring(0, 5000) : queryText;
+            var queryWords = new HashSet<string>(
+                querySample.Split(new[] { ' ', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(w => w.ToLowerInvariant().Trim()), 
+                StringComparer.OrdinalIgnoreCase);
+
+            foreach (var group in episodeGroups)
+            {
+                // Get one representative from the group
+                var representative = group.First();
+                
+                // Retrieve stored subtitle text from database (using CleanText which has normalized formatting)
+                using var command = connection.CreateCommand();
+                command.CommandText = "SELECT CleanText FROM SubtitleHashes WHERE Id = @id LIMIT 1";
+                command.Parameters.AddWithValue("@id", representative.Id);
+                
+                var storedText = await command.ExecuteScalarAsync() as string;
+                if (string.IsNullOrEmpty(storedText))
+                {
+                    _logger.LogWarning("No subtitle text found for S{Season}E{Episode} - Operation: {OperationId}", 
+                        representative.Season, representative.Episode, operationId);
+                    
+                    // Add all group members with 0 text score
+                    foreach (var candidate in group)
+                    {
+                        rerankedCandidates.Add((candidate, 0, candidate.Similarity));
+                    }
+                    continue;
+                }
+
+                // Fast word-based similarity: count matching words
+                var storedSample = storedText.Length > 5000 ? storedText.Substring(0, 5000) : storedText;
+                var storedWords = storedSample.Split(new[] { ' ', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(w => w.ToLowerInvariant().Trim());
+                
+                var matchingWords = storedWords.Count(w => queryWords.Contains(w));
+                var textScore = (double)matchingWords / Math.Max(queryWords.Count, 1);
+                
+                // Combined score: 40% embedding + 60% text (text is more reliable for disambiguation)
+                var combinedScore = (representative.Similarity * 0.4) + (textScore * 0.6);
+                
+                _logger.LogInformation("Text similarity for S{Season}E{Episode}: Embedding={Embedding:P1}, TextWordMatch={Text:P1}, Combined={Combined:P1} - Operation: {OperationId}",
+                    representative.Season, representative.Episode, representative.Similarity, textScore, combinedScore, operationId);
+                
+                // Apply same score to all variants of this episode
+                foreach (var candidate in group)
+                {
+                    rerankedCandidates.Add((candidate, textScore, combinedScore));
+                }
+            }
+
+            // Sort by combined score
+            var sorted = rerankedCandidates
+                .OrderByDescending(x => x.combinedScore)
+                .Select(x => x.result)
+                .ToList();
+
+            _logger.LogInformation("Text-based re-ranking completed - Top match: S{Season}E{Episode} (was embedding rank #{Rank}) - Operation: {OperationId}",
+                sorted[0].Season, sorted[0].Episode, candidates.IndexOf(sorted[0]) + 1, operationId);
+
+            return sorted;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during text-based re-ranking - Operation: {OperationId}", operationId);
+            return null;
+        }
     }
 
     /// <summary>

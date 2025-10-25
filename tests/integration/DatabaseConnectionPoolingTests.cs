@@ -136,7 +136,9 @@ public class DatabaseConnectionPoolingTests : IDisposable
 
         // Concurrent should not be significantly slower than sequential due to connection overhead
         // This test documents current performance for comparison after optimization
-        concurrentStopwatch.ElapsedMilliseconds.Should().BeLessThan(sequentialStopwatch.ElapsedMilliseconds * 3,
+        // Use Math.Max to ensure minimum threshold of 3ms to avoid timing precision issues
+        var threshold = Math.Max(3, sequentialStopwatch.ElapsedMilliseconds * 3);
+        concurrentStopwatch.ElapsedMilliseconds.Should().BeLessThan(threshold,
             "Concurrent operations should not be more than 3x slower than sequential");
     }
 

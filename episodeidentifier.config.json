@@ -2,39 +2,39 @@
   "version": "2.0",
   "maxConcurrency": 3,
   "renameConfidenceThreshold": 0.59,
-  "matchingStrategy": "hybrid",
+  "matchingStrategy": "embedding",
   "matchingThresholds": {
     "textBased": {
-      "matchConfidence": 0.7,
-      "renameConfidence": 0.8,
-      "fuzzyHashSimilarity": 70
+      "matchConfidence": 0.4,
+      "renameConfidence": 0.4,
+      "fuzzyHashSimilarity": 40
     },
     "pgs": {
-      "matchConfidence": 0.6,
-      "renameConfidence": 0.7,
-      "fuzzyHashSimilarity": 60
+      "matchConfidence": 0.4,
+      "renameConfidence": 0.4,
+      "fuzzyHashSimilarity": 40
     },
     "vobSub": {
-      "matchConfidence": 0.5,
-      "renameConfidence": 0.59,
-      "fuzzyHashSimilarity": 50
+      "matchConfidence": 0.4,
+      "renameConfidence": 0.4,
+      "fuzzyHashSimilarity": 40
     }
   },
   "embeddingThresholds": {
     "textBased": {
-      "embedSimilarity": 0.85,
-      "matchConfidence": 0.70,
-      "renameConfidence": 0.80
+      "embedSimilarity": 0.40,
+      "matchConfidence": 0.40,
+      "renameConfidence": 0.40
     },
     "pgs": {
-      "embedSimilarity": 0.80,
-      "matchConfidence": 0.60,
-      "renameConfidence": 0.70
+      "embedSimilarity": 0.40,
+      "matchConfidence": 0.40,
+      "renameConfidence": 0.40
     },
     "vobSub": {
-      "embedSimilarity": 0.75,
-      "matchConfidence": 0.50,
-      "renameConfidence": 0.59
+      "embedSimilarity": 0.40,
+      "matchConfidence": 0.40,
+      "renameConfidence": 0.40
     }
   },
   "embeddingModel": {
@@ -48,9 +48,18 @@
   },
   "hashingAlgorithm": "CTPH",
   "filenamePatterns": {
-    "primaryPattern": "^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
-    "secondaryPattern": "^(?<SeriesName>.+?)\\s(?<Season>\\d+)x(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$", 
-    "tertiaryPattern": "^(?<SeriesName>.+?)\\.S(?<Season>\\d+)\\.E(?<Episode>\\d+)(?:\\.(?<EpisodeName>.+?))?$"
+    "primaryPattern": "^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)[A-Za-z]?(?:E\\d+[A-Za-z]?)*(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
+    "secondaryPattern": "^(?<SeriesName>.+?)\\s(?<Season>\\d+)x(?<Episode>\\d+)[A-Za-z]?(?:x\\d+[A-Za-z]?)*(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$", 
+    "tertiaryPattern": "^(?<SeriesName>.+?)\\.S(?<Season>\\d+)\\.E(?<Episode>\\d+)[A-Za-z]?(?:\\.E\\d+[A-Za-z]?)*(?:\\.(?<EpisodeName>.+?))?$"
   },
-  "filenameTemplate": "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}"
+  "filenameTemplate": "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}",
+  "textRankFiltering": {
+    "enabled": true,
+    "sentencePercentage": 25,
+    "minSentences": 15,
+    "minPercentage": 10,
+    "dampingFactor": 0.85,
+    "convergenceThreshold": 0.0001,
+    "maxIterations": 100
+  }
 }

@@ -154,8 +154,24 @@ public class PgsRipService
 
             if (success)
             {
-                // Look for generated SRT files
+                // Look for generated SRT files - use case-insensitive search since pgsrip may change case
+                // First try exact match
                 var srtFiles = Directory.GetFiles(videoDir, $"{videoName}*.srt");
+                
+                // If no exact match, try case-insensitive search for files that start with the video name
+                if (srtFiles.Length == 0)
+                {
+                    var allSrtFiles = Directory.GetFiles(videoDir, "*.srt");
+                    srtFiles = allSrtFiles
+                        .Where(f => Path.GetFileName(f).StartsWith(videoName, StringComparison.OrdinalIgnoreCase))
+                        .ToArray();
+                    
+                    if (srtFiles.Length > 0)
+                    {
+                        _logger.LogDebug("Found {Count} SRT files with case-insensitive match for {VideoName}", 
+                            srtFiles.Length, videoName);
+                    }
+                }
 
                 if (srtFiles.Length > 0)
                 {
@@ -167,7 +183,8 @@ public class PgsRipService
                 }
                 else
                 {
-                    _logger.LogWarning("pgsrip completed but no SRT files were generated");
+                    _logger.LogWarning("pgsrip completed but no SRT files were generated for {VideoName} in {VideoDir}", 
+                        videoName, videoDir);
                     return string.Empty;
                 }
             }

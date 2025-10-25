@@ -109,6 +109,13 @@ public class Configuration
     public BulkProcessingConfiguration? BulkProcessing { get; set; }
 
     /// <summary>
+    /// TextRank-based filtering configuration for plot-relevant sentence extraction.
+    /// When enabled, filters subtitle text before embedding generation to improve matching accuracy.
+    /// Optional - when null or disabled, full subtitle text is used.
+    /// </summary>
+    public TextRankConfiguration? TextRankFiltering { get; set; }
+
+    /// <summary>
     /// Timestamp when this configuration was last loaded.
     /// Used for hot-reload change detection.
     /// </summary>
@@ -355,6 +362,22 @@ public class ConfigurationValidator : AbstractValidator<Configuration>
                 .Must(x => x.DefaultMaxConcurrency <= x.MaxConcurrency)
                 .WithMessage("BulkProcessing.DefaultMaxConcurrency must not exceed MaxConcurrency")
                 .WithName("DefaultMaxConcurrency");
+        });
+
+        // TextRank filtering configuration validation rules
+        When(x => x.TextRankFiltering is not null && x.TextRankFiltering.Enabled, () =>
+        {
+            RuleFor(x => x.TextRankFiltering!)
+                .Must(config =>
+                {
+                    var (isValid, _) = config.Validate();
+                    return isValid;
+                })
+                .WithMessage(x =>
+                {
+                    var (_, errorMessage) = x.TextRankFiltering!.Validate();
+                    return errorMessage ?? "TextRankFiltering configuration is invalid";
+                });
         });
     }
 
