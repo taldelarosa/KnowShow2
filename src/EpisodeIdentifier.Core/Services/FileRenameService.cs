@@ -57,15 +57,27 @@ public class FileRenameService : IFileRenameService
             };
         }
 
-        // Check for target collision
+        // Check for target collision and find unique name if needed
         if (File.Exists(targetPath) && !request.ForceOverwrite)
         {
-            return new FileRenameResult
+            // Try to find a unique filename by adding underscores
+            string? uniqueTargetPath = FindUniqueFilename(targetPath);
+            
+            if (uniqueTargetPath != null)
             {
-                Success = false,
-                ErrorType = FileRenameError.TargetExists,
-                ErrorMessage = $"Target file already exists: {targetPath}"
-            };
+                // Use the unique path instead
+                targetPath = uniqueTargetPath;
+            }
+            else
+            {
+                // Could not find a unique name (unlikely but possible after many attempts)
+                return new FileRenameResult
+                {
+                    Success = false,
+                    ErrorType = FileRenameError.TargetExists,
+                    ErrorMessage = $"Target file already exists and could not generate unique name: {targetPath}"
+                };
+            }
         }
 
         // Check if we can rename the file
@@ -255,6 +267,36 @@ public class FileRenameService : IFileRenameService
         {
             throw new ArgumentException($"Invalid path format: {ex.Message}", ex);
         }
+    }
+
+    /// <summary>
+    /// Finds a unique filename by adding underscores before the extension when the target already exists.
+    /// For example: "file.mkv" becomes "file_.mkv", then "file__.mkv", etc.
+    /// </summary>
+    /// <param name="targetPath">The desired target path that already exists</param>
+    /// <returns>A unique path with underscores added, or null if unable to find unique name after 100 attempts</returns>
+    private string? FindUniqueFilename(string targetPath)
+    {
+        var directory = Path.GetDirectoryName(targetPath) ?? string.Empty;
+        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(targetPath);
+        var extension = Path.GetExtension(targetPath);
+        
+        // Try up to 100 times to find a unique name
+        for (int i = 1; i <= 100; i++)
+        {
+            // Add underscores before the extension
+            var underscores = new string('_', i);
+            var newFileName = $"{fileNameWithoutExtension}{underscores}{extension}";
+            var newPath = Path.Combine(directory, newFileName);
+            
+            if (!File.Exists(newPath))
+            {
+                return newPath;
+            }
+        }
+        
+        // Could not find a unique name after 100 attempts
+        return null;
     }
 
     private FileRenameResult? ValidateRequest(FileRenameRequest request)

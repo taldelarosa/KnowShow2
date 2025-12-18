@@ -56,16 +56,25 @@
   
   // Filename Pattern Matching
   // Regex patterns for extracting series/season/episode information from filenames
-  // Patterns are tried in order: primary -> secondary -> tertiary
+  // Patterns are tried in order until a match is found. You can add as many as needed.
+  // Each pattern must use named capture groups: SeriesName, Season, Episode (EpisodeName is optional)
   "filenamePatterns": {
-    // Standard format: "Series Name S01E01 Episode Name"
-    "primaryPattern": "^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
-    
-    // Alternative format: "Series Name 1x01 Episode Name" 
-    "secondaryPattern": "^(?<SeriesName>.+?)\\s(?<Season>\\d+)x(?<Episode>\\d+)(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
-    
-    // Dotted format: "Series.Name.S01.E01.Episode.Name"
-    "tertiaryPattern": "^(?<SeriesName>.+?)\\.S(?<Season>\\d+)\\.E(?<Episode>\\d+)(?:\\.(?<EpisodeName>.+?))?$"
+    "patterns": [
+      // Space or dot before S##E## - handles "Show Name S01E01" and "Show.Name.S01E01.WEB.x264-GROUP"
+      "^(?<SeriesName>.+?)[\\s\\.]S(?<Season>\\d+)E(?<Episode>\\d+)[A-Za-z]?(?:E\\d+[A-Za-z]?)*(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
+      
+      // Space before season x episode - handles "Show Name 1x01 Episode Title"
+      "^(?<SeriesName>.+?)\\s(?<Season>\\d+)x(?<Episode>\\d+)[A-Za-z]?(?:x\\d+[A-Za-z]?)*(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
+      
+      // Dot-separated S##.E## - handles "Show.Name.S01.E01.Episode.Title"
+      "^(?<SeriesName>.+?)\\.S(?<Season>\\d+)\\.E(?<Episode>\\d+)[A-Za-z]?(?:\\.E\\d+[A-Za-z]?)*(?:\\.(?<EpisodeName>.+?))?$",
+      
+      // Hyphen-separated - handles "Show-Name-S01E01"
+      "^(?<SeriesName>.+?)-S(?<Season>\\d+)E(?<Episode>\\d+)[A-Za-z]?(?:E\\d+[A-Za-z]?)*(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
+      
+      // Underscore-separated - handles "Show_Name_S01E01"
+      "^(?<SeriesName>.+?)_S(?<Season>\\d+)E(?<Episode>\\d+)[A-Za-z]?(?:E\\d+[A-Za-z]?)*(?:[\\s\\.\\-_]+(?<EpisodeName>.+?))?$"
+    ]
   },
   
   // Filename Template for Renaming

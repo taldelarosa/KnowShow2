@@ -353,39 +353,75 @@ public class PgsToTextConverter
         try
         {
             // Extract subtitle images directly from video file using ffmpeg
-            // This extracts PGS/DVD subtitles as individual images
-            // For dvd_subtitle, we need to specify the video codec (not subtitle codec)
-            using var process = new Process
+            // For PGS/DVD subtitles, we need to:
+            // 1. Extract the subtitle stream to a temporary SUP file
+            // 2. Then convert SUP to images (but that's complex)
+            // OR use a two-step process
+            
+            // Step 1: Extract PGS/SUP stream to a file
+            var tempSupFile = Path.Combine(outputDir, "subtitle_stream.sup");
+            
+            using (var extractProcess = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "ffmpeg",
-                    Arguments = $"-i \"{videoPath}\" -map 0:{trackIndex} -c:v png -f image2 \"{outputDir}/subtitle_%06d.png\"",
+                    Arguments = $"-i \"{videoPath}\" -map 0:{trackIndex} -c copy \"{tempSupFile}\"",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
-            };
-
-            process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
-            var error = await process.StandardError.ReadToEndAsync();
-            await process.WaitForExitAsync();
-
-            if (process.ExitCode == 0)
+            })
             {
-                // Find all generated PNG files
-                var pngFiles = Directory.GetFiles(outputDir, "subtitle_*.png")
-                    .OrderBy(f => f)
-                    .ToList();
+                extractProcess.Start();
+                var extractError = await extractProcess.StandardError.ReadToEndAsync();
+                await extractProcess.WaitForExitAsync();
 
-                imageFiles.AddRange(pngFiles);
-                _logger.LogInformation("Extracted {Count} images from video subtitle track {TrackIndex}", pngFiles.Count, trackIndex);
+                if (extractProcess.ExitCode != 0)
+                {
+                    _logger.LogWarning("ffmpeg failed to extract subtitle stream: {Error}", extractError);
+                    return imageFiles;
+                }
+                
+                _logger.LogInformation("Extracted subtitle stream to {SupFile}, size: {Size} bytes", 
+                    tempSupFile, new FileInfo(tempSupFile).Length);
             }
-            else
+            
+            // Step 2: Convert SUP file to images using ffmpeg
+            // For PGS/SUP format, we need to decode the subtitle stream
+            using (var convertProcess = new Process
             {
-                _logger.LogWarning("ffmpeg failed to extract images from video track {TrackIndex}: {Error}", trackIndex, error);
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "ffmpeg",
+                    Arguments = $"-i \"{tempSupFile}\" -c:v png \"{outputDir}/subtitle_%06d.png\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            })
+            {
+                convertProcess.Start();
+                var output = await convertProcess.StandardOutput.ReadToEndAsync();
+                var error = await convertProcess.StandardError.ReadToEndAsync();
+                await convertProcess.WaitForExitAsync();
+
+                if (convertProcess.ExitCode == 0)
+                {
+                    // Find all generated PNG files
+                    var pngFiles = Directory.GetFiles(outputDir, "subtitle_*.png")
+                        .OrderBy(f => f)
+                        .ToList();
+
+                    imageFiles.AddRange(pngFiles);
+                    _logger.LogInformation("Extracted {Count} images from video subtitle track {TrackIndex}", pngFiles.Count, trackIndex);
+                }
+                else
+                {
+                    _logger.LogWarning("ffmpeg failed to convert SUP to images from video track {TrackIndex}. This is expected - PGS subtitle extraction via ffmpeg is not reliable. Error: {Error}", trackIndex, error);
+                }
             }
         }
         catch (Exception ex)

@@ -70,20 +70,36 @@ public class AppConfig
 public class FilenamePatterns
 {
     /// <summary>
-    /// Primary pattern for "Series S##E## EpisodeName" format
+    /// List of regex patterns for parsing episode information from filenames.
+    /// Each pattern must contain named capture groups: SeriesName, Season, Episode (EpisodeName is optional).
+    /// Patterns are tried in order until a match is found.
+    /// If not specified, default patterns are used for common formats.
     /// </summary>
+    [JsonPropertyName("patterns")]
+    public List<string> Patterns { get; set; } = new()
+    {
+        // Space or dot before S##E## (handles: "Show Name S01E01", "Show.Name.S01E01.WEB.x264-GROUP")
+        @"^(?<SeriesName>.+?)[\s\.]S(?<Season>\d+)E(?<Episode>\d+)[A-Za-z]?(?:E\d+[A-Za-z]?)*(?:[\s\.\-]+(?<EpisodeName>.+?))?$",
+        // Space before season x episode (handles: "Show Name 1x01", "Show Name 1x01 Episode Title")
+        @"^(?<SeriesName>.+?)\s(?<Season>\d+)x(?<Episode>\d+)[A-Za-z]?(?:x\d+[A-Za-z]?)*(?:[\s\.\-]+(?<EpisodeName>.+?))?$",
+        // Dot-separated with S##.E## (handles: "Show.Name.S01.E01.Episode.Title")
+        @"^(?<SeriesName>.+?)\.S(?<Season>\d+)\.E(?<Episode>\d+)[A-Za-z]?(?:\.E\d+[A-Za-z]?)*(?:\.(?<EpisodeName>.+?))?$",
+        // Hyphen-separated S##E## (handles: "Show-Name-S01E01")
+        @"^(?<SeriesName>.+?)-S(?<Season>\d+)E(?<Episode>\d+)[A-Za-z]?(?:E\d+[A-Za-z]?)*(?:[\s\.\-]+(?<EpisodeName>.+?))?$",
+        // Underscore-separated S##E## (handles: "Show_Name_S01E01")
+        @"^(?<SeriesName>.+?)_S(?<Season>\d+)E(?<Episode>\d+)[A-Za-z]?(?:E\d+[A-Za-z]?)*(?:[\s\.\-_]+(?<EpisodeName>.+?))?$"
+    };
+
+    // Legacy properties for backward compatibility - deprecated but maintained for config migration
     [JsonPropertyName("primaryPattern")]
-    public string PrimaryPattern { get; set; } = @"^(.+?)\s+S(\d+)E(\d+)(?:[\s\.\-]+(.+?))?$";
+    [Obsolete("Use Patterns list instead. This property is maintained for backward compatibility only.")]
+    public string? PrimaryPattern { get; set; }
 
-    /// <summary>
-    /// Secondary pattern for "Series Season Episode EpisodeName" format (space-separated)
-    /// </summary>
     [JsonPropertyName("secondaryPattern")]
-    public string SecondaryPattern { get; set; } = @"^(.+?)\s+(\d+)x(\d+)(?:[\s\.\-]+(.+?))?$";
+    [Obsolete("Use Patterns list instead. This property is maintained for backward compatibility only.")]
+    public string? SecondaryPattern { get; set; }
 
-    /// <summary>
-    /// Tertiary pattern for "Series.S##.E##.EpisodeName" format (dot-separated)
-    /// </summary>
     [JsonPropertyName("tertiaryPattern")]
-    public string TertiaryPattern { get; set; } = @"^(.+?)\.S(\d+)\.E(\d+)(?:\.(.+?))?$";
+    [Obsolete("Use Patterns list instead. This property is maintained for backward compatibility only.")]
+    public string? TertiaryPattern { get; set; }
 }

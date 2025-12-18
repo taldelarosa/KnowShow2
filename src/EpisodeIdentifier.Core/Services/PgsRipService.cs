@@ -83,9 +83,10 @@ public class PgsRipService
             return string.Empty;
         }
 
-        // Create temporary files
-        var tempSupFile = Path.GetTempFileName() + ".sup";
-        var expectedSrtFile = Path.ChangeExtension(tempSupFile, ".srt");
+        // Create temporary files in a temp directory
+        var tempDir = Path.Combine(Path.GetTempPath(), $"pgsrip_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var tempSupFile = Path.Combine(tempDir, "subtitle.sup");
 
         try
         {
@@ -93,35 +94,38 @@ public class PgsRipService
             await File.WriteAllBytesAsync(tempSupFile, pgsData);
             _logger.LogDebug("Created temporary SUP file: {SupFile}", tempSupFile);
 
-            // Run pgsrip
-            var success = await RunPgsRipAsync(tempSupFile, language);
+            // Run pgsrip with output to the same temp directory
+            var success = await RunPgsRipAsync(tempSupFile, language, tempDir);
 
-            if (success && File.Exists(expectedSrtFile))
+            if (success)
             {
-                var srtContent = await File.ReadAllTextAsync(expectedSrtFile);
-                _logger.LogInformation("pgsrip converted {DataSize} bytes to {SrtLength} characters",
-                    pgsData.Length, srtContent.Length);
-                return srtContent;
+                // Look for any SRT file in the temp directory
+                var srtFiles = Directory.GetFiles(tempDir, "*.srt");
+                if (srtFiles.Length > 0)
+                {
+                    var srtContent = await File.ReadAllTextAsync(srtFiles[0]);
+                    _logger.LogInformation("pgsrip converted {DataSize} bytes to {SrtLength} characters",
+                        pgsData.Length, srtContent.Length);
+                    return srtContent;
+                }
             }
-            else
-            {
-                _logger.LogWarning("pgsrip failed to generate SRT file");
-                return string.Empty;
-            }
+            
+            _logger.LogWarning("pgsrip failed to generate SRT file");
+            return string.Empty;
         }
         finally
         {
-            // Cleanup temporary files
+            // Cleanup temporary directory
             try
             {
-                if (File.Exists(tempSupFile))
-                    File.Delete(tempSupFile);
-                if (File.Exists(expectedSrtFile))
-                    File.Delete(expectedSrtFile);
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to cleanup temporary files");
+                _logger.LogWarning(ex, "Failed to cleanup temporary directory: {TempDir}", tempDir);
             }
         }
     }
@@ -144,38 +148,74 @@ public class PgsRipService
             throw new FileNotFoundException($"Video file not found: {videoPath}");
         }
 
-        var videoDir = Path.GetDirectoryName(videoPath)!;
-        var videoName = Path.GetFileNameWithoutExtension(videoPath);
+        // Create a temp directory for pgsrip to avoid permission issues and special character problems
+        // pgsrip writes output files in the same directory as the input, so we create a symlink
+        var tempDir = Path.Combine(Path.GetTempPath(), $"pgsrip_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        
+        // Create a simple filename for the symlink to avoid special character issues
+        var tempVideoLink = Path.Combine(tempDir, "video.mkv");
 
         try
         {
-            // Run pgsrip on the video file
-            var success = await RunPgsRipAsync(videoPath, language);
+            // Create a symbolic link to the video file
+            // This avoids permission issues and special characters in the path
+            try
+            {
+                // On Linux/Unix, create a symlink
+                if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+                {
+                    var symlinkProcess = new Process
+                    {
+                        StartInfo = new ProcessStartInfo
+                        {
+                            FileName = "ln",
+                            Arguments = $"-s \"{videoPath}\" \"{tempVideoLink}\"",
+                            RedirectStandardError = true,
+                            UseShellExecute = false
+                        }
+                    };
+                    symlinkProcess.Start();
+                    await symlinkProcess.WaitForExitAsync();
+                    
+                    if (symlinkProcess.ExitCode != 0)
+                    {
+                        _logger.LogWarning("Failed to create symlink, will try copying file instead");
+                        throw new IOException("Symlink creation failed");
+                    }
+                }
+                else
+                {
+                    // On Windows or if symlink fails, copy the file (slower but works)
+                    throw new IOException("Not Linux, will copy");
+                }
+            }
+            catch
+            {
+                // If symlink fails, copy the file (slower but more compatible)
+                _logger.LogInformation("Creating temporary copy of video file for pgsrip processing");
+                File.Copy(videoPath, tempVideoLink, true);
+            }
+
+            // Run pgsrip on the temp video link
+            var success = await RunPgsRipAsync(tempVideoLink, language, tempDir);
 
             if (success)
             {
-                // Look for generated SRT files - use case-insensitive search since pgsrip may change case
-                // First try exact match
-                var srtFiles = Directory.GetFiles(videoDir, $"{videoName}*.srt");
+                _logger.LogInformation("pgsrip reported success. Searching for output files in temp dir: {TempDir}", tempDir);
                 
-                // If no exact match, try case-insensitive search for files that start with the video name
-                if (srtFiles.Length == 0)
-                {
-                    var allSrtFiles = Directory.GetFiles(videoDir, "*.srt");
-                    srtFiles = allSrtFiles
-                        .Where(f => Path.GetFileName(f).StartsWith(videoName, StringComparison.OrdinalIgnoreCase))
-                        .ToArray();
-                    
-                    if (srtFiles.Length > 0)
-                    {
-                        _logger.LogDebug("Found {Count} SRT files with case-insensitive match for {VideoName}", 
-                            srtFiles.Length, videoName);
-                    }
-                }
+                // List all SRT files in the temp directory for debugging
+                var allSrtInDir = Directory.GetFiles(tempDir, "*.srt");
+                _logger.LogInformation("Found {Count} total SRT files in temp directory: {Files}", 
+                    allSrtInDir.Length, 
+                    string.Join(", ", allSrtInDir.Select(f => Path.GetFileName(f))));
+                
+                // Get any SRT file from temp directory
+                var srtFiles = allSrtInDir;
 
                 if (srtFiles.Length > 0)
                 {
-                    // Combine all SRT files or return the first one
+                    // Read the first SRT file
                     var srtContent = await File.ReadAllTextAsync(srtFiles[0]);
                     _logger.LogInformation("pgsrip extracted subtitles from {VideoPath}: {SrtFiles} files, {ContentLength} characters",
                         videoPath, srtFiles.Length, srtContent.Length);
@@ -183,8 +223,7 @@ public class PgsRipService
                 }
                 else
                 {
-                    _logger.LogWarning("pgsrip completed but no SRT files were generated for {VideoName} in {VideoDir}", 
-                        videoName, videoDir);
+                    _logger.LogWarning("pgsrip completed but no SRT files were generated in temp directory {TempDir}", tempDir);
                     return string.Empty;
                 }
             }
@@ -199,12 +238,30 @@ public class PgsRipService
             _logger.LogError(ex, "Error processing video with pgsrip");
             return string.Empty;
         }
+        finally
+        {
+            // Clean up temp directory
+            try
+            {
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to clean up temp directory: {TempDir}", tempDir);
+            }
+        }
     }
 
     /// <summary>
     /// Run pgsrip command on a file
     /// </summary>
-    private async Task<bool> RunPgsRipAsync(string inputFile, string language)
+    /// <param name="inputFile">Path to the input video file</param>
+    /// <param name="language">Language code for OCR</param>
+    /// <param name="workingDir">Directory where pgsrip will write output files (same as input file location)</param>
+    private async Task<bool> RunPgsRipAsync(string inputFile, string language, string workingDir)
     {
         try
         {
@@ -216,6 +273,9 @@ public class PgsRipService
                 $"\"{inputFile}\""
             };
 
+            _logger.LogInformation("About to run pgsrip: InputFile={InputFile}, Language={Language}, WorkingDir={WorkingDir}", 
+                inputFile, language, workingDir);
+
             using var process = new Process
             {
                 StartInfo = new ProcessStartInfo
@@ -226,11 +286,11 @@ public class PgsRipService
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true,
-                    WorkingDirectory = Path.GetDirectoryName(inputFile)
+                    WorkingDirectory = workingDir // pgsrip writes output in same dir as input
                 }
             };
 
-            _logger.LogDebug("Running pgsrip: {Command} {Arguments}", process.StartInfo.FileName, process.StartInfo.Arguments);
+            _logger.LogInformation("Running pgsrip command: {Command} {Arguments}", process.StartInfo.FileName, process.StartInfo.Arguments);
 
             process.Start();
 
@@ -241,12 +301,12 @@ public class PgsRipService
 
             if (process.ExitCode == 0)
             {
-                _logger.LogDebug("pgsrip completed successfully: {Output}", output);
+                _logger.LogInformation("pgsrip completed successfully. Output: {Output}, Error: {Error}", output, error);
                 return true;
             }
             else
             {
-                _logger.LogWarning("pgsrip failed with exit code {ExitCode}: {Error}", process.ExitCode, error);
+                _logger.LogWarning("pgsrip failed with exit code {ExitCode}. Output: {Output}, Error: {Error}", process.ExitCode, output, error);
                 return false;
             }
         }
