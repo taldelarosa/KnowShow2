@@ -48,9 +48,13 @@
   },
   "hashingAlgorithm": "CTPH",
   "filenamePatterns": {
-    "primaryPattern": "^(?<SeriesName>.+?)\\sS(?<Season>\\d+)E(?<Episode>\\d+)[A-Za-z]?(?:E\\d+[A-Za-z]?)*(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
-    "secondaryPattern": "^(?<SeriesName>.+?)\\s(?<Season>\\d+)x(?<Episode>\\d+)[A-Za-z]?(?:x\\d+[A-Za-z]?)*(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$", 
-    "tertiaryPattern": "^(?<SeriesName>.+?)\\.S(?<Season>\\d+)\\.E(?<Episode>\\d+)[A-Za-z]?(?:\\.E\\d+[A-Za-z]?)*(?:\\.(?<EpisodeName>.+?))?$"
+    "patterns": [
+      "^(?<SeriesName>.+?)[\\s\\.]S(?<Season>\\d+)E(?<Episode>\\d+)[A-Za-z]?(?:E\\d+[A-Za-z]?)*(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
+      "^(?<SeriesName>.+?)\\s(?<Season>\\d+)x(?<Episode>\\d+)[A-Za-z]?(?:x\\d+[A-Za-z]?)*(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
+      "^(?<SeriesName>.+?)\\.S(?<Season>\\d+)\\.E(?<Episode>\\d+)[A-Za-z]?(?:\\.E\\d+[A-Za-z]?)*(?:\\.(?<EpisodeName>.+?))?$",
+      "^(?<SeriesName>.+?)-S(?<Season>\\d+)E(?<Episode>\\d+)[A-Za-z]?(?:E\\d+[A-Za-z]?)*(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
+      "^(?<SeriesName>.+?)_S(?<Season>\\d+)E(?<Episode>\\d+)[A-Za-z]?(?:E\\d+[A-Za-z]?)*(?:[\\s\\.\\-_]+(?<EpisodeName>.+?))?$"
+    ]
   },
   "filenameTemplate": "{SeriesName} - S{Season:D2}E{Episode:D2} - {EpisodeName}{FileExtension}",
   "textRankFiltering": {

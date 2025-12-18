@@ -18,11 +18,12 @@ public class SubtitleFilenameParser
 
     /// <summary>
     /// Parses TV show information from subtitle filename
-    /// Supports formats like:
-    /// - "SeriesName - 1x1 - NameOfEpisode.srt" -> Series: SeriesName, Season: 1, Episode: 1
-    /// - "SeriesName - S01E01.srt" -> Series: SeriesName, Season: 1, Episode: 1
-    /// - "SeriesName.S01E01.srt" -> Series: SeriesName, Season: 1, Episode: 1
-    /// - "SeriesName S1E1.srt" -> Series: SeriesName, Season: 1, Episode: 1
+    /// Supports various formats with configurable patterns:
+    /// - "SeriesName S01E01 EpisodeName" 
+    /// - "SeriesName.S01E01.WEB.x264-GROUP"
+    /// - "SeriesName 1x01 EpisodeName"
+    /// - "SeriesName.S01.E01.EpisodeName"
+    /// And many more - fully configurable via patterns in config
     /// </summary>
     public SubtitleFileInfo? ParseFilename(string filePath)
     {
@@ -37,54 +38,77 @@ public class SubtitleFilenameParser
             return null;
         }
 
-        // Use configurable patterns
         var patterns = _configService.Config.FilenamePatterns;
+        
+        // For backward compatibility, try legacy properties first if Patterns list is empty
+        var patternList = patterns.Patterns?.Any() == true 
+            ? patterns.Patterns 
+            : GetLegacyPatterns(patterns);
 
-        // Pattern 1: Primary pattern (default: SeriesName S##E## EpisodeName)
-        var match1 = Regex.Match(fileName, patterns.PrimaryPattern, RegexOptions.IgnoreCase);
-        if (match1.Success && match1.Groups.Count >= 4)
+        // Try each pattern in order until we find a match
+        for (int i = 0; i < patternList.Count; i++)
         {
-            return new SubtitleFileInfo
+            var pattern = patternList[i];
+            if (string.IsNullOrWhiteSpace(pattern))
+                continue;
+
+            try
             {
-                FilePath = filePath,
-                Series = CleanSeriesName(match1.Groups[1].Value),
-                Season = match1.Groups[2].Value.TrimStart('0') ?? "0", // Remove leading zeros
-                Episode = match1.Groups[3].Value.TrimStart('0') ?? "0",
-                EpisodeName = CleanEpisodeName(match1.Groups.Count > 4 ? match1.Groups[4].Value : null)
-            };
+                var match = Regex.Match(fileName, pattern, RegexOptions.IgnoreCase);
+                if (match.Success)
+                {
+                    // Extract using named capture groups
+                    var seriesName = match.Groups["SeriesName"]?.Value;
+                    var season = match.Groups["Season"]?.Value;
+                    var episode = match.Groups["Episode"]?.Value;
+                    var episodeName = match.Groups["EpisodeName"]?.Value;
+
+                    // Validate we got the required fields
+                    if (!string.IsNullOrEmpty(seriesName) && 
+                        !string.IsNullOrEmpty(season) && 
+                        !string.IsNullOrEmpty(episode))
+                    {
+                        _logger.LogDebug("Matched filename '{FileName}' using pattern #{PatternIndex}", fileName, i + 1);
+                        
+                        return new SubtitleFileInfo
+                        {
+                            FilePath = filePath,
+                            Series = CleanSeriesName(seriesName),
+                            Season = season.TrimStart('0') != "" ? season.TrimStart('0') : "0", // Remove leading zeros
+                            Episode = episode.TrimStart('0') != "" ? episode.TrimStart('0') : "0",
+                            EpisodeName = CleanEpisodeName(episodeName)
+                        };
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error applying pattern #{PatternIndex}: {Pattern}", i + 1, pattern);
+            }
         }
 
-        // Pattern 2: Secondary pattern (default: SeriesName ##x## EpisodeName)
-        var match2 = Regex.Match(fileName, patterns.SecondaryPattern, RegexOptions.IgnoreCase);
-        if (match2.Success && match2.Groups.Count >= 4)
-        {
-            return new SubtitleFileInfo
-            {
-                FilePath = filePath,
-                Series = CleanSeriesName(match2.Groups[1].Value),
-                Season = match2.Groups[2].Value.TrimStart('0') ?? "0",
-                Episode = match2.Groups[3].Value.TrimStart('0') ?? "0",
-                EpisodeName = CleanEpisodeName(match2.Groups.Count > 4 ? match2.Groups[4].Value : null)
-            };
-        }
-
-        // Pattern 3: Tertiary pattern (default: SeriesName.S##.E##.EpisodeName)
-        var match3 = Regex.Match(fileName, patterns.TertiaryPattern, RegexOptions.IgnoreCase);
-        if (match3.Success && match3.Groups.Count >= 4)
-        {
-            return new SubtitleFileInfo
-            {
-                FilePath = filePath,
-                Series = CleanSeriesName(match3.Groups[1].Value),
-                Season = match3.Groups[2].Value,
-                Episode = match3.Groups[3].Value,
-                EpisodeName = CleanEpisodeName(match3.Groups.Count > 4 ? match3.Groups[4].Value : null)
-            };
-        }
-
-        _logger.LogWarning("Could not parse filename: {FileName}. Current patterns: Primary='{Primary}', Secondary='{Secondary}', Tertiary='{Tertiary}'",
-            fileName, patterns.PrimaryPattern, patterns.SecondaryPattern, patterns.TertiaryPattern);
+        _logger.LogWarning("Could not parse filename: {FileName}. Tried {PatternCount} pattern(s)", 
+            fileName, patternList.Count);
         return null;
+    }
+
+    /// <summary>
+    /// Gets patterns from legacy properties for backward compatibility
+    /// </summary>
+    private List<string> GetLegacyPatterns(FilenamePatterns patterns)
+    {
+        var legacyPatterns = new List<string>();
+        
+        #pragma warning disable CS0618 // Type or member is obsolete
+        if (!string.IsNullOrWhiteSpace(patterns.PrimaryPattern))
+            legacyPatterns.Add(patterns.PrimaryPattern);
+        if (!string.IsNullOrWhiteSpace(patterns.SecondaryPattern))
+            legacyPatterns.Add(patterns.SecondaryPattern);
+        if (!string.IsNullOrWhiteSpace(patterns.TertiaryPattern))
+            legacyPatterns.Add(patterns.TertiaryPattern);
+        #pragma warning restore CS0618
+        
+        return legacyPatterns;
     }
 
     /// <summary>
