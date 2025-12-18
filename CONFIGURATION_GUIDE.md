@@ -67,35 +67,62 @@ The configuration file should be placed in the same directory as the executable:
 ```json
 {
   "filenamePatterns": {
-    "primaryPattern": "^(.+?)\\s+S(\\d+)E(\\d+)(?:[\\s\\.\\-]+(.+?))?$",
-<<<<<<< HEAD
-    "secondaryPattern": "^(.+?)\\s+(\\d+)x(\\d+)(?:[\\s\\.\\-]+(.+?))?$",
-=======
-    "secondaryPattern": "^(.+?)\\s+(\\d+)x(\\d+)(?:[\\s\\.\\-]+(.+?))?$",
->>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
-    "tertiaryPattern": "^(.+?)\\.S(\\d+)\\.E(\\d+)(?:\\.(.+?))?$"
+    "patterns": [
+      "^(?<SeriesName>.+?)[\\s\\.]S(?<Season>\\d+)E(?<Episode>\\d+)[A-Za-z]?(?:E\\d+[A-Za-z]?)*(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
+      "^(?<SeriesName>.+?)\\s(?<Season>\\d+)x(?<Episode>\\d+)[A-Za-z]?(?:x\\d+[A-Za-z]?)*(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
+      "^(?<SeriesName>.+?)\\.S(?<Season>\\d+)\\.E(?<Episode>\\d+)[A-Za-z]?(?:\\.E\\d+[A-Za-z]?)*(?:\\.(?<EpisodeName>.+?))?$",
+      "^(?<SeriesName>.+?)-S(?<Season>\\d+)E(?<Episode>\\d+)[A-Za-z]?(?:E\\d+[A-Za-z]?)*(?:[\\s\\.\\-]+(?<EpisodeName>.+?))?$",
+      "^(?<SeriesName>.+?)_S(?<Season>\\d+)E(?<Episode>\\d+)[A-Za-z]?(?:E\\d+[A-Za-z]?)*(?:[\\s\\.\\-_]+(?<EpisodeName>.+?))?$"
+    ]
   }
 }
 ```
 
+These regex patterns control how series information is extracted from subtitle filenames. Patterns are tried **in order** until a match is found. You can add, remove, or reorder patterns as needed.
 
-<<<<<<< HEAD
+Each pattern must use **named capture groups**:
+- `(?<SeriesName>...)` - The TV series name (required)
+- `(?<Season>...)` - The season number (required)  
+- `(?<Episode>...)` - The episode number (required)
+- `(?<EpisodeName>...)` - The episode title (optional)
 
-=======
->>>>>>> 81fec204ed68e2301ca62c560a507572f1abad78
-These regex patterns control how series information is extracted from subtitle filenames:
+**Default Patterns:**
 
-- **primaryPattern**: Default format "Series S##E## Episode Name"
-    - Matches: "Bones S12E01 The Final Chapter"
-    - Groups: (1) Series, (2) Season, (3) Episode, (4) Episode Name
+1. **Space or dot before S##E##** - Most flexible pattern
+   - Matches: `Bones S12E01 The Final Chapter`
+   - Matches: `Star.Trek.Lower.Decks.S04E01.WEB.x264-TG.EN`
+   - Matches: `Show.Name.S01E05a.720p.BluRay`
 
-- **secondaryPattern**: Alternative format "Series ##x## Episode Name"
-    - Matches: "Bones 12x01 The Final Chapter"
-    - Groups: (1) Series, (2) Season, (3) Episode, (4) Episode Name
+2. **Space before season x episode**
+   - Matches: `Bones 12x01 The Final Chapter`
+   - Matches: `Criminal Minds 6x19 With Friends Like These`
 
-- **tertiaryPattern**: Dot-separated format "Series.S##.E##.Episode Name"
-    - Matches: "Bones.S12.E01.The Final Chapter"
-    - Groups: (1) Series, (2) Season, (3) Episode, (4) Episode Name
+3. **Dot-separated S##.E##**
+   - Matches: `Bones.S12.E01.The.Final.Chapter`
+
+4. **Hyphen-separated S##E##**
+   - Matches: `Show-Name-S01E01`
+
+5. **Underscore-separated S##E##**
+   - Matches: `Show_Name_S01E01`
+
+**Adding Custom Patterns:**
+
+You can add your own patterns to handle unique filename formats. For example, to handle date-based episodes:
+
+```json
+{
+  "filenamePatterns": {
+    "patterns": [
+      "^(?<SeriesName>.+?)\\.(?<Season>\\d{4})\\.(?<Episode>\\d{2}\\.\\d{2})$"
+    ]
+  }
+}
+```
+
+**Backward Compatibility:**
+
+The legacy `primaryPattern`, `secondaryPattern`, and `tertiaryPattern` properties are still supported but deprecated. If you have an old config, the system will automatically use those patterns as a fallback.
 
 ### Filename Template
 
